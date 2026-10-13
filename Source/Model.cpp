@@ -1,0 +1,791 @@
+#include "Model.h"
+
+namespace rm
+{
+using juce::var;
+
+static String safeId (const String& s)
+{
+    return s.retainCharacters ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_");
+}
+
+//==============================================================================
+var Snapshot::toVar() const
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("schema", kSchemaVersion);
+    o->setProperty ("id", id);
+    o->setProperty ("project", project);
+    o->setProperty ("version", version);
+    o->setProperty ("deviceId", deviceId);
+    o->setProperty ("notes", notes);
+    juce::Array<var> ph;
+    for (auto& p : photos) ph.add (p);
+    o->setProperty ("photos", ph);
+    if (! order.isEmpty())
+    {
+        juce::Array<var> od;
+        for (auto& d : order) od.add (d);
+        o->setProperty ("order", od);
+    }
+    o->setProperty ("created", created);
+    o->setProperty ("modified", modified);
+
+    auto* vals = new juce::DynamicObject();
+    for (auto& kv : values)
+    {
+        if (! kv.second.known) continue;      // nezname = v souboru proste neni
+        auto* v = new juce::DynamicObject();
+        v->setProperty ("pos", kv.second.pos);
+        if (kv.second.source != "manual")  v->setProperty ("source", kv.second.source);
+        if (kv.second.confidence >= 0)     v->setProperty ("confidence", kv.second.confidence);
+        vals->setProperty (juce::Identifier (kv.first), var (v));
+    }
+    o->setProperty ("values", var (vals));
+    return var (o);
+}
+
+bool Snapshot::fromVar (const var& v, Snapshot& s, String& error)
+{
+    auto* o = v.getDynamicObject();
+    if (o == nullptr) { error = "soubor neobsahuje snapshot"; return false; }
+
+    const int schema = (int) v.getProperty ("schema", 0);
+    if (schema < 1)              { error = "chybi verze formatu"; return false; }
+    if (schema > kSchemaVersion) { error = "ulozeno novejsi verzi pluginu (format " + String (schema) + ")"; return false; }
+
+    s = Snapshot();
+    s.id = safeId (v.getProperty ("id", "").toString());
+    if (s.id.isEmpty()) { error = "chybi ID"; return false; }
+
+    s.project  = v.getProperty ("project", "").toString();
+    s.version  = v.getProperty ("version", "").toString();
+    s.notes    = v.getProperty ("notes", "").toString();
+    s.created  = (juce::int64) v.getProperty ("created", 0);
+    s.modified = (juce::int64) v.getProperty ("modified", 0);
+
+    if (auto* ph = v.getProperty ("photos", var()).getArray())
+        for (auto& p : *ph)
+            if (auto name = juce::File::createLegalFileName (p.toString()); name.isNotEmpty())
+                s.photos.add (name);
+    if (auto legacy = juce::File::createLegalFileName (v.getProperty ("photoOriginal", "").toString()); legacy.isNotEmpty())
+        s.photos.addIfNotAlreadyThere (legacy);
+
+    if (auto* od = v.getProperty ("order", var()).getArray())
+        for (auto& d : *od)
+        {
+            auto dev = d.toString();
+            if (dev == "elysia.xfilter.500") dev = "elysia.xfilter.me";      // viz prevod hodnot nize
+            if (dev.isNotEmpty()) s.order.addIfNotAlreadyThere (dev);
+        }
+
+    // format 1 ukladal jeden pristroj na snapshot -> prevedeme na klice "pristroj:ovladac"
+    const auto fileDevice = v.getProperty ("deviceId", "").toString();
+    if (fileDevice.isEmpty()) { error = "chybi pristroj"; return false; }
+    const String prefix = fileDevice == kRackId ? String() : fileDevice + ":";
+    s.deviceId = kRackId;
+
+    if (auto* vals = v.getProperty ("values", var()).getDynamicObject())
+    {
+        for (auto& p : vals->getProperties())
+        {
+            ControlValue cv;
+            cv.known      = (bool) p.value.getProperty ("known", true);
+            cv.pos        = (double) p.value.getProperty ("pos", 0.0);
+            cv.source     = p.value.getProperty ("source", "manual").toString();
+            cv.confidence = (double) p.value.getProperty ("confidence", -1.0);
+            if (! cv.known || ! std::isfinite (cv.pos)) continue;
+
+            auto key = prefix + p.name.toString();
+            // do verze 0.4 byl xfilter veden jako 500 modul; polohy knobu jsou stejne (41 kroku) -> patri k ME
+            if (key.startsWith ("elysia.xfilter.500:"))
+            {
+                key = "elysia.xfilter.me:" + key.fromFirstOccurrenceOf (":", false, false);
+                if (vals->hasProperty (juce::Identifier (key))) continue;
+            }
+            const auto dev = key.upToFirstOccurrenceOf (":", false, false);
+            const auto ctl = key.fromFirstOccurrenceOf (":", false, false);
+
+            // Hodnota mimo rozsah znameho profilu se NEopravuje odhadem, zahodi se (= neznama).
+            if (auto* prof = profileForInstance (dev))
+            {
+                if (auto* c = prof->find (ctl))
+                {
+                    if (c->type == ControlType::knob)
+                    {
+                        if (cv.pos < 0.0 || cv.pos > 1.0) continue;
+                    }
+                    else
+                    {
+                        const double r = std::round (cv.pos);
+                        if (r < 0 || r >= c->numPositions()) continue;
+                        cv.pos = r;
+                    }
+                }
+            }
+            s.values[key] = cv;   // nezname pristroje / ovladace (novejsi profil) se zachovaji
+        }
+    }
+    return true;
+}
+
+bool Snapshot::fromJson (const String& text, Snapshot& s, String& error)
+{
+    var v;
+    if (juce::JSON::parse (text, v).failed()) { error = "poskozeny JSON"; return false; }
+    return fromVar (v, s, error);
+}
+
+Snapshot Snapshot::createNew (const String& project)
+{
+    Snapshot s;
+    s.id = juce::Uuid().toString();
+    s.project = project;
+    s.created = s.modified = juce::Time::currentTimeMillis();
+    return s;
+}
+
+int Snapshot::numKnown (const DeviceProfile& p) const
+{
+    int n = 0;
+    for (auto& c : p.controls) if (get (p.id, c.id).known) ++n;
+    return n;
+}
+
+int Snapshot::numKnown() const
+{
+    // vsechny kusy vsech modelu (i ty, ktere zrovna nejsou v racku)
+    int n = 0;
+    for (auto& kv : values)
+    {
+        if (! kv.second.known) continue;
+        const auto dev = kv.first.upToFirstOccurrenceOf (":", false, false);
+        if (auto* p = profileForInstance (dev))
+            if (p->find (kv.first.fromFirstOccurrenceOf (":", false, false)) != nullptr) ++n;
+    }
+    return n;
+}
+
+String Snapshot::title() const
+{
+    auto t = project.isEmpty() ? String ("Bez nazvu") : project;
+    if (version.isNotEmpty()) t << "  " << version;
+    return t;
+}
+
+int totalControls()
+{
+    int n = 0;
+    for (auto& p : profiles()) n += (int) p.controls.size();
+    return n;
+}
+
+//==============================================================================
+String clockString (double pos01, double sweepDeg)
+{
+    const double angle = (juce::jlimit (0.0, 1.0, pos01) - 0.5) * sweepDeg;   // 0 = 12 hodin
+    int minutes = (int) std::lround (angle * 2.0);                            // 30 stupnu = 60 minut
+    minutes = (int) std::lround (minutes / 5.0) * 5;
+    minutes = ((minutes % 720) + 720) % 720;
+    int h = minutes / 60, m = minutes % 60;
+    if (h == 0) h = 12;
+    return String (h) + ":" + String (m).paddedLeft ('0', 2);
+}
+
+double position01 (const ControlDef& c, const ControlValue& v)
+{
+    if (c.type == ControlType::knob) return juce::jlimit (0.0, 1.0, v.pos);
+    const int n = c.numPositions();
+    return n > 1 ? juce::jlimit (0.0, 1.0, v.pos / (double) (n - 1)) : 0.0;
+}
+
+double angleFor (const ControlDef& c, const ControlValue& v)
+{
+    return c.angleMin + position01 (c, v) * (c.angleMax - c.angleMin);
+}
+
+String shortValue (const ControlDef& c, const ControlValue& v)
+{
+    if (! v.known) return "?";
+    if (! c.scale.empty()) return entryText (c, v);
+    switch (c.type)
+    {
+        case ControlType::button:   return v.pos >= 0.5 ? "ON" : "OFF";
+        case ControlType::selector: return c.options[(int) v.pos];
+        case ControlType::stepped:
+            if (c.options.size() == c.steps) return c.options[(int) v.pos].upToFirstOccurrenceOf (" (", false, false);
+            return String ((int) v.pos + 1);
+        case ControlType::knob:
+        default:                    return clockString (v.pos, c.angleMax - c.angleMin);
+    }
+}
+
+String describeValue (const ControlDef& c, const ControlValue& v)
+{
+    if (! v.known) return "?";
+
+    switch (c.type)
+    {
+        case ControlType::button:
+            return v.pos >= 0.5 ? "ON" : "OFF";
+
+        case ControlType::selector:
+            return c.options[(int) v.pos];
+
+        case ControlType::stepped:
+        {
+            const int i = (int) v.pos;
+            if (c.options.size() == c.steps) return c.options[i];
+            if (! c.scale.empty()) return entryText (c, v) + "   (krok " + String (i + 1) + "/" + String (c.steps) + ")";
+            return String (i + 1) + "/" + String (c.steps);
+        }
+
+        case ControlType::knob:
+        default:
+            if (! c.scale.empty()) return entryText (c, v);
+            return clockString (v.pos, c.angleMax - c.angleMin);
+    }
+}
+
+String formatTime (juce::int64 ms)
+{
+    if (ms <= 0) return "-";
+    return juce::Time (ms).formatted ("%d.%m. %H:%M");
+}
+
+int versionNumber (const String& version)
+{
+    return version.retainCharacters ("0123456789").getIntValue();
+}
+
+String makeReport (const Snapshot& s)
+{
+    String r;
+    r << "RACK MEMORY\n===========\n";
+    r << "Skladba:   " << s.project << "\n";
+    r << "Verze:     " << s.version << "\n";
+    r << "Ulozeno:   " << formatTime (s.modified) << "\n";
+    r << "Poznamka:  " << s.notes << "\n";
+    r << "Fotky:     " << s.photos.joinIntoString (", ") << "\n";
+
+    for (auto& p : profiles())
+    {
+        r << "\n" << p.name << "\n" << String::repeatedString ("-", p.name.length()) << "\n";
+        for (auto& c : p.controls)
+            r << "  " << (c.group + " / " + c.name).paddedRight (' ', 34) << describeValue (c, s.get (p.id, c.id)) << "\n";
+    }
+    r << "\n? = nezadano. Plugin hardware neovlada, jen si pamatuje polohy.\n";
+    return r;
+}
+
+
+//==============================================================================
+// Rucni zadani cisel
+//==============================================================================
+bool parseNumber (String t, double& out)
+{
+    t = t.trim().toLowerCase().replace (",", ".").replace (" ", "").replace (juce::CharPointer_UTF8 ("\xe2\x88\x92"), "-");
+    t = t.trimCharactersAtStart ("~").trimCharactersAtStart (juce::CharPointer_UTF8 ("\xe2\x89\x88"));
+    t = t.upToFirstOccurrenceOf ("hz", false, true).upToFirstOccurrenceOf ("db", false, true).upToFirstOccurrenceOf ("ms", false, true);
+    if (t.isEmpty()) return false;
+    double mult = 1.0;
+    if (t.endsWithChar ('k')) { mult = 1000.0; t = t.dropLastCharacters (1); }
+    else if (t.containsChar ('k'))
+    {
+        // "1k5" = 1.5k, "2k2" = 2.2k
+        const auto a = t.upToFirstOccurrenceOf ("k", false, false), b = t.fromFirstOccurrenceOf ("k", false, false);
+        if (! b.containsOnly ("0123456789")) return false;
+        t = a + "." + b; mult = 1000.0;
+    }
+    if (t == "+" || t == "-" || ! t.containsOnly ("+-0123456789.")) return false;
+    if (t.lastIndexOfAnyOf ("+-") > 0 || t.indexOf (".") != t.lastIndexOf (".")) return false;
+    out = t.getDoubleValue() * mult;
+    return std::isfinite (out);
+}
+
+namespace
+{
+String formatLike (double v, const std::vector<ControlDef::Mark>& scale)
+{
+    // format podle potisku: 1k0 / 16k pro kHz, jinak tolik desetinnych mist jako potisk
+    bool kilo = false; int decimals = 0;
+    for (auto& m : scale)
+    {
+        if (m.label.containsIgnoreCase ("k")) kilo = true;
+        if (m.label.containsChar ('.')) decimals = juce::jmax (decimals, m.label.fromLastOccurrenceOf (".", false, false).length());
+    }
+    if (kilo && std::abs (v) >= 1000.0)
+    {
+        const double k = std::round (v / 100.0) / 10.0;      // na desetiny kHz
+        if (k >= 9.95) return String (juce::roundToInt (v / 1000.0)) + "k";
+        const int whole = (int) std::floor (k + 1e-9), frac = juce::roundToInt ((k - whole) * 10.0);
+        return String (whole) + "k" + String (frac);
+    }
+    if (std::abs (v) >= 10.0) return String (juce::roundToInt (v));
+    return String (v, juce::jmax (1, decimals));
+}
+
+// poloha 0..1 -> hodnota na stupnici (mezi cisly potisku linearne); false = mimo / bez cisel
+bool valueAt (const ControlDef& c, double pos, double& value, String& exactLabel)
+{
+    const auto& s = c.scale;
+    if (s.size() < 2) return false;
+    const double tol = c.type == ControlType::stepped && c.steps > 1 ? 0.45 / (c.steps - 1) : 0.006;
+    for (auto& m : s)
+        if (std::abs (m.pos01 - pos) <= tol) { exactLabel = m.label; value = m.value; return m.numeric; }
+    for (size_t i = 0; i + 1 < s.size(); ++i)
+    {
+        const auto& a = s[i]; const auto& b = s[i + 1];
+        if (pos >= a.pos01 && pos <= b.pos01 && a.numeric && b.numeric && b.pos01 > a.pos01)
+        {
+            value = a.value + (b.value - a.value) * (pos - a.pos01) / (b.pos01 - a.pos01);
+            return true;
+        }
+    }
+    return false;
+}
+}
+
+String entryText (const ControlDef& c, const ControlValue& v)
+{
+    if (! v.known) return "?";
+    if (c.type == ControlType::button)   return v.pos >= 0.5 ? "ON" : "OFF";
+    if (c.type == ControlType::selector) return c.options[(int) v.pos];
+    if (c.type == ControlType::stepped && c.options.size() == c.steps) return c.options[(int) v.pos].upToFirstOccurrenceOf (" (", false, false);
+
+    const double pos = position01 (c, v);
+    double value = 0; String label;
+    if (valueAt (c, pos, value, label))
+        return label.isNotEmpty() ? label : String (juce::CharPointer_UTF8 ("\xe2\x89\x88")) + formatLike (value, c.scale);
+    if (label.isNotEmpty()) return label;                                  // napr. OFF / MAX
+    if (c.type == ControlType::stepped) return String ((int) v.pos + 1);   // krok 1..N
+    return clockString (v.pos, c.angleMax - c.angleMin);
+}
+
+bool parseEntry (const ControlDef& c, const String& text, ControlValue& out)
+{
+    const auto t = text.trim();
+    out = ControlValue();
+    out.source = "manual";
+    if (t.isEmpty() || t == "?") { out.known = false; return true; }
+    const auto lower = t.toLowerCase();
+
+    auto setPos01 = [&] (double p01)
+    {
+        p01 = juce::jlimit (0.0, 1.0, p01);
+        out.known = true;
+        if (c.type == ControlType::knob) out.pos = p01;
+        else out.pos = (double) juce::jlimit (0, juce::jmax (0, c.numPositions() - 1), (int) std::lround (p01 * (c.numPositions() - 1)));
+        return true;
+    };
+
+    if (c.type == ControlType::button)
+    {
+        if (lower == "on" || lower == "1" || lower == "zap" || lower == "z" || lower == "x" || lower == "+") { out.known = true; out.pos = 1; return true; }
+        if (lower == "off" || lower == "0" || lower == "vyp" || lower == "v" || lower == "-")               { out.known = true; out.pos = 0; return true; }
+        return false;
+    }
+    if (c.options.size() > 0 && (c.type == ControlType::selector || c.options.size() == c.steps))
+    {
+        for (int i = 0; i < c.options.size(); ++i)
+            if (c.options[i].toLowerCase().startsWith (lower) || c.options[i].upToFirstOccurrenceOf (" (", false, false).equalsIgnoreCase (t))
+                { out.known = true; out.pos = i; return true; }
+        double n;
+        if (parseNumber (t, n) && n == std::floor (n) && n >= 1 && n <= c.options.size()) { out.known = true; out.pos = n - 1; return true; }
+        return false;
+    }
+
+    // "#12" = krok 12 (u knobu s aretaci)
+    if (c.type == ControlType::stepped && (t.startsWithChar ('#') || lower.startsWith ("k")))
+    {
+        double n;
+        if (parseNumber (t.substring (1), n) && n >= 1 && n <= c.steps && n == std::floor (n)) { out.known = true; out.pos = n - 1; return true; }
+        return false;
+    }
+    // "2:30" = poloha jako na hodinach
+    if (t.containsChar (':'))
+    {
+        const int h = t.upToFirstOccurrenceOf (":", false, false).getIntValue(), m = t.fromFirstOccurrenceOf (":", false, false).getIntValue();
+        if (h < 1 || h > 12 || m < 0 || m > 59) return false;
+        double angle = ((h % 12) * 60 + m) * 0.5;            // stupne od 12 hodin
+        if (angle > 180.0) angle -= 360.0;
+        return setPos01 ((angle - c.angleMin) / (c.angleMax - c.angleMin));
+    }
+
+    // text z potisku (OFF, MAX, LOW, 1k0 ...)
+    for (auto& m : c.scale)
+        if (m.label.equalsIgnoreCase (t)) return setPos01 (m.pos01);
+
+    double n;
+    if (! parseNumber (t, n)) return false;
+    // cislo na stupnici potisku
+    std::vector<const ControlDef::Mark*> nums;
+    for (auto& m : c.scale) if (m.numeric) nums.push_back (&m);
+    if (nums.size() >= 2)
+    {
+        for (auto* m : nums) if (std::abs (m->value - n) < 1e-9) return setPos01 (m->pos01);
+        for (size_t i = 0; i + 1 < nums.size(); ++i)
+        {
+            const double a = nums[i]->value, b = nums[i + 1]->value;
+            if ((n - a) * (n - b) <= 0 && a != b)
+                return setPos01 (nums[i]->pos01 + (nums[i + 1]->pos01 - nums[i]->pos01) * (n - a) / (b - a));
+        }
+        return false;    // mimo stupnici
+    }
+    if (c.type == ControlType::stepped)
+    {
+        if (n >= 1 && n <= c.steps && n == std::floor (n)) { out.known = true; out.pos = n - 1; return true; }
+        return false;
+    }
+    if (n >= 0 && n <= 10) return setPos01 (n / 10.0);      // knob bez cisel: 0 .. 10
+    return false;
+}
+
+juce::StringArray defaultRack()
+{
+    juce::StringArray out;
+    for (auto* id : { "spl.vitalizer.mk3t", "elysia.xfilter.me", "elysia.xmax.500", "elysia.nvelope.500", "wesaudio.rhea" })
+        if (findProfile (id) != nullptr) out.add (id);
+    return out;
+}
+
+
+//==============================================================================
+// Rack uzivatele
+//==============================================================================
+String profileIdOf (const String& instanceId)          { return instanceId.upToFirstOccurrenceOf ("#", false, false); }
+const DeviceProfile* profileForInstance (const String& id)   { return findProfile (profileIdOf (id)); }
+
+namespace
+{
+int slotsOfModel (const String& model)
+{
+    auto* p = findProfile (model);
+    return p != nullptr && p->formFactor.startsWith ("500") ? 2 : 0;
+}
+}
+
+int RackLayout::width500 (const RackItem& it) const   { return slotsOfModel (it.model); }
+
+juce::StringArray RackLayout::ids() const
+{
+    juce::StringArray r;
+    for (auto& it : items) r.add (it.id);
+    return r;
+}
+
+const RackItem* RackLayout::find (const String& id) const
+{
+    for (auto& it : items) if (it.id == id) return &it;
+    return nullptr;
+}
+
+bool RackLayout::fits (int slot, int width, const String& ignoreId) const
+{
+    if (slot < 0 || slot + width > lunchboxSlots) return false;
+    for (auto& it : items)
+    {
+        const int w = width500 (it);
+        if (w == 0 || it.id == ignoreId || it.slot < 0) continue;
+        if (slot < it.slot + w && it.slot < slot + width) return false;
+    }
+    return true;
+}
+
+int RackLayout::freeSlot (int width) const
+{
+    for (int s = 0; s + width <= lunchboxSlots; ++s) if (fits (s, width)) return s;
+    return -1;
+}
+
+String RackLayout::add (const String& model)
+{
+    if (findProfile (model) == nullptr) return {};
+    String id = model;
+    for (int n = 2; find (id) != nullptr; ++n) id = model + "#" + String (n);
+    RackItem it; it.id = id; it.model = model;
+    const int w = slotsOfModel (model);
+    if (w > 0)
+    {
+        it.slot = freeSlot (w);
+        if (it.slot < 0)                         // lunchbox je plny: rozsirit
+        {
+            int end = 0;
+            for (auto& o : items) if (width500 (o) > 0) end = juce::jmax (end, o.slot + width500 (o));
+            lunchboxSlots = juce::jmax (lunchboxSlots, end) + w;
+            it.slot = freeSlot (w);
+        }
+        // modul jde za posledni 500 modul (lunchbox se v radach nehne)
+        int insertAt = (int) items.size();
+        for (int i = (int) items.size() - 1; i >= 0; --i) if (width500 (items[(size_t) i]) > 0) { insertAt = i + 1; break; }
+        items.insert (items.begin() + insertAt, it);
+    }
+    else items.push_back (it);
+    return id;
+}
+
+bool RackLayout::remove (const String& id)
+{
+    for (auto i = items.begin(); i != items.end(); ++i)
+        if (i->id == id) { items.erase (i); return true; }
+    return false;
+}
+
+bool RackLayout::place500 (const String& id, int slot)
+{
+    auto* me = find (id);
+    if (me == nullptr) return false;
+    const int w = width500 (*me);
+    if (w == 0 || slot < 0 || slot + w > lunchboxSlots) return false;
+    if (fits (slot, w, id)) { const_cast<RackItem*> (me)->slot = slot; return true; }
+
+    // odsunout prekazejici moduly do volnych mist (nejdriv co nejbliz)
+    RackLayout trial = *this;
+    for (auto& it : trial.items) if (it.id == id) it.slot = slot;
+    for (auto& it : trial.items)
+    {
+        const int ow = trial.width500 (it);
+        if (ow == 0 || it.id == id) continue;
+        if (! (slot < it.slot + ow && it.slot < slot + w)) continue;     // neprekryva se
+        const int old = it.slot;
+        it.slot = -1;
+        int best = -1;
+        for (int d = 1; d < trial.lunchboxSlots && best < 0; ++d)
+            for (int cand : { old + d, old - d })
+                if (cand >= 0 && trial.fits (cand, ow, it.id)) { best = cand; break; }
+        if (best < 0) return false;                                       // neni kam
+        it.slot = best;
+    }
+    *this = trial;
+    return true;
+}
+
+void RackLayout::move (const String& id, int newIndex)
+{
+    for (size_t i = 0; i < items.size(); ++i)
+        if (items[i].id == id)
+        {
+            auto it = items[i];
+            items.erase (items.begin() + (long) i);
+            if (newIndex > (int) i) --newIndex;
+            items.insert (items.begin() + juce::jlimit (0, (int) items.size(), newIndex), it);
+            return;
+        }
+}
+
+String RackLayout::displayName (const String& id) const
+{
+    auto* p = profileForInstance (id);
+    String name = p != nullptr ? p->name : id;
+    if (id.containsChar ('#')) name << " (" << id.fromLastOccurrenceOf ("#", false, false) << ")";
+    return name;
+}
+
+void RackLayout::normalise()
+{
+    std::vector<RackItem> keep;
+    juce::StringArray seen;
+    for (auto& it : items)
+    {
+        if (findProfile (it.model) == nullptr || it.id.isEmpty() || seen.contains (it.id)) continue;
+        seen.add (it.id);
+        keep.push_back (it);
+    }
+    items = keep;
+    lunchboxSlots = juce::jlimit (2, 24, lunchboxSlots);
+    // sloty: prekryvy / mimo lunchbox se presunou na volne misto
+    for (auto& it : items)
+    {
+        const int w = width500 (it);
+        if (w == 0) { it.slot = -1; continue; }
+        const int wanted = it.slot;
+        it.slot = -2;                                              // docasne mimo
+        if (wanted >= 0 && fits (wanted, w, it.id)) { it.slot = wanted; continue; }
+        int s = freeSlot (w);
+        if (s < 0) { lunchboxSlots += w; s = freeSlot (w); }
+        it.slot = s;
+    }
+}
+
+RackLayout RackLayout::makeDefault()       { return fromOrder (defaultRack()); }
+
+RackLayout RackLayout::fromOrder (const juce::StringArray& ids)
+{
+    RackLayout r;
+    for (auto& id : ids)
+    {
+        auto model = profileIdOf (id == "elysia.xfilter.500" ? String ("elysia.xfilter.me") : id);
+        if (findProfile (model) == nullptr || r.find (id) != nullptr) continue;
+        RackItem it; it.id = id == "elysia.xfilter.500" ? String ("elysia.xfilter.me") : id; it.model = model;
+        const int w = slotsOfModel (model);
+        it.slot = w > 0 ? r.freeSlot (w) : -1;
+        if (w > 0 && it.slot < 0) { r.lunchboxSlots += w; it.slot = r.freeSlot (w); }
+        r.items.push_back (it);
+    }
+    return r;
+}
+
+juce::var RackLayout::toVar() const
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("schema", kSchema);
+    o->setProperty ("lunchboxSlots", lunchboxSlots);
+    juce::Array<juce::var> arr;
+    for (auto& it : items)
+    {
+        auto* e = new juce::DynamicObject();
+        e->setProperty ("id", it.id);
+        e->setProperty ("model", it.model);
+        if (it.slot >= 0) e->setProperty ("slot", it.slot);
+        arr.add (juce::var (e));
+    }
+    o->setProperty ("devices", arr);
+    return juce::var (o);
+}
+
+bool RackLayout::fromVar (const juce::var& v, RackLayout& out, String& error)
+{
+    if (v.getDynamicObject() == nullptr)               { error = "neni to rack"; return false; }
+    if ((int) v.getProperty ("schema", 0) > kSchema)   { error = "rack ulozila novejsi verze pluginu"; return false; }
+    RackLayout r;
+    r.lunchboxSlots = (int) v.getProperty ("lunchboxSlots", 8);
+    if (auto* arr = v.getProperty ("devices", juce::var()).getArray())
+        for (auto& e : *arr)
+        {
+            RackItem it;
+            it.id = e.getProperty ("id", "").toString();
+            it.model = e.getProperty ("model", profileIdOf (it.id)).toString();
+            it.slot = (int) e.getProperty ("slot", -1);
+            r.items.push_back (it);
+        }
+    r.normalise();
+    out = r;
+    return true;
+}
+
+bool RackLayout::operator== (const RackLayout& o) const
+{
+    if (lunchboxSlots != o.lunchboxSlots || items.size() != o.items.size()) return false;
+    for (size_t i = 0; i < items.size(); ++i)
+        if (items[i].id != o.items[i].id || items[i].model != o.items[i].model || items[i].slot != o.items[i].slot) return false;
+    return true;
+}
+
+//==============================================================================
+Library::Library()
+{
+    auto env = juce::SystemStats::getEnvironmentVariable ("RACKMEMORY_HOME", {});
+    root = env.isNotEmpty() ? juce::File (env)
+                            : juce::File::getSpecialLocation (juce::File::userMusicDirectory).getChildFile ("Rack Memory");
+}
+
+juce::File Library::snapshotFile (const String& id) const
+{
+    return snapshotsDir().getChildFile (safeId (id) + ".json");
+}
+
+juce::File Library::photoFile (const String& relName) const
+{
+    if (relName.isEmpty()) return {};
+    return photosDir().getChildFile (juce::File::createLegalFileName (relName));
+}
+
+std::vector<Snapshot> Library::loadAll (juce::StringArray* errors) const
+{
+    std::vector<Snapshot> out;
+    for (auto& f : snapshotsDir().findChildFiles (juce::File::findFiles, false, "*.json"))
+    {
+        Snapshot s; String err;
+        if (f.getSize() > 4 * 1024 * 1024)
+            err = "soubor je podezrele velky";
+        else if (Snapshot::fromJson (f.loadFileAsString(), s, err))
+        {
+            if (s.id != f.getFileNameWithoutExtension()) err = "ID nesouhlasi s nazvem souboru";
+            else { out.push_back (std::move (s)); continue; }
+        }
+        if (errors != nullptr) errors->add (f.getFileName() + ": " + err);
+    }
+    std::sort (out.begin(), out.end(), [] (const Snapshot& a, const Snapshot& b) { return a.modified > b.modified; });
+    return out;
+}
+
+bool Library::wasDeleted (const String& id) const
+{
+    return trashDir().getNumberOfChildFiles (juce::File::findFiles, safeId (id) + "*.json") > 0;
+}
+
+juce::Result Library::save (Snapshot& s) const
+{
+    if (safeId (s.id).isEmpty())
+        return juce::Result::fail ("Snapshot nema ID.");
+    if (! snapshotsDir().createDirectory())
+        return juce::Result::fail ("Nelze vytvorit slozku " + snapshotsDir().getFullPathName());
+
+    s.modified = juce::Time::currentTimeMillis();
+    if (s.created <= 0) s.created = s.modified;
+
+    // replaceWithText zapisuje pres docasny soubor -> pri padu nezustane napul zapsany snapshot
+    if (! snapshotFile (s.id).replaceWithText (s.toJson(), false, false, "\n"))
+        return juce::Result::fail ("Zapis selhal: " + snapshotFile (s.id).getFullPathName());
+    return juce::Result::ok();
+}
+
+bool Library::loadRack (RackLayout& out, String& error) const
+{
+    for (auto f : { rackFile(), rackFile().withFileExtension ("json.bak") })
+    {
+        if (! f.existsAsFile()) continue;
+        var v;
+        if (juce::JSON::parse (f.loadFileAsString(), v).wasOk() && RackLayout::fromVar (v, out, error))
+            return true;
+        error = "rack.json je poskozeny";
+    }
+    return false;
+}
+
+juce::Result Library::saveRack (const RackLayout& r) const
+{
+    if (! root.createDirectory()) return juce::Result::fail ("Nelze vytvorit slozku " + root.getFullPathName());
+    auto f = rackFile();
+    if (f.existsAsFile()) f.copyFileTo (f.withFileExtension ("json.bak"));
+    if (! f.replaceWithText (juce::JSON::toString (r.toVar()), false, false, "\n"))
+        return juce::Result::fail ("Zapis selhal: " + f.getFullPathName());
+    return juce::Result::ok();
+}
+
+juce::Result Library::remove (const String& id) const
+{
+    auto f = snapshotFile (id);
+    if (! f.existsAsFile()) return juce::Result::ok();
+    if (! trashDir().createDirectory())
+        return juce::Result::fail ("Nelze vytvorit slozku Trash.");
+    auto target = trashDir().getChildFile (safeId (id) + "_" + String (juce::Time::currentTimeMillis()) + ".json");
+    if (! f.moveFileTo (target))
+        return juce::Result::fail ("Presun do Trash selhal.");
+    return juce::Result::ok();
+}
+
+String Library::signature() const
+{
+    juce::int64 latest = 0; int n = 0;
+    for (auto& f : snapshotsDir().findChildFiles (juce::File::findFiles, false, "*.json"))
+    {
+        ++n;
+        latest = juce::jmax (latest, f.getLastModificationTime().toMilliseconds());
+    }
+    return String (n) + ":" + String (latest) + ":" + String (rackFile().getLastModificationTime().toMilliseconds());
+}
+
+String Library::importPhoto (const juce::File& source, const String& snapshotId, String& error) const
+{
+    if (! source.existsAsFile())                 { error = "Soubor neexistuje."; return {}; }
+    if (source.getSize() > 200 * 1024 * 1024)    { error = "Soubor je prilis velky (max 200 MB)."; return {}; }
+    if (! photosDir().createDirectory())         { error = "Nelze vytvorit slozku Photos."; return {}; }
+
+    const auto ext = source.getFileExtension().toLowerCase().retainCharacters ("abcdefghijklmnopqrstuvwxyz0123456789.");
+    auto target = photosDir().getNonexistentChildFile (safeId (snapshotId).substring (0, 8) + "_" + String (juce::Time::currentTimeMillis()), ext, false);
+    if (! source.copyFileTo (target))            { error = "Kopirovani fotky selhalo."; return {}; }
+    return target.getFileName();
+}
+
+} // namespace rm

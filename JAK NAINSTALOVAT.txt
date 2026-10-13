@@ -1,0 +1,17 @@
+RACK MEMORY - instalace (bez Terminalu)
+=======================================
+
+PRVNI INSTALACE
+1. Zip rozbal dvojklikem.
+2. Ve Finderu stiskni Cmd+Shift+G, vloz:  ~/Library/Audio/Plug-Ins/Components
+   a do te slozky pretahni "Rack Memory.component".
+3. Restartuj Logic. Plugin je v: Audio FX > Audio Units > DusiX > Rack Memory.
+
+Kdyz ho Logic nenacte: Nastaveni systemu > Soukromi a zabezpeceni > dole "Presto povolit",
+pak Logic znovu otevri. (Plugin neni podepsany u Applu.)
+
+DALSI VERZE
+Novy zip (napr. "Rack Memory 0.5.1.zip") jen uloz do Stazenych nebo na Plochu.
+V pluginu se nahore objevi zelene tlacitko AKTUALIZOVAT - klikni, pak restartuj Logic.
+
+Tvoje ulozena nastaveni jsou v ~/Music/Rack Memory (aktualizace je nemaze).
