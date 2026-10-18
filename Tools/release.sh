@@ -68,6 +68,8 @@ python3 - "$OUT/latest.json" <<PY
 import json, sys
 data = {
   "version": "$VERSION",
+  "channel": "stable",
+  "minimum_version": "0.8.0",
   "notes": """$NOTES""",
   "notes_url": "https://github.com/$REPO/releases/tag/$TAG",
   "download": "https://github.com/$REPO/releases/download/$TAG/$ASSET",

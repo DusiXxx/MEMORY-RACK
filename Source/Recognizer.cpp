@@ -41,6 +41,7 @@ struct Plane
 struct Photo
 {
     Plane r, g, b, gray;
+    double scale = 1.0;          // pracovni rozliseni / puvodni fotka
 };
 
 Photo toPhoto (const juce::Image& source, int maxSide)
@@ -54,6 +55,7 @@ Photo toPhoto (const juce::Image& source, int maxSide)
                             juce::Graphics::mediumResamplingQuality);
     }
     Photo p;
+    p.scale = (double) img.getWidth() / juce::jmax (1, source.getWidth());
     const int w = img.getWidth(), h = img.getHeight();
     for (auto* pl : { &p.r, &p.g, &p.b, &p.gray }) { pl->w = w; pl->h = h; pl->v.resize ((size_t) w * (size_t) h); }
     juce::Image::BitmapData bd (img, juce::Image::BitmapData::readOnly);
@@ -617,6 +619,81 @@ rm::ControlValue readRectGlow (const Photo& ph, const rm::ControlDef& c, const T
     const double thr = 0.45;
     return onOff (h.v > thr, std::abs (h.v - thr));
 }
+
+// Svitivost barevne LED v okoli bodu panelu (jas * sytost; bily potisk je jasny, ale bezbarvy)
+double ledLevel (const Photo& ph, const rm::ControlDef& c, const Transform& t, size_t i)
+{
+    double px, py; t.map (c.draw.points[i].x, c.draw.points[i].y, px, py);
+    double j[4]; t.jacobian (c.draw.points[i].x, c.draw.points[i].y, j);
+    const double s = std::sqrt (std::abs (j[0] * j[3] - j[1] * j[2]));
+    const double r = juce::jmax (1.2, c.draw.ledR * s);
+    double best = 0;
+    for (double dy = -r; dy <= r + 1e-9; dy += juce::jmax (0.7, r / 2))
+        for (double dx = -r; dx <= r + 1e-9; dx += juce::jmax (0.7, r / 2))
+        {
+            const auto h = sample (ph, px + dx, py + dy, r * 0.8);
+            best = juce::jmax (best, h.v * juce::jmin (1.0, h.s * 1.6));
+        }
+    return best;
+}
+
+// WesAudio _RHEA: krouzek LED kolem enkoderu. Nevime jiste, jestli krouzek ukazuje jednu tecku nebo pas
+// (manual to neuvadi) -> umi oboje; cokoli jineho = nejiste (nezadano, ke kontrole).
+rm::ControlValue readLedRing (const Photo& ph, const rm::ControlDef& c, const Transform& t)
+{
+    rm::ControlValue v; v.source = "recognized";
+    const int n = (int) c.draw.points.size();
+    if (n < 2 || n != c.numPositions()) return v;
+    std::vector<double> lv;
+    for (int i = 0; i < n; ++i) lv.push_back (ledLevel (ph, c, t, (size_t) i));
+    const double mx = *std::max_element (lv.begin(), lv.end());
+    if (mx < 0.30) return v;                                          // nic nesviti (vypnuto / tma)
+    const double thr = juce::jmax (0.24, mx * 0.55);
+    std::vector<int> lit;
+    for (int i = 0; i < n; ++i) if (lv[(size_t) i] > thr) lit.push_back (i);
+    // souvisly usek?
+    for (size_t k = 1; k < lit.size(); ++k) if (lit[k] != lit[k - 1] + 1) return v;
+    const int a = lit.front(), b = lit.back();
+    int pos = -1;
+    if (a == b) pos = a;                                              // jedna tecka
+    else if (a == 0) pos = b;                                         // pas od zacatku
+    else if (b == n - 1) pos = a;                                     // pas od konce
+    else if (c.minLabel.startsWith ("-") && (a == n / 2 || a == n / 2 - 1)) pos = b;   // od stredu doprava
+    else if (c.minLabel.startsWith ("-") && (b == n / 2 || b == n / 2 - 1)) pos = a;   // od stredu doleva
+    if (pos < 0) return v;
+    double lo = 1.0;
+    for (int i = 0; i < n; ++i) if (std::find (lit.begin(), lit.end(), i) == lit.end()) lo = juce::jmin (lo, thr - lv[(size_t) i]);
+    double hi = 1.0;
+    for (int i : lit) hi = juce::jmin (hi, lv[(size_t) i] - thr);
+    v.confidence = juce::jlimit (0.0, 1.0, juce::jmin (lo, hi) / 0.12);
+    v.known = v.confidence >= 0.35;
+    v.pos = pos;
+    return v;
+}
+
+// Prepinac / tlacitko s LED (jedna sviti = poloha; zadna = poloha bez LED, napr. OFF)
+rm::ControlValue readLedSelect (const Photo& ph, const rm::ControlDef& c, const Transform& t)
+{
+    rm::ControlValue v; v.source = "recognized";
+    const int n = (int) c.draw.points.size();
+    if (n < 1 || (int) c.draw.map.size() != c.numPositions()) return v;
+    std::vector<double> lv;
+    for (int i = 0; i < n; ++i) lv.push_back (ledLevel (ph, c, t, (size_t) i));
+    const double thr = 0.36;
+    int litCount = 0, litIdx = -1; double margin = 1.0;
+    for (int i = 0; i < n; ++i)
+    {
+        margin = juce::jmin (margin, std::abs (lv[(size_t) i] - thr));
+        if (lv[(size_t) i] > thr) { ++litCount; litIdx = i; }
+    }
+    if (litCount > 1) return v;
+    for (int p = 0; p < (int) c.draw.map.size(); ++p)
+        if (c.draw.map[(size_t) p] == litIdx) { v.pos = p; v.known = true; }
+    v.confidence = juce::jlimit (0.0, 1.0, margin / 0.18);
+    v.known = v.known && v.confidence >= 0.30;
+    return v;
+}
+
 //==============================================================================
 // Zarovnani podle potisku panelu (nezavisle na knobech)
 //==============================================================================
@@ -1396,7 +1473,16 @@ const std::vector<KeyPt>& referenceKeypoints (const rm::DeviceProfile& prof, con
 }
 }
 
-Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const juce::Image& reference)
+Transform fromCorners (const rm::DeviceProfile& prof, const juce::Point<float> corners[4])
+{
+    std::vector<cd> p { cd (0, 0), cd (prof.w, 0), cd (prof.w, prof.h), cd (0, prof.h) }, q;
+    for (int i = 0; i < 4; ++i) q.push_back (cd (corners[i].x, corners[i].y));
+    Transform t;
+    if (! fitHomography (p, q, t)) return {};
+    return t;
+}
+
+Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const juce::Image& reference, const Transform* manual)
 {
     Result res;
     for (auto& c : prof.controls)
@@ -1414,6 +1500,14 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     // ---- 1) kandidati polohy: (a) podle vyraznych bodu potisku, (b) podle knobu
     std::vector<Transform> hyps;
     int siftInliers = 0;
+    if (manual != nullptr)
+    {
+        // rucni zarovnani (uzivatel oznacil 4 rohy panelu): bez hledani, jen se presne doladi potiskem
+        Transform t = *manual;
+        if (ph.scale != 1.0) for (int i = 0; i < 6; ++i) t.h[i] *= ph.scale;      // fotka se pro vypocet zmensuje
+        hyps.push_back (t);
+    }
+    else
     {
         const auto& refKps = referenceKeypoints (prof, rp);
         const double fs = juce::jmin (1.0, 1600.0 / juce::jmax (ph.gray.w, ph.gray.h));
@@ -1433,7 +1527,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     const int N = (int) anchors.size();
     const Kernel kernel = makeKernel (prof.anchor.isEmpty() ? String ("disc") : prof.anchor);
 
-    if (N >= 4 && prof.anchor.isNotEmpty() && siftInliers < 25)
+    if (manual == nullptr && N >= 4 && prof.anchor.isNotEmpty() && siftInliers < 25)
     {
         const int factor = juce::jmax (1, (int) std::ceil (juce::jmax (ph.gray.w, ph.gray.h) / 600.0));
         const Plane work = shrink (ph.gray, factor);
@@ -1574,7 +1668,19 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     for (size_t hi = 0; hi < hyps.size(); ++hi)
     {
         double ncc = -1;
-        const Transform t = refinePrint (ph.gray, rp, hyps[hi], ncc);
+        Transform t = refinePrint (ph.gray, rp, hyps[hi], ncc);
+        if (manual != nullptr)
+        {
+            // doladeni nesmi rucni rohy odvest jinam (max 4 % uhlopricky panelu)
+            double worst = 0;
+            for (auto c : { cd (0, 0), cd (prof.w, 0), cd (prof.w, prof.h), cd (0, prof.h) })
+            {
+                double ax, ay, bx, by; hyps[hi].map (c.real(), c.imag(), ax, ay); t.map (c.real(), c.imag(), bx, by);
+                worst = juce::jmax (worst, std::hypot (ax - bx, ay - by));
+            }
+            double j[4]; hyps[hi].jacobian (prof.w * 0.5, prof.h * 0.5, j);
+            if (worst > 0.04 * std::hypot (prof.w, prof.h) * std::sqrt (std::abs (j[0] * j[3] - j[1] * j[2]))) t = hyps[hi];
+        }
         if (debug) std::cout << "  kandidat " << hi << " -> potisk " << ncc << std::endl;
         if (ncc > best) { best = ncc; xp = t; bestIsSift = siftInliers >= 8 && hi == 0; }
     }
@@ -1583,7 +1689,8 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     const double detail = best > -1 ? detailMatch (ph.gray, rp, xp) : 0.0;
     if (debug) std::cout << "  jemny potisk " << detail << std::endl;
     // prijeti: hodne sedicich bodu potisku, nebo dobra shoda jasu I jemneho potisku (pismena)
-    const bool accepted = (bestIsSift && siftInliers >= kMinInliers && best >= 0.12)
+    const bool accepted = manual != nullptr
+                       || (bestIsSift && siftInliers >= kMinInliers && best >= 0.12)
                        || (best >= kMinPrintMatch && detail >= kMinDetail);
     if (! accepted && std::getenv ("RM_FORCE") == nullptr)
     {
@@ -1593,6 +1700,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
 
     res.aligned = true;
     res.transform = xp;
+    res.photoScale = ph.scale;
 
     // ---- knoby vycnivaji z panelu: jejich skutecny stred na fotce se dohleda v okoli (paralaxa)
     Transform xf = xp;
@@ -1658,6 +1766,8 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         else if (c.read == "led")       v = readLed (ph, c, xp);
         else if (c.read == "ringglow")  v = readRingGlow (ph, c, xp);
         else if (c.read == "rectglow")  v = readRectGlow (ph, c, xp);
+        else if (c.read == "ledring")   v = readLedRing (ph, c, xp);
+        else if (c.read == "ledsel")    v = readLedSelect (ph, c, xp);
 
         v.source = "recognized";
         res.values[c.id] = v;

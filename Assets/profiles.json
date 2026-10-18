@@ -2743,7 +2743,8 @@
       ],
       "ledR": 11.02,
       "colour": "#2f8dff"
-     }
+     },
+     "read": "ledring"
     },
     {
      "id": "threshold",
@@ -2831,7 +2832,8 @@
       ],
       "ledR": 11.02,
       "colour": "#2f8dff"
-     }
+     },
+     "read": "ledring"
     },
     {
      "id": "output",
@@ -2919,7 +2921,8 @@
       ],
       "ledR": 11.02,
       "colour": "#2f8dff"
-     }
+     },
+     "read": "ledring"
     },
     {
      "id": "attack",
@@ -2974,7 +2977,8 @@
       ],
       "ledR": 11.02,
       "colour": "#2f8dff"
-     }
+     },
+     "read": "ledring"
     },
     {
      "id": "mix",
@@ -3062,7 +3066,8 @@
       ],
       "ledR": 11.02,
       "colour": "#2f8dff"
-     }
+     },
+     "read": "ledring"
     },
     {
      "id": "release",
@@ -3117,7 +3122,8 @@
       ],
       "ledR": 11.02,
       "colour": "#2f8dff"
-     }
+     },
+     "read": "ledring"
     },
     {
      "id": "thd",
@@ -3153,7 +3159,8 @@
        0,
        1
       ]
-     }
+     },
+     "read": "ledsel"
     },
     {
      "id": "bypass",
@@ -3180,7 +3187,8 @@
        -1,
        0
       ]
-     }
+     },
+     "read": "ledsel"
     },
     {
      "id": "scfilter",
@@ -3222,12 +3230,420 @@
        1,
        2
       ]
-     }
+     },
+     "read": "ledsel"
     }
    ],
    "anchor": "",
    "profileVersion": 2,
    "slots500": 2
+  },
+  {
+   "id": "warmaudio.wa76",
+   "name": "Warm Audio WA76",
+   "manufacturer": "Warm Audio",
+   "formFactor": "19\" 2U",
+   "category": "mixing",
+   "w": 2400,
+   "h": 442,
+   "image": "wa76.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Popisky podle manuálu WA76, rozmístění podle fotek z obchodu.",
+   "sources": [
+    "Warm Audio WA76 User Manual (gear4music.com, download_148406.pdf)",
+    "Fotka produktu gear4music.cz (rozmístění)"
+   ],
+   "openQuestions": [
+    "Čísla stupnic INPUT/OUTPUT/ATTACK/RELEASE nejsou ověřená – ukládá se poloha.",
+    "Přesné rozmístění ovladačů ověřit na skutečném panelu.",
+    "Kombinace dvou tlačítek RATIO (mimo ALL) se neukládá."
+   ],
+   "controls": [
+    {
+     "id": "input",
+     "name": "INPUT",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Stupnice potisku zatím neověřená – hodnota se ukládá jako poloha (hodiny).",
+     "x": 420,
+     "y": 230,
+     "r": 100,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#d8d8d8"
+     }
+    },
+    {
+     "id": "output",
+     "name": "OUTPUT",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Stupnice potisku zatím neověřená – hodnota se ukládá jako poloha (hodiny).",
+     "x": 860,
+     "y": 230,
+     "r": 100,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#d8d8d8"
+     }
+    },
+    {
+     "id": "attack",
+     "name": "ATTACK",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Rozsah 20 µs – 800 µs (manuál WA76). Směr stupnice neověřen.",
+     "x": 1240,
+     "y": 150,
+     "r": 50,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "release",
+     "name": "RELEASE",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Rozsah 50 ms – 1100 ms (manuál WA76).",
+     "x": 1240,
+     "y": 320,
+     "r": 50,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "ratio",
+     "name": "RATIO",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "4",
+      "8",
+      "12",
+      "20",
+      "ALL"
+     ],
+     "note": "Tlačítka 4, 8, 12, 20; „All-buttons in“ = všechna stisknutá (manuál). Kombinace dvou tlačítek se neukládá.",
+     "verified": true,
+     "x": 1480,
+     "y": 214,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1480,
+        310
+       ],
+       [
+        1480,
+        246
+       ],
+       [
+        1480,
+        182
+       ],
+       [
+        1480,
+        118
+       ]
+      ],
+      "w": 60,
+      "h": 44,
+      "colour": "#f2f2ee",
+      "map": [
+       0,
+       1,
+       2,
+       3,
+       99
+      ]
+     }
+    },
+    {
+     "id": "meter",
+     "name": "METER",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "GR",
+      "+8",
+      "+4",
+      "OFF"
+     ],
+     "note": "Měřák: GR / +8 / +4; OFF vypíná celý přístroj (manuál).",
+     "verified": true,
+     "x": 2190,
+     "y": 214,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2190,
+        118
+       ],
+       [
+        2190,
+        182
+       ],
+       [
+        2190,
+        246
+       ],
+       [
+        2190,
+        310
+       ]
+      ],
+      "w": 60,
+      "h": 44,
+      "colour": "#f2f2ee",
+      "map": [
+       0,
+       1,
+       2,
+       3
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "warmaudio.wa2a",
+   "name": "Warm Audio WA-2A",
+   "manufacturer": "Warm Audio",
+   "formFactor": "19\" 2U",
+   "category": "mixing",
+   "w": 2400,
+   "h": 442,
+   "image": "wa2a.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Popisky podle manuálu WA-2A, rozmístění orientační.",
+   "sources": [
+    "Warm Audio WA-2A User Manual (bhphotovideo.com lit_files/755190.pdf)",
+    "Fotka produktu thomann.cz (rozmístění)"
+   ],
+   "openQuestions": [
+    "Rozmístění ovladačů je odhad podle malé fotky – ověřit na přístroji (pošli fotku zepředu).",
+    "Poloha přepínače LIMIT/COMPRESS (nahoře/dole) neověřena.",
+    "Pre-emphasis: manuál ji uvádí mezi předními ovladači, ale fotka ji neukazuje – zatím není v profilu.",
+    "Čísla stupnic GAIN a PEAK REDUCTION neověřená – ukládá se poloha."
+   ],
+   "controls": [
+    {
+     "id": "gain",
+     "name": "GAIN",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Výstupní (make-up) zisk, cca 40 dB (manuál). Čísla stupnice neověřená – ukládá se poloha.",
+     "x": 680,
+     "y": 220,
+     "r": 105,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#2a2a2a"
+     }
+    },
+    {
+     "id": "peak",
+     "name": "PEAK REDUCTION",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Míra komprese (práh). Zcela vlevo = měkký bypass (manuál). Čísla stupnice neověřená – ukládá se poloha.",
+     "x": 1720,
+     "y": 220,
+     "r": 105,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#2a2a2a"
+     }
+    },
+    {
+     "id": "mode",
+     "name": "LIMIT / COMPRESS",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "COMPRESS",
+      "LIMIT"
+     ],
+     "verified": false,
+     "note": "Dvoupolohový přepínač (manuál). Která poloha je nahoře, není ověřeno.",
+     "x": 2050,
+     "y": 134,
+     "r": 40,
+     "draw": {
+      "kind": "vlever",
+      "points": [
+       [
+        2050,
+        94
+       ],
+       [
+        2050,
+        176
+       ]
+      ],
+      "colour": "#e8e8e8"
+     }
+    },
+    {
+     "id": "meter",
+     "name": "METER",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "GAIN REDUCTION",
+      "+10",
+      "+4"
+     ],
+     "verified": true,
+     "note": "Měřák: gain reduction / výstup +10 / výstup +4 (manuál).",
+     "x": 2050,
+     "y": 362,
+     "r": 40,
+     "angleMin": -60,
+     "angleMax": 60,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    }
+   ]
+  },
+  {
+   "id": "samson.spatchplus",
+   "name": "Samson S-patch Plus",
+   "manufacturer": "Samson",
+   "formFactor": "patchbay",
+   "category": "",
+   "w": 2400,
+   "h": 221,
+   "image": "spatchplus.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (modro-bílý vzhled), ne fotografie výrobce.",
+   "sources": [
+    "Samson S-patch Plus User Manual (goknight.com/content/documentation)",
+    "Samson S-patch Plus Spec Sheet"
+   ],
+   "openQuestions": [
+    "Přesné rozteče jacků a poloha přepínačů jsou orientační."
+   ],
+   "patchbay": {
+    "channels": 24,
+    "topY": 58,
+    "bottomY": 166,
+    "x0": 270,
+    "dx": 83.47826086956522,
+    "jackR": 25,
+    "bottomContinues": true,
+    "modes": [
+     "N",
+     "HN",
+     "T"
+    ],
+    "modeNames": [
+     "Normalled",
+     "Half-normalled",
+     "Thru"
+    ],
+    "modeHow": "Přepínač každého kanálu na předním panelu (N / HN / T).",
+    "topLabel": "horní řada 1–24 (zezadu: zdroj – výstupy zařízení)",
+    "bottomLabel": "dolní řada 25–48 (zezadu: cíl – vstupy zařízení)",
+    "note": "Normalled/half-normalled: horní zadní jack napájí dolní zadní jack (manuál Samson)."
+   },
+   "controls": []
+  },
+  {
+   "id": "neutrik.nysspp.l1",
+   "name": "Neutrik NYS-SPP-L1",
+   "manufacturer": "Neutrik (Rean)",
+   "formFactor": "patchbay",
+   "category": "",
+   "w": 2400,
+   "h": 221,
+   "image": "nysspp.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (černý panel, popisové proužky), ne fotografie výrobce.",
+   "sources": [
+    "NEUTRIK NYS-SPP-L1 – popis produktu (markertek.com): 48 bodů, 2 řady, 24 desek, half-normal ve výrobě, otočením desky se mění"
+   ],
+   "openQuestions": [
+    "Režim po otočení desky není v dostupném popisu jednoznačně uveden – ověřit v návodu Neutrik.",
+    "Která řada je „šedá“ (normalizační) – kresba předpokládá dolní."
+   ],
+   "patchbay": {
+    "channels": 24,
+    "topY": 74,
+    "bottomY": 150,
+    "x0": 300,
+    "dx": 83.91304347826087,
+    "jackR": 25,
+    "bottomContinues": false,
+    "modes": [
+     "HN",
+     "FLIP"
+    ],
+    "modeNames": [
+     "Half-normal (výrobní nastavení)",
+     "Deska otočená (ověřit)"
+    ],
+    "modeHow": "Mění se otočením desky kanálu (žádný přepínač vpředu).",
+    "topLabel": "horní řada 1–24",
+    "bottomLabel": "dolní řada 1–24 (šedé jacky)",
+    "note": "Výrobní nastavení: half-normal na dolní řadě. Zastrčení do šedého jacku odpojí horní řadu od dolní."
+   },
+   "controls": []
   }
  ]
 }

@@ -8,7 +8,8 @@
 // a merenim urovne. Dve instance (IN pred hardwarem, OUT za nim) se navzajem vidi a ukazuji rozdil.
 class RackMemoryProcessor : public juce::AudioProcessor,
                             public juce::ChangeBroadcaster,
-                            private juce::AsyncUpdater
+                            private juce::AsyncUpdater,
+                            private juce::Timer
 {
 public:
     RackMemoryProcessor();
@@ -53,24 +54,34 @@ public:
     std::vector<rm::Snapshot> all;      // cela knihovna, nejnovejsi prvni
     juce::StringArray loadErrors;       // poskozene soubory (nemazou se)
 
-    rm::Snapshot working;               // prave zobrazene nastaveni racku
-    juce::String loadedId;              // ulozeny snapshot, ze ktereho working vychazi ("" = zadny)
+    rm::Snapshot working;               // nastaveni vsech pristroju v tomto projektu (vsechny skupiny)
+    juce::String loadedId;              // verze aktualni skupiny, ze ktere working vychazi ("" = zadna)
+    std::map<juce::String, juce::String> loadedByGroup;   // skupina -> nactena verze
     bool dirty = false;                 // zmeneno od posledniho ulozeni / nacteni
     juce::String songName;
     bool showValues = false;
+    bool highContrast = false;          // vyrazne ukazatele knobu (nastaveni zobrazeni)
     juce::String instanceId;
 
     void reloadLibrary();
     const rm::Snapshot* findSnapshot (const juce::String& id) const;
     int nextVersionNumber (const juce::String& song) const;
 
-    // Ulozeni vzdy vytvori novou verzi (v1, v2, ...) - nic se neprepisuje, neni na co se ptat.
+    // Ulozeni vzdy vytvori novou verzi (v1, v2, ...) aktualni skupiny - nic se neprepisuje.
+    // Verze obsahuje jen pristroje aktualni skupiny (Mixing a Mastering maji nezavisle verze).
     juce::Result save();
-    bool load (const juce::String& id);             // predchozi stav jde vratit pres undo()
+    juce::Result overwriteLoaded();                 // prepsat nactenou verzi (jen na vyslovne prani)
+    juce::Result duplicateSnapshot (const juce::String& id);
+    juce::Result renameSnapshot (const juce::String& id, const juce::String& name);
+    std::vector<rm::Difference> compareWith (const juce::String& id) const;    // working vs. ulozena verze
+    bool load (const juce::String& id);             // jen pristroje dane verze; predchozi stav jde vratit pres undo()
+    juce::StringArray instancesOf (const rm::Snapshot&) const;
+    juce::String snapshotTitle (const rm::Snapshot&) const;
     bool canUndo() const                            { return hasUndo; }
     void undo();
     juce::Result deleteSnapshot (const juce::String& id);
-    void clearAll();                                // vsechno zpet na "nezadano" (jde vratit pres undo)
+    void clearAll();                                // pristroje skupiny zpet na "nezadano" (jde vratit pres undo)
+    void clearDevice (const juce::String& deviceId);
 
     // cteni z fotky (stav jen pro tuto relaci, do projektu se neuklada)
     struct DevicePhoto
@@ -78,30 +89,62 @@ public:
         juce::Image rectified;          // fotka narovnana na panel (pro kontrolu okem)
         juce::Image original;           // zmensena puvodni fotka (prohlizeni dole)
         juce::String status;            // kratky text do slotu
+        std::vector<juce::Point<float>> quad;   // kde byl pristroj na fotce nalezen (px nahledu original)
         bool busy = false, failed = false;
         int read = 0, readable = 0;
     };
     std::map<juce::String, DevicePhoto> devicePhotos;
     bool showPhotos = false;
     // Hodnoty pristroje nahradi tim, co se precetlo z fotky; nejiste ovladace zustanou nezadane. Jde vratit pres undo().
+    // Precteno jiste -> nastavi se (z fotky, ceka na kontrolu). Nejiste -> NIC se nemeni (rucni hodnota zustava),
+    // ovladac se zaradi ke kontrole. Jde vratit pres undo().
     void applyRecognition (const juce::String& deviceId, const std::map<juce::String, rm::ControlValue>& values);
     void applyRecognition (const std::map<juce::String, std::map<juce::String, rm::ControlValue>>& perDevice);   // vic pristroju, jeden krok zpet
+    std::map<juce::String, juce::StringArray> needsReview;      // kus -> ovladace, ktere z fotky precist nesly (jen tato relace)
+    int confirmRecognized (const juce::String& deviceId);       // modre (z fotky) -> potvrzene; vraci pocet
+    int numUnconfirmed (const juce::String& deviceId) const;
+    void unlinkPhoto (const juce::String& deviceId);            // odebrat fotku pristroje - nastaveni zustava
 
-    // Rack uzivatele (dlouhodobe, spolecny pro vsechny projekty): ~/Music/Rack Memory/rack.json
-    rm::RackLayout rack;
+    // presety pristroju (nezavisle na skladbach)
+    juce::Result savePreset (const juce::String& deviceId, const juce::String& name);
+    void applyPreset (const juce::String& deviceId, const rm::DevicePreset&);
+
+    // Studio uzivatele (dlouhodobe, spolecne pro vsechny projekty): skupiny s racky + patchbaye, ~/Music/Rack Memory/rack.json
+    rm::Studio studio;
+    juce::String currentGroup;                                   // zobrazena skupina (uklada se do projektu)
+    rm::RackLayout rack;                                         // rack aktualni skupiny (kopie ze studia)
     void reloadRack();
-    juce::Result setRack (const rm::RackLayout&);                // ulozi hned (jine instance si ho nactou)
+    juce::Result setRack (const rm::RackLayout&);                // rack aktualni skupiny; ulozi hned (jine instance si ho nactou)
+    juce::Result setStudio (const rm::Studio&);
+    void setGroup (const juce::String& groupId);
     juce::StringArray rackOrder() const                          { return rack.ids(); }
     juce::StringArray missingInstances() const;                  // kusy s hodnotami v teto verzi, ktere v racku nejsou
 
-    void markDirty();                               // po kazde zmene working / songName
-    void commitState();                             // prepocita stav ukladany do projektu Logicu
+    // kabely patchbaye (v projektu, ukladaji se s verzemi)
+    void setCables (const std::vector<rm::Cable>&);
+
+    // Obnova neulozenych zmen: kdyz se projekt zavrel bez ulozeni, plugin zmeny nabidne (nikdy sam neprepise).
+    struct RecoveryOffer { bool available = false; juce::int64 time = 0; juce::String song, state; int changes = 0; };
+    RecoveryOffer recovery;
+    void acceptRecovery();
+    void discardRecovery();
+
+    void markDirty();                               // po kazde zmene working / songName (Logic se dozvi, ze je co ulozit)
+    void commitState (bool notifyHost = true);      // prepocita stav ukladany do projektu Logicu
+    juce::AudioParameterFloat* stateParam = nullptr;   // skryty parametr: jeho zmenou se Logic dozvi o zmene nastaveni
+    int hostNotifications = 0;                      // pro testy
 
     juce::String buildStateJson() const;
     void applyStateJson (const juce::String&);
 
 private:
     void handleAsyncUpdate() override;
+    void timerCallback() override;
+    void writeRecovery();
+    juce::File recoveryFile() const;
+    bool pendingNotify = false, pendingRecovery = false;
+    std::atomic<bool> emitted { false };
+    juce::String loadedToken, lastEmittedToken;
     template <typename T> void processAudio (juce::AudioBuffer<T>&);
     juce::SmoothedValue<float> gainSmooth { 1.0f };
     double currentRate = 44100.0;

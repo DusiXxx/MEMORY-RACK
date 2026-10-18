@@ -46,6 +46,7 @@ ControlDef parseControl (const juce::var& v)
 
     auto d = v.getProperty ("draw", juce::var());
     c.draw.kind = str (d, "kind");
+    c.draw.style = str (d, "style");
     c.draw.sprite = str (d, "sprite"); c.draw.spriteR = num (d, "spriteR"); c.draw.refAngle = num (d, "refAngle");
     if (auto* p = d.getProperty ("points", juce::var()).getArray())
         for (auto& e : *p) c.draw.points.push_back ({ (float) (double) e[0], (float) (double) e[1] });
@@ -59,18 +60,31 @@ ControlDef parseControl (const juce::var& v)
     return c;
 }
 
-std::vector<DeviceProfile> loadProfiles()
+int loadedLibraryVersion = 0;
+} // namespace
+
+std::vector<DeviceProfile> parseProfiles (const juce::var& root, const String& origin)
 {
     std::vector<DeviceProfile> out;
-    juce::var root;
-    if (juce::JSON::parse (String::fromUTF8 (BinaryData::profiles_json, BinaryData::profiles_jsonSize), root).failed())
-        return out;
-
-    if (auto* arr = root.getProperty ("profiles", juce::var()).getArray())
     {
+        if (auto* arr = root.getProperty ("profiles", juce::var()).getArray())
         for (auto& v : *arr)
         {
             DeviceProfile p;
+            p.origin = origin;
+            p.category = str (v, "category");
+            auto pb = v.getProperty ("patchbay", juce::var());
+            if (pb.getDynamicObject() != nullptr)
+            {
+                p.patchbay.channels = (int) pb.getProperty ("channels", 0);
+                p.patchbay.topY = num (pb, "topY"); p.patchbay.bottomY = num (pb, "bottomY");
+                p.patchbay.x0 = num (pb, "x0"); p.patchbay.dx = num (pb, "dx"); p.patchbay.jackR = num (pb, "jackR", 10);
+                if (auto* m = pb.getProperty ("modes", juce::var()).getArray())     for (auto& e : *m) p.patchbay.modes.add (e.toString());
+                if (auto* m = pb.getProperty ("modeNames", juce::var()).getArray()) for (auto& e : *m) p.patchbay.modeNames.add (e.toString());
+                p.patchbay.modeHow = str (pb, "modeHow"); p.patchbay.note = str (pb, "note");
+                p.patchbay.topLabel = str (pb, "topLabel"); p.patchbay.bottomLabel = str (pb, "bottomLabel");
+                p.patchbay.bottomContinues = (bool) pb.getProperty ("bottomContinues", false);
+            }
             p.id = str (v, "id"); p.name = str (v, "name"); p.manufacturer = str (v, "manufacturer"); p.formFactor = str (v, "formFactor");
             p.profileVersion = (int) v.getProperty ("profileVersion", 1);
             p.w = num (v, "w", 900); p.h = num (v, "h", 1576);
@@ -80,13 +94,60 @@ std::vector<DeviceProfile> loadProfiles()
             if (auto* s = v.getProperty ("sources", juce::var()).getArray())        for (auto& e : *s) p.sources.add (e.toString());
             if (auto* q = v.getProperty ("openQuestions", juce::var()).getArray())  for (auto& e : *q) p.openQuestions.add (e.toString());
             if (auto* cs = v.getProperty ("controls", juce::var()).getArray())      for (auto& e : *cs) p.controls.push_back (parseControl (e));
-            if (p.id.isNotEmpty() && ! p.controls.empty())
+            if (p.id.isNotEmpty() && (! p.controls.empty() || p.patchbay.channels > 0))
                 out.push_back (std::move (p));
         }
     }
     return out;
 }
-} // namespace
+
+std::vector<DeviceProfile> mergeProfiles (const std::vector<DeviceProfile>& builtIn, const juce::var& lib, juce::StringArray* notes)
+{
+    auto out = builtIn;
+    if (lib.getDynamicObject() == nullptr) return out;
+    if ((int) lib.getProperty ("schema", 0) != 1) { if (notes) notes->add ("knihovna hardwaru ma neznamy format"); return out; }
+    for (auto& np : parseProfiles (lib, "library"))
+    {
+        auto it = std::find_if (out.begin(), out.end(), [&] (const DeviceProfile& p) { return p.id == np.id; });
+        if (it == out.end()) { out.push_back (np); if (notes) notes->add ("novy: " + np.name); continue; }
+        if (np.profileVersion <= it->profileVersion) continue;
+        bool keepsIds = true;
+        for (auto& c : it->controls) if (np.find (c.id) == nullptr) keepsIds = false;
+        if (! keepsIds) { if (notes) notes->add ("neprevzato (chybi ovladace): " + np.name); continue; }
+        *it = np;
+        if (notes) notes->add ("aktualizovano: " + np.name);
+    }
+    return out;
+}
+
+juce::File hardwareLibraryDir()
+{
+    auto env = juce::SystemStats::getEnvironmentVariable ("RACKMEMORY_HOME", {});
+    auto root = env.isNotEmpty() ? juce::File (env) : juce::File::getSpecialLocation (juce::File::userMusicDirectory).getChildFile ("Rack Memory");
+    return root.getChildFile ("Hardware");
+}
+
+int hardwareLibraryVersion()   { profiles(); return loadedLibraryVersion; }
+
+namespace
+{
+std::vector<DeviceProfile> loadProfiles()
+{
+    juce::var root;
+    if (juce::JSON::parse (String::fromUTF8 (BinaryData::profiles_json, BinaryData::profiles_jsonSize), root).failed())
+        return {};
+    auto out = parseProfiles (root, "built-in");
+    // stazena (overena) knihovna hardwaru: novejsi profily / nove pristroje
+    auto f = hardwareLibraryDir().getChildFile ("library.json");
+    juce::var lib;
+    if (f.existsAsFile() && f.getSize() < 8 * 1024 * 1024 && juce::JSON::parse (f.loadFileAsString(), lib).wasOk())
+    {
+        out = mergeProfiles (out, lib);
+        loadedLibraryVersion = (int) lib.getProperty ("libraryVersion", 0);
+    }
+    return out;
+}
+}
 
 const std::vector<DeviceProfile>& profiles()
 {

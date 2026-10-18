@@ -84,7 +84,7 @@ int main (int argc, char** argv)
 
     section ("profily");
     {
-        CHECK (rm::profiles().size() == 6 && rm::defaultRack().size() == 5);
+        CHECK (rm::profiles().size() == 10 && rm::defaultRack().size() == 5);
         juce::StringArray ids;
         for (auto& p : rm::profiles())
         {
@@ -281,6 +281,187 @@ int main (int argc, char** argv)
         CHECK (a.findSnapshot (b.loadedId)->get (XM, "tone").pos == 3 && a.findSnapshot (a.loadedId)->get (XM, "tone").pos == 22);
     }
 
+
+    section ("REGRESE: Logic se dozvi o zmene nastaveni (jinak zavre projekt bez ulozeni)");
+    {
+        struct L : juce::AudioProcessorListener
+        {
+            int params = 0, other = 0;
+            void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override { ++params; }
+            void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails&) override { ++other; }
+        } l;
+        RackMemoryProcessor p;
+        p.addListener (&l);
+        // nacteni projektu Logic NESMI oznacit jako zmeneny
+        RackMemoryProcessor src; src.working.values[rm::valueKey ("spl.vitalizer.mk3t", "drive")] = V (0.3); src.markDirty();
+        setState (p, stateOf (src)); pump (400);
+        CHECK (l.params == 0);
+        // zmena knobu -> parametr "state" se zmeni (AU/Logic jinak o zmene nevi: nonParameterStateChanged se do AU nepredava)
+        p.working.values[rm::valueKey ("spl.vitalizer.mk3t", "drive")] = V (0.6); p.markDirty();
+        pump (400);
+        CHECK (l.params >= 1 && p.hostNotifications >= 1);
+        CHECK (! p.stateParam->isAutomatable());
+        p.removeListener (&l);
+    }
+
+    section ("dva projekty Logicu s ruznym SPL: kazdy si pamatuje svoje");
+    {
+        const juce::String SPL ("spl.vitalizer.mk3t");
+        juce::String blobA, blobB;
+        {
+            RackMemoryProcessor a;      // projekt A (bez ULOZIT, jen ulozeni projektu v Logicu)
+            a.working.values[rm::valueKey (SPL, "drive")] = V (0.2);
+            a.working.values[rm::valueKey (SPL, "process")] = V (0.9);
+            a.markDirty(); blobA = stateOf (a);
+        }
+        {
+            RackMemoryProcessor b;      // projekt B
+            b.working.values[rm::valueKey (SPL, "drive")] = V (0.8);
+            b.markDirty(); blobB = stateOf (b);
+        }
+        auto check = [&] (const juce::String& blob, double drive, bool processKnown)
+        {
+            RackMemoryProcessor p; setState (p, blob); pump (50);
+            return p.working.get (SPL, "drive").pos == drive && p.working.get (SPL, "process").known == processKnown;
+        };
+        CHECK (check (blobA, 0.2, true));  CHECK (check (blobB, 0.8, false));
+        CHECK (check (blobB, 0.8, false)); CHECK (check (blobA, 0.2, true));
+        // oba otevrene zaroven (dve okna / dve stopy) + ulozeni verzi do spolecne knihovny
+        RackMemoryProcessor a, b; setState (a, blobA); setState (b, blobB);
+        CHECK (a.save().wasOk() && b.save().wasOk());
+        a.reloadLibrary();
+        CHECK (a.working.get (SPL, "drive").pos == 0.2 && b.working.get (SPL, "drive").pos == 0.8);
+        RackMemoryProcessor a2; setState (a2, stateOf (a));
+        CHECK (a2.working.get (SPL, "drive").pos == 0.2 && a2.loadedId == a.loadedId);
+        // nezadane zustava nezadane (ne 0, ne vychozi)
+        CHECK (! a2.working.get (SPL, "intensity").known && ! b.working.get (SPL, "process").known);
+    }
+
+    section ("zkopirovana stopa: dve instance nesmi mit stejnou identitu");
+    {
+        RackMemoryProcessor a; a.markDirty(); const auto blob = stateOf (a);
+        RackMemoryProcessor b, c; setState (b, blob); setState (c, blob);
+        CHECK (b.instanceId != c.instanceId && (b.instanceId == a.instanceId || c.instanceId == a.instanceId) == false);
+    }
+
+    section ("zavreni bez ulozeni: zmeny se nabidnou (jen spravnemu projektu, nikdy samy)");
+    {
+        const juce::String SPL ("spl.vitalizer.mk3t");
+        juce::String saved;
+        { RackMemoryProcessor a; a.working.values[rm::valueKey (SPL, "drive")] = V (0.1); a.markDirty(); saved = stateOf (a); }
+        juce::String saveAs;
+        {
+            RackMemoryProcessor a; setState (a, saved); pump (50);
+            CHECK (! a.recovery.available);
+            a.working.values[rm::valueKey (SPL, "drive")] = V (0.7); a.markDirty();
+            pump (500);                                       // zaloha se zapise
+        }                                                     // Logic zavren bez ulozeni
+        {
+            RackMemoryProcessor a; setState (a, saved); pump (50);
+            CHECK (a.recovery.available && a.recovery.changes == 1);
+            CHECK (a.working.get (SPL, "drive").pos == 0.1);  // nic se samo neprepsalo
+            a.acceptRecovery();
+            CHECK (a.working.get (SPL, "drive").pos == 0.7 && a.dirty && ! a.recovery.available);
+            saveAs = stateOf (a);                             // "Ulozit jako" -> projekt B
+            pump (300);
+            a.working.values[rm::valueKey (SPL, "drive")] = V (0.5); a.markDirty(); pump (500);   // zmena v B, neulozeno
+        }
+        {
+            RackMemoryProcessor a; setState (a, saved); pump (50);
+            CHECK (! a.recovery.available);                   // zmeny z B se do A nenabidnou
+        }
+        {
+            RackMemoryProcessor b; setState (b, saveAs); pump (50);
+            CHECK (b.recovery.available && b.working.get (SPL, "drive").pos == 0.7);
+            b.discardRecovery();
+            CHECK (! b.recovery.available && b.working.get (SPL, "drive").pos == 0.7);
+        }
+        { RackMemoryProcessor b; setState (b, saveAs); pump (50); CHECK (! b.recovery.available); }
+    }
+
+    section ("knihovna nedostupna: nastaveni v projektu se neztrati");
+    {
+        auto blocker = tmp.getChildFile ("not_a_dir");
+        blocker.replaceWithText ("x");
+        setenv ("RACKMEMORY_HOME", blocker.getFullPathName().toRawUTF8(), 1);
+        juce::String blob;
+        {
+            RackMemoryProcessor p; p.songName = "Offline";
+            p.working.values[rm::valueKey (XM, "tone")] = V (8); p.markDirty();
+            CHECK (p.save().failed());                        // ulozit verzi nejde ...
+            CHECK (p.working.get (XM, "tone").pos == 8 && p.dirty);
+            blob = stateOf (p);
+        }
+        RackMemoryProcessor q; setState (q, blob);
+        CHECK (q.working.get (XM, "tone").pos == 8 && q.songName == "Offline");   // ... ale projekt ho drzi
+        setenv ("RACKMEMORY_HOME", home.getFullPathName().toRawUTF8(), 1);
+    }
+
+    section ("verze: prepsat, duplikovat, prejmenovat, porovnat; presety; fotka je jen odkaz");
+    {
+        RackMemoryProcessor p; p.songName = "Ops";
+        p.working.values[rm::valueKey (XM, "tone")] = V (4); p.markDirty();
+        CHECK (p.save().wasOk());
+        const auto v1 = p.loadedId;
+        p.working.values[rm::valueKey (XM, "tone")] = V (6); p.markDirty();
+        auto diff = p.compareWith (v1);
+        CHECK (diff.size() == 1 && diff[0].control == "tone" && diff[0].a.pos == 4 && diff[0].b.pos == 6);
+        auto nOps = [&p] { int n = 0; for (auto& x : p.all) if (x.project == "Ops") ++n; return n; };
+        CHECK (p.overwriteLoaded().wasOk() && p.findSnapshot (v1)->get (XM, "tone").pos == 6 && nOps() == 1 && ! p.dirty);
+        CHECK (p.duplicateSnapshot (v1).wasOk() && nOps() == 2);
+        CHECK (p.renameSnapshot (v1, "Refren hlasity").wasOk() && p.findSnapshot (v1)->name == "Refren hlasity");
+        CHECK (p.snapshotTitle (*p.findSnapshot (v1)).contains ("Refren hlasity"));
+        CHECK (p.compareWith (v1).empty());
+
+        CHECK (p.savePreset (XM, "Vokal jemne").wasOk());
+        auto presets = p.library.loadPresets (XM);
+        CHECK (presets.size() == 1 && presets[0].values["tone"].pos == 6);
+        p.working.values[rm::valueKey (XM, "tone")] = V (1); p.working.values[rm::valueKey (XM, "level")] = V (2);
+        p.applyPreset (XM, presets[0]);
+        CHECK (p.working.get (XM, "tone").pos == 6 && ! p.working.get (XM, "level").known && p.canUndo());
+        p.undo(); CHECK (p.working.get (XM, "tone").pos == 1);
+        CHECK (p.library.removePreset (XM, presets[0].id).wasOk() && p.library.loadPresets (XM).empty());
+
+        p.working.devicePhotos[XM] = "x.jpg"; p.working.photos.add ("x.jpg");
+        p.unlinkPhoto (XM);
+        CHECK (p.working.devicePhotos.count (XM) == 0 && p.working.get (XM, "tone").pos == 1);   // nastaveni zustava
+    }
+
+    section ("skupiny: Mixing a Mastering maji nezavisle verze");
+    {
+        RackMemoryProcessor p; p.songName = "Groups";
+        CHECK (p.studio.groups.size() >= 2 && p.studio.findGroup ("mixing") != nullptr && p.currentGroup == "mastering");
+        // do Mixingu kus xmax #2 (vokal), do Masteringu zustava puvodni rack
+        auto st = p.studio;
+        st.findGroup ("mixing")->layout.add ("elysia.xmax.500", st.newInstanceId ("elysia.xmax.500"));
+        CHECK (p.setStudio (st).wasOk());
+        const juce::String X2 ("elysia.xmax.500#2");
+        p.working.values[rm::valueKey (XM, "tone")] = V (3); p.markDirty();
+        CHECK (p.save().wasOk()); const auto m1 = p.loadedId;
+        p.setGroup ("mixing");
+        CHECK (p.rack.find (X2) != nullptr && p.loadedId.isEmpty());
+        p.working.values[rm::valueKey (X2, "tone")] = V (11); p.markDirty();
+        CHECK (p.save().wasOk()); const auto x1 = p.loadedId;
+        CHECK (p.working.version == "v1" && p.findSnapshot (x1)->group == "mixing" && ! p.findSnapshot (x1)->get (XM, "tone").known);
+        p.working.values[rm::valueKey (X2, "tone")] = V (12);
+        p.working.values[rm::valueKey (XM, "tone")] = V (5);
+        p.setGroup ("mastering"); CHECK (p.loadedId == m1);
+        CHECK (p.load (m1));
+        CHECK (p.working.get (XM, "tone").pos == 3 && p.working.get (X2, "tone").pos == 12);   // Mixing nedotcen
+        const auto blob = stateOf (p);
+        RackMemoryProcessor q; setState (q, blob);
+        CHECK (q.currentGroup == "mastering" && q.loadedId == m1 && q.loadedByGroup["mixing"] == x1);
+        // stary rack.json (jeden rack) -> skupina Mastering, prazdny Mixing
+        rm::Studio s2; juce::String err;
+        CHECK (rm::Studio::fromVar (rm::RackLayout::makeDefault().toVar(), s2, err) && s2.findGroup ("mastering")->layout.items.size() == 5 && s2.findGroup ("mixing")->layout.items.empty());
+        // novy format umi precist i starsi plugin (pole "devices")
+        rm::RackLayout legacy; CHECK (rm::RackLayout::fromVar (q.studio.toVar(), legacy, err) && ! legacy.items.empty());
+        CHECK (s2.addGroup ("Vokaly") == "vokaly" && s2.renameGroup ("vokaly", "Vokály") && s2.duplicateGroup ("mastering", "Mastering B").isNotEmpty());
+        CHECK (s2.groups.size() == 4 && s2.removeGroup ("vokaly") && s2.groups.size() == 3);
+        rm::Studio one; one.groups.push_back ({ "a", "A", {} }); CHECK (! one.removeGroup ("a"));
+        CHECK (p.setStudio (rm::Studio::makeDefault()).wasOk());      // dalsi testy: vychozi rack
+    }
+
     section ("zvuk prochazi beze zmeny");
     {
         juce::Random rng (42);
@@ -382,9 +563,12 @@ int main (int argc, char** argv)
         // a precte zpet. Overuje geometrii a logiku cteni; NEoveruje vzhled skutecnych fotek z telefonu.
         juce::Random rng (7);
         int totalRead = 0, totalReadable = 0, wrong = 0, scenes = 0, aligned = 0;
+        PanelView::overlayPointers = false;        // "fotka" skutecneho pristroje: bez ukazatelu pluginu
         for (auto& prof : rm::profiles())
         {
-            if (prof.anchor.isEmpty()) continue;
+            bool readable = false;
+            for (auto& c : prof.controls) readable = readable || c.read.isNotEmpty();
+            if (! readable) continue;
             for (int scene = 0; scene < 4; ++scene)
             {
                 rm::Snapshot truth = rm::Snapshot::createNew ("t");
@@ -398,6 +582,7 @@ int main (int argc, char** argv)
                 const bool wide = prof.w > prof.h;
                 const int W = wide ? 2000 : 1500, H = wide ? 900 : 2000;
                 juce::Image photo (juce::Image::RGB, W, H, true);
+                juce::AffineTransform placed;
                 {
                     juce::Graphics g (photo);
                     g.fillAll (juce::Colour (0xff2b2a28));
@@ -412,7 +597,21 @@ int main (int argc, char** argv)
                     const float tx = W * 0.5f + (rng.nextFloat() - 0.5f) * (W - prof.w * sc) * 0.6f;
                     const float ty = H * 0.5f + (rng.nextFloat() - 0.5f) * (H - prof.h * sc) * 0.6f;
                     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-                    g.drawImageTransformed (panelImg, juce::AffineTransform::translation (-prof.w * 0.5f, -prof.h * 0.5f).scaled (sc).rotated (rot).translated (tx, ty));
+                    placed = juce::AffineTransform::translation (-prof.w * 0.5f, -prof.h * 0.5f).scaled (sc).rotated (rot).translated (tx, ty);
+                    g.drawImageTransformed (panelImg, placed);
+                    if (prof.id == "wesaudio.rhea" && scene == 3)
+                    {
+                        // _RHEA: LED krouzek jako PAS (INPUT od zacatku po krok 10) - i tak se ma precist
+                        auto& c = *prof.find ("input");
+                        truth.values[rm::valueKey (prof.id, "input")] = V (9);
+                        for (int i = 0; i < 16; ++i)
+                        {
+                            auto q = juce::Point<float> (c.draw.points[(size_t) i].x, c.draw.points[(size_t) i].y).transformedBy (placed);
+                            const float rr = c.draw.ledR * sc;
+                            g.setColour (juce::Colour (0xff101010)); g.fillEllipse (q.x - rr * 1.4f, q.y - rr * 1.4f, rr * 2.8f, rr * 2.8f);
+                            if (i <= 9) { g.setColour (juce::Colour (0xff2f8dff)); g.fillEllipse (q.x - rr, q.y - rr, rr * 2, rr * 2); }
+                        }
+                    }
                     // nerovnomerne svetlo
                     g.setGradientFill (juce::ColourGradient (juce::Colours::white.withAlpha (0.10f), 0, 0, juce::Colours::black.withAlpha (0.25f), (float) W, (float) H, false));
                     g.fillAll();
@@ -433,6 +632,27 @@ int main (int argc, char** argv)
                 auto loaded = rmcv::loadPhoto (file, err);
                 CHECK (loaded.isValid());
                 auto r = rmcv::recognize (loaded, prof, rm::loadAsset (prof.image));
+                if (scene == 0)
+                {
+                    // rucni zarovnani (4 rohy, o par px vedle jako pri klikani mysi) cte stejne
+                    juce::Point<float> corners[4] = { juce::Point<float> (0, 0).transformedBy (placed) + juce::Point<float> (3, -2),
+                                                      juce::Point<float> (prof.w, 0).transformedBy (placed) + juce::Point<float> (-2, 3),
+                                                      juce::Point<float> (prof.w, prof.h).transformedBy (placed) + juce::Point<float> (2, 2),
+                                                      juce::Point<float> (0, prof.h).transformedBy (placed) + juce::Point<float> (-3, 1) };
+                    auto mt = rmcv::fromCorners (prof, corners);
+                    auto rm2 = rmcv::recognize (loaded, prof, rm::loadAsset (prof.image), &mt);
+                    int manualWrong = 0;
+                    for (auto& kv : rm2.values)
+                    {
+                        if (! kv.second.known) continue;
+                        auto* c = prof.find (kv.first); const auto tv = truth.get (prof.id, kv.first);
+                        const bool ok = c->type == rm::ControlType::knob ? std::abs (kv.second.pos - tv.pos) * (c->angleMax - c->angleMin) <= 9.0
+                                                                          : std::abs (kv.second.pos - tv.pos) <= (c->type == rm::ControlType::stepped ? 1.0 : 0.0);
+                        if (! ok) ++manualWrong;
+                    }
+                    std::cout << "  " << prof.name.paddedRight (' ', 22) << " rucne zarovnano: precteno " << rm2.read << "/" << rm2.readable << ", spatne " << manualWrong << std::endl;
+                    CHECK (rm2.aligned && rm2.read >= rm2.readable * 7 / 10 && manualWrong == 0);
+                }
                 ++scenes; if (r.aligned) ++aligned;
                 int sceneWrong = 0;
                 for (auto& c : prof.controls)
@@ -457,6 +677,7 @@ int main (int argc, char** argv)
                 }
             }
         }
+        PanelView::overlayPointers = true;
         std::cout << "  CELKEM: sceny " << aligned << "/" << scenes << " zarovnano, precteno " << totalRead << "/" << totalReadable << ", spatne " << wrong << std::endl;
         CHECK (aligned == scenes);
         CHECK (totalRead >= totalReadable * 85 / 100);
@@ -486,7 +707,9 @@ int main (int argc, char** argv)
         rm::ControlValue u; u.source = "recognized"; vals["level"] = u;          // nejiste
         p.applyRecognition (XM, vals);
         CHECK (p.working.get (XM, "tone").pos == 17 && p.working.get (XM, "tone").source == "recognized");
-        CHECK (! p.working.get (XM, "level").known && p.dirty && p.canUndo());     // nejiste = nezadano, ne stara hodnota
+        // nejiste z fotky: rucni hodnota zustava (nic se tise neprepise), ovladac je ke kontrole
+        CHECK (p.working.get (XM, "level").pos == 9 && p.working.get (XM, "level").source == "manual" && p.dirty && p.canUndo());
+        CHECK (p.needsReview[XM].contains ("level") && ! p.working.get (XM, "tone").confirmed && p.numUnconfirmed (XM) == 1);
         juce::String err; rm::Snapshot r;
         CHECK (rm::Snapshot::fromJson (p.working.toJson(), r, err) && r.get (XM, "tone").source == "recognized" && r.get (XM, "tone").confidence == 0.9);
         p.undo();
@@ -578,7 +801,10 @@ int main (int argc, char** argv)
         u.setWorkFolder (dir.getChildFile ("work"));
         u.setNetwork ([&] (const juce::URL& url, juce::String& b, juce::String& err) { lastUrl = url; if (! online) { err = "offline"; return false; } b = body; return true; },
                       [&] (const juce::URL&, const juce::File& target, const std::function<bool (float)>& prog, juce::String&) { prog (0.5f); return zip.copyFileTo (target); });
-        u.setInstaller ([&] (const juce::File& f) { ++installs; installedFrom = f; CHECK (f.loadFileAsString() == zip.loadFileAsString()); return juce::Result::ok(); });
+        juce::String onDisk = "0.8.0";       // co je po instalaci opravdu na disku
+        u.setInstaller ([&] (const juce::File& f) { ++installs; installedFrom = f; CHECK (f.loadFileAsString() == zip.loadFileAsString()); onDisk = "9.1.0"; return juce::Result::ok(); });
+        u.setInstalledProbe ([&] { return onDisk; });
+        u.setRetryDelay (5);
         using S = rm::Updater::State;
 
         CHECK (rm::Updater::manifestUrl ("DusiXxx/MEMORY-RACK") == "https://github.com/DusiXxx/MEMORY-RACK/releases/latest/download/latest.json");
@@ -801,6 +1027,176 @@ int main (int argc, char** argv)
         }
         ed.reset();
         pump (50);
+    }
+
+
+    section ("editor: skupiny, patchbay, detail ovladace, velikost okna");
+    {
+        RackMemoryProcessor p;
+        p.setStudio (rm::Studio::makeDefault());
+        std::unique_ptr<juce::AudioProcessorEditor> ed (p.createEditor());
+        auto* e = static_cast<RackMemoryEditor*> (ed.get());
+        pump (50);
+        // zalozky: PATCHBAY, Mixing, Mastering
+        CHECK (e->tabs.tabs.size() == 3 && e->tabs.tabs[0].id == "@patchbay" && e->tabs.selected == "mastering");
+        // WA-2A a WA76 do Mixingu
+        e->selectTab ("mixing"); pump (20);
+        CHECK (p.currentGroup == "mixing" && p.rack.items.empty());
+        auto r = p.rack; r.add ("warmaudio.wa2a", p.studio.newInstanceId ("warmaudio.wa2a")); r.add ("warmaudio.wa76", p.studio.newInstanceId ("warmaudio.wa76"));
+        CHECK (p.setRack (r).wasOk()); e->refreshAll(); pump (30);
+        auto* wa = e->panelFor ("warmaudio.wa2a");
+        CHECK (wa != nullptr && e->panelFor ("warmaudio.wa76") != nullptr && e->panelFor ("spl.vitalizer.mk3t") == nullptr);
+        p.songName = "Vokal";
+        p.working.values[rm::valueKey ("warmaudio.wa2a", "peak")] = V (0.4);
+        p.working.values[rm::valueKey ("warmaudio.wa76", "ratio")] = V (4);       // ALL buttons
+        p.markDirty(); e->refreshAll();
+        if (pngDir != juce::File()) { pump (20); savePng (*ed, pngDir.getChildFile ("mixing.png")); }
+        CHECK (p.save().wasOk() && p.findSnapshot (p.loadedId)->group == "mixing");
+
+        // detail ovladace: stejna poloha jako v racku, zmena se projevi v racku
+        if (wa != nullptr)
+        {
+            const int idx = wa->indexOf ("peak");
+            e->openDetail ("warmaudio.wa2a", idx); pump (20);
+            CHECK (e->detail.isVisible() && e->detail.describe().contains ("PEAK REDUCTION") && e->detail.describe().contains (juce::String::fromUTF8 ("zadáno ručně")));
+            e->detail.plusButton.triggerClick(); pump (20);
+            CHECK (std::abs (p.working.get ("warmaudio.wa2a", "peak").pos - 0.42) < 1e-9 && p.dirty);
+            if (pngDir != juce::File()) savePng (*ed, pngDir.getChildFile ("detail.png"));
+            e->detail.unknownButton.triggerClick(); pump (20);
+            CHECK (! p.working.get ("warmaudio.wa2a", "peak").known && e->detail.describe().contains (juce::String::fromUTF8 ("NEZADÁNO")));
+            e->detail.setVisible (false);
+        }
+        // ukazatel knobu: pri vetsim knobu nikdy tensi; vyrazny rezim je silnejsi
+        CHECK (PanelView::pointerWidth (10) >= 2.2f && PanelView::pointerWidth (80) >= PanelView::pointerWidth (20));
+        PanelView::highContrast = true; const float hc = PanelView::pointerWidth (30); PanelView::highContrast = false;
+        CHECK (hc > PanelView::pointerWidth (30));
+
+        // patchbay: Samson + Neutrik, kabel = klik na zdroj a pak na cil
+        e->selectTab ("@patchbay"); pump (20);
+        auto st = p.studio; st.addPatchbay ("samson.spatchplus"); st.addPatchbay ("neutrik.nysspp.l1"); CHECK (p.setStudio (st).wasOk());
+        e->refreshAll(); pump (20);
+        CHECK (e->patchbay.isVisible() && e->panelFor ("warmaudio.wa2a") != nullptr && ! e->panelFor ("warmaudio.wa2a")->isVisible());
+        e->patchbay.clickPoint ("samson.spatchplus:T1");
+        CHECK (e->patchbay.pendingPoint() == "samson.spatchplus:T1");
+        e->patchbay.clickPoint ("samson.spatchplus:B3");
+        CHECK (p.working.cables.size() == 1 && p.working.cables[0].from == "samson.spatchplus:T1" && p.working.cables[0].to == "samson.spatchplus:B3");
+        e->patchbay.clickPoint ("samson.spatchplus:B3"); e->patchbay.clickPoint ("samson.spatchplus:T1");   // stejny kabel obracene = nic noveho
+        CHECK (p.working.cables.size() == 1);
+        e->patchbay.clickPoint ("samson.spatchplus:T2"); e->patchbay.clickPoint ("neutrik.nysspp.l1:B7");
+        CHECK (p.working.cables.size() == 2);
+        CHECK (e->patchbay.pointName ("samson.spatchplus:B3").contains ("27"));       // Samson: dolni rada 25-48
+        CHECK (e->patchbay.pointName ("neutrik.nysspp.l1:B7").contains ("7"));
+        auto s2 = p.studio; s2.findPatchbay ("samson.spatchplus")->labels["T1"] = "WA-2A OUT"; s2.findPatchbay ("samson.spatchplus")->modes[1] = "HN";
+        CHECK (p.setStudio (s2).wasOk());
+        CHECK (e->patchbay.pointName ("samson.spatchplus:T1").contains ("WA-2A OUT"));
+        e->refreshAll(); pump (20);
+        if (pngDir != juce::File()) savePng (*ed, pngDir.getChildFile ("patchbay.png"));
+        // kabely jsou v projektu i ve verzi; popisky a rezimy ve studiu (spolecne)
+        const auto blob = stateOf (p);
+        RackMemoryProcessor q; setState (q, blob);
+        CHECK (q.working.cables.size() == 2 && q.studio.findPatchbay ("samson.spatchplus")->modes[1] == "HN");
+        CHECK (p.save().wasOk() && p.findSnapshot (p.loadedId)->cables.size() == 2);
+
+        // velikost okna: vyska roste se sirkou (rack se zvetsuje, nic se nedeformuje)
+        e->selectTab ("mastering"); pump (20);
+        const int h1 = e->heightForWidth (900), h2 = e->heightForWidth (1500);
+        CHECK (h2 > h1);
+        ed->setSize (1500, h2); pump (20);
+        const auto big = e->getRackArea();
+        ed->setSize (900, h1); pump (20);
+        const auto small = e->getRackArea();
+        CHECK (big.getWidth() > small.getWidth() * 1.4 && big.getHeight() > small.getHeight() * 1.4);
+        CHECK (big.getWidth() >= 1500 - 30);                       // vyuzije celou sirku (zadne prazdne misto po stranach)
+        juce::Rectangle<int> b (0, 0, 1700, 400);
+        e->setResizeLimits (720, 420, 3400, 2600);
+        // constrainer: tah do sirky -> vyska dopocitana
+        struct Probe : juce::ComponentBoundsConstrainer {};
+        CHECK (e->heightForWidth (1700) > 400);
+        if (pngDir != juce::File()) { ed->setSize (1500, h2); pump (20); savePng (*ed, pngDir.getChildFile ("mastering_big.png")); }
+
+        // obnova: banner se ukaze, kdyz je co obnovit
+        p.recovery.available = true; p.recovery.changes = 3; e->refreshAll(); pump (10);
+        CHECK (e->banner.isVisible());
+        p.recovery = {}; e->refreshAll();
+        CHECK (! e->banner.isVisible());
+        ed.reset(); pump (30);
+        p.setStudio (rm::Studio::makeDefault());
+    }
+
+    section ("knihovna hardwaru: slouceni profilu (nic se neztrati)");
+    {
+        auto builtIn = rm::profiles();
+        juce::var lib;
+        const juce::String libText = R"J({"schema":1,"libraryVersion":3,"profiles":[
+            {"id":"spl.vitalizer.mk3t","name":"SPL Vitalizer Mk3-T (novy)","profileVersion":99,"w":2400,"h":219,"image":"vitalizer.jpg","controls":[{"id":"drive","name":"DRIVE","x":10,"y":10}]},
+            {"id":"novy.pristroj","name":"Novy","profileVersion":1,"w":100,"h":50,"image":"x.jpg","formFactor":"19in 1U","controls":[{"id":"a","name":"A","x":10,"y":10}]}]})J";
+        CHECK (juce::JSON::parse (libText, lib).wasOk());
+        juce::StringArray notes;
+        auto merged = rm::mergeProfiles (builtIn, lib, &notes);
+        auto find = [&] (const juce::String& id) -> const rm::DeviceProfile* { for (auto& x : merged) if (x.id == id) return &x; return nullptr; };
+        CHECK (find ("novy.pristroj") != nullptr && find ("novy.pristroj")->origin == "library");
+        CHECK (find ("spl.vitalizer.mk3t")->name == "SPL Vitalizer Mk3-T");        // novejsi, ale chybi ovladace -> neprevzato
+        CHECK (notes.joinIntoString ("|").contains ("neprevzato") && notes.joinIntoString ("|").contains ("novy"));
+        CHECK (rm::mergeProfiles (builtIn, juce::var (new juce::DynamicObject())).size() == builtIn.size());
+    }
+
+    section ("aktualizace: potvrzeni instalace, kompatibilita, opakovani, knihovna hardwaru");
+    {
+        using S = rm::Updater::State;
+        auto dir = tmp.getChildFile ("gh2"); dir.createDirectory();
+        auto zip = dir.getChildFile ("p.zip"); zip.replaceWithText ("plugin");
+        juce::FileInputStream zin (zip); const auto sha = juce::SHA256 (zin).toHexString();
+        auto manifest = [&] (const juce::String& extra)
+        {
+            return "{ \"version\": \"9.2.0\", \"download\": \"https://github.com/x/y/releases/download/v9.2.0/p.zip\", \"sha256\": \"" + sha
+                   + "\", \"size\": " + juce::String (zip.getSize()) + extra + " }";
+        };
+        juce::String body = manifest (""); int fails = 0;
+        juce::String onDisk = "0.8.0";
+        rm::Updater u; u.setRepo ("DusiXxx/MEMORY-RACK"); u.setInstalledVersion ("0.9.0"); u.setWorkFolder (dir.getChildFile ("w")); u.setRetryDelay (5);
+        u.setNetwork ([&] (const juce::URL&, juce::String& b, juce::String& err) { if (fails > 0) { --fails; err = "offline"; return false; } b = body; return true; },
+                      [&] (const juce::URL&, const juce::File& t, const std::function<bool (float)>&, juce::String&) { return zip.copyFileTo (t); });
+        u.setInstaller ([&] (const juce::File&) { return juce::Result::ok(); });      // "nainstalovano", ale na disku nic noveho
+        u.setInstalledProbe ([&] { return onDisk; });
+        fails = 2; u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::available);   // 2x vypadek, 3. pokus OK
+        u.downloadAndInstall(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::failed && u.getInstalledVersion() == "0.9.0");   // stazeno != nainstalovano
+        body = manifest (", \"minimum_version\": \"0.9.5\""); u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::manualOnly);
+        u.setSystemVersion ("10.13.6");
+        body = manifest (", \"macos_min\": \"11.0\""); u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::upToDate);
+        body = "{ \"version\": \"9.2.0\", \"download\": \"https://evil.example.com/p.zip\", \"sha256\": \"" + sha + "\" }";
+        u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::failed);     // jen GitHub
+        CHECK (rm::Updater::libraryManifestUrl ("a/b") == "https://github.com/a/b/releases/download/hardware/hardware.json");
+
+        // knihovna: zip s library.json + obrazky; spatny soucet nic nezmeni; spravny se nainstaluje vedle (puvodni jako .prev)
+        auto libDir = dir.getChildFile ("Hardware");
+        libDir.createDirectory(); libDir.getChildFile ("library.json").replaceWithText ("{\"schema\":1,\"libraryVersion\":1,\"profiles\":[]}");
+        auto libZip = dir.getChildFile ("hw.zip");
+        {
+            juce::ZipFile::Builder zb;
+            auto lj = dir.getChildFile ("library.json");
+            lj.replaceWithText (R"({"schema":1,"libraryVersion":2,"profiles":[{"id":"novy.pristroj","name":"Novy","profileVersion":1,"w":100,"h":50,"image":"novy.jpg","controls":[{"id":"a","name":"A","x":10,"y":10}]}]})");
+            auto img = dir.getChildFile ("novy.jpg"); img.replaceWithText ("jpg");
+            auto evil = dir.getChildFile ("run.sh"); evil.replaceWithText ("rm -rf ~");
+            zb.addFile (lj, 9, "library.json"); zb.addFile (img, 9, "images/novy.jpg"); zb.addFile (evil, 9, "run.sh");
+            juce::FileOutputStream os (libZip); CHECK (zb.writeToStream (os, nullptr));
+        }
+        juce::FileInputStream lz (libZip); const auto lsha = juce::SHA256 (lz).toHexString();
+        rm::Updater L; L.setRepo ("DusiXxx/MEMORY-RACK"); L.setLibraryFolder (libDir); L.setLibraryVersion (1); L.setWorkFolder (dir.getChildFile ("w2")); L.setRetryDelay (5);
+        juce::String lbody;
+        L.setNetwork ([&] (const juce::URL&, juce::String& b, juce::String&) { b = lbody; return true; },
+                      [&] (const juce::URL&, const juce::File& t, const std::function<bool (float)>&, juce::String&) { return libZip.copyFileTo (t); });
+        using LS = rm::Updater::LibState;
+        lbody = "{\"schema\":1,\"libraryVersion\":2,\"download\":\"https://github.com/x/y/releases/download/hardware/hw.zip\",\"sha256\":\"" + lsha.replaceSection (0, 1, lsha[0] == 'a' ? "b" : "a") + "\",\"changes\":[\"Novy pristroj\"]}";
+        L.checkLibraryNow(); CHECK (L.waitUntilIdle (5000)); CHECK (L.getLibraryStatus().state == LS::available && L.getLibraryStatus().changes.size() == 1);
+        L.installLibrary(); CHECK (L.waitUntilIdle (5000));
+        CHECK (L.getLibraryStatus().state == LS::failed && libDir.getChildFile ("library.json").loadFileAsString().contains ("\"libraryVersion\":1"));
+        lbody = lbody.replace (lsha.replaceSection (0, 1, lsha[0] == 'a' ? "b" : "a"), lsha);
+        L.checkLibraryNow(); CHECK (L.waitUntilIdle (5000)); L.installLibrary(); CHECK (L.waitUntilIdle (5000));
+        CHECK (L.getLibraryStatus().state == LS::installed);
+        CHECK (libDir.getChildFile ("library.json").loadFileAsString().contains ("\"libraryVersion\":2") && libDir.getChildFile ("images/novy.jpg").existsAsFile());
+        CHECK (! libDir.getChildFile ("run.sh").exists() && libDir.getSiblingFile ("Hardware.prev").getChildFile ("library.json").existsAsFile());
+        L.checkLibraryNow(); CHECK (L.waitUntilIdle (5000)); CHECK (L.getLibraryStatus().state == LS::upToDate);
     }
 
     tmp.deleteRecursively();

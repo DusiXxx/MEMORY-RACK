@@ -1,16 +1,19 @@
-# Rack Memory 0.8.0
+# Rack Memory 0.9.0
 
 AU plugin pro Logic Pro: paměť nastavení analogového racku + hlasitost a měření do/z hardwaru. Celý rack je na jedné stránce. Hardware se **neovládá**; zvuk prochází beze změny (jen volitelný gain, 0 dB = bitově beze změny).
 
-Rack: SPL Vitalizer Mk3-T, elysia xfilter Mastering Edition (1U), a v lunchboxu elysia xmax 500, nvelope 500 a WesAudio _RHEA.
+Skupiny (záložky): **Mixing**, **Mastering** a vlastní – každá má svůj rack a své verze. Nahoře **PATCHBAY** (Samson S-patch Plus, Neutrik NYS-SPP-L1).
+Přístroje: SPL Vitalizer Mk3-T, elysia xfilter Mastering Edition (1U), elysia xmax 500, nvelope 500, WesAudio _RHEA, Warm Audio WA76, WA-2A.
+
+**Co je nového v 0.9 a jak to otestovat v Logicu: `docs/OPRAVY-0.9.md`.**
 
 ## Instalace (u tebe)
 
 Dvojklik na `Instalovat Rack Memory.command` (ve složce RackMemory), nebo v Terminálu:
 
-    cd ~/Downloads && unzip -oq RackMemory-0.8.0.zip && bash RackMemory/build.sh
+    cd ~/Downloads && unzip -oq RackMemory-0.9.0.zip && bash RackMemory/build.sh
 
-Build je univerzální (Intel i Apple Silicon) a na konci uloží do Stažených **`Rack Memory 0.8.0.zip`**, hotový balíček pro kamarády.
+Build je univerzální (Intel i Apple Silicon) a na konci uloží do Stažených **`Rack Memory 0.9.0.zip`**, hotový balíček pro kamarády.
 
 ## Pro kamaráda (bez Terminálu)
 
@@ -24,11 +27,14 @@ Vydání nové verze: viz `RELEASING.md` (`bash Tools/release.sh "co je nového"
 ## Nastavení z fotky
 
 1. Vyfoť přístroj zepředu, celý, ostře (bez blesku do odlesku).
-2. Fotku pusť **kamkoli do pluginu**: plugin sám pozná, který přístroj na ní je (víc přístrojů na jedné fotce = víc najednou). Nebo ji pusť přímo na přístroj / jeho políčko dole.
-3. Ovladače se nastaví. **Modrá tečka** = přečteno z fotky, **oranžová** = nejisté, nenastaveno (nehádá se). **Zpět** vrátí stav. Fotka je dole v políčku přístroje (klik na náhled = zvětšit); vzhled panelů se podle fotky nemění.
+2. Klikni **FOTO** nahoře, nebo fotku pusť **kamkoli do pluginu**: plugin sám pozná, který přístroj na ní je (víc přístrojů na jedné fotce = víc najednou). Nebo ji pusť přímo na přístroj / jeho políčko dole.
+3. Ovladače se nastaví. **Modrá tečka** = přečteno z fotky, čeká na kontrolu (kroužek = potvrzeno); nejisté ovladače se NEZMĚNÍ a jsou v okně **Kontrola po fotce**. **Oranžová** = nezadáno.
+   Nenašel-li plugin přístroj: pravé tlačítko na přístroj → **Zarovnat fotku ručně** (4 rohy). **Zpět** vrátí stav. Fotka je dole v políčku přístroje (klik na náhled = zvětšit); vzhled panelů se podle fotky nemění.
 
 Přístroj se na fotce hledá podle potisku (písmena, stupnice, šrouby), takže nevadí pozadí, vodoznak, okolní věci v racku ani mírně šikmý pohled.
-Čte se: elysia (zářez na knobu, LED, svítící tlačítka), SPL (ryska na knobu, ON). _RHEA zatím ne, fotka se jen uloží.
+Čte se: elysia (zářez na knobu, LED, svítící tlačítka), SPL (ryska na knobu, ON), _RHEA (LED kroužky a LED přepínačů – ověřeno jen na syntetických fotkách). WA76 / WA-2A zatím ne.
+
+**Klik na knob** = zvětšený detail (potisk, hodnota, stupnice, stav, výřez tvojí fotky). ••• → Výrazné ukazatele = silnější ručičky.
 
 ## Hlasitost do a z hardwaru
 
@@ -65,4 +71,4 @@ SPL, WesAudio: oficiální čelní fotografie výrobce. elysia 500: složeno z o
 
 ## Ověření
 
-Offline testy (`RM_BUILD_TESTS=ON`): 1514 kontrol, mimo jiné 20 syntetických scén se známou pravdou (238/272 přečteno, 0 špatně) a fotky výrobců/obchodů (Vitalizer z Thomannu 9/9 správně). Na skutečných fotkách z telefonu ověřené není.
+Offline testy (`RM_BUILD_TESTS=ON`): přes 1700 kontrol, mimo jiné 20 syntetických scén se známou pravdou (238/272 přečteno, 0 špatně) a fotky výrobců/obchodů (Vitalizer z Thomannu 9/9 správně). Na skutečných fotkách z telefonu ověřené není.

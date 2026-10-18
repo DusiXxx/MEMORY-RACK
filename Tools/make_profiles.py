@@ -4,7 +4,7 @@ ID ovladacu se nesmi menit (jsou klicem v ulozenych snapshotech)."""
 import json
 
 WORK = '/home/claude/panels/work'
-OUT = '/home/claude/RackMemory/Assets'
+OUT = __import__('os').environ.get('RM_OUT', '/home/claude/RackMemory/Assets')
 geo = lambda n: json.load(open(f'{WORK}/geo_{n}.json'))
 
 
@@ -267,6 +267,13 @@ profiles.append({
 # Manley v racku uzivatele neni -> profil se negeneruje (podklady zustavaji v Tools pro pripad navratu)
 profiles = [p for p in profiles if not p['id'].startswith('manley')]
 
+# Nove pristroje s vlastni kresbou panelu (WA76, WA-2A, patchbaye)
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+_os.environ.setdefault('RM_OUT', OUT)
+from build_new_panels import new_profiles
+profiles += new_profiles()
+
 # Podklady pro cteni nastaveni z fotky: cim se pristroj na fotce zarovna (anchor) a jak se cte kazdy ovladac
 for p in profiles:
     if p['id'].startswith('elysia'):
@@ -282,8 +289,15 @@ for p in profiles:
             k = c.get('draw', {}).get('kind')
             if k == 'sprite': c['anchorR'] = 65.0; c['read'] = 'line'; c['readR'] = 38.0
             elif k == 'glow': c['read'] = 'rectglow'
+    elif p['id'] == 'wesaudio.rhea':
+        # _RHEA: zarovnani podle potisku panelu (SIFT), cte se LED krouzek enkoderu a LED prepinacu
+        p['anchor'] = ''
+        for c in p['controls']:
+            k = c.get('draw', {}).get('kind')
+            if k == 'ring': c['read'] = 'ledring'
+            elif k == 'leds': c['read'] = 'ledsel'
     else:
-        p['anchor'] = ''                # WesAudio _RHEA: cteni z fotky zatim neni (ma vlastni recall)
+        p['anchor'] = ''
 
 for p in profiles:
     p.setdefault('profileVersion', 2)

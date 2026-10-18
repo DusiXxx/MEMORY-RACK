@@ -24,7 +24,8 @@ struct Result
     double skew = 1.0;                     // > 1.07 = fotka moc ze strany
     int read = 0, readable = 0;            // kolik ovladacu se podarilo precist / kolik se cist da
     int keypoints = 0;                     // kolik vyraznych bodu potisku sedi (miru jistoty, ze je to tento pristroj)
-    Transform transform;
+    Transform transform;                   // panel -> fotka v pracovnim rozliseni
+    double photoScale = 1.0;               // pracovni rozliseni / puvodni fotka
     std::map<juce::String, rm::ControlValue> values;    // jen ovladace, ktere se cist daji (known = false -> nejiste)
     juce::Image rectified;                 // fotka narovnana do souradnic panelu
     juce::String message;
@@ -35,6 +36,9 @@ juce::Image applyOrientation (const juce::Image&, int orientation);
 juce::Image loadPhoto (const juce::File&, juce::String& error);       // vcetne EXIF otoceni a prevodu HEIC (macOS)
 
 // reference = obrazek panelu z profilu (pomaha poznat, ze sedi i potisk, nejen knoby)
-Result recognize (const juce::Image& photo, const rm::DeviceProfile&, const juce::Image& reference);
+// manualAlignment: panel -> puvodni fotka (rucne oznacene rohy); nullptr = najit automaticky
+Result recognize (const juce::Image& photo, const rm::DeviceProfile&, const juce::Image& reference, const Transform* manualAlignment = nullptr);
+// rohy panelu na fotce v poradi: vlevo nahore, vpravo nahore, vpravo dole, vlevo dole (px puvodni fotky)
+Transform fromCorners (const rm::DeviceProfile&, const juce::Point<float> corners[4]);
 juce::String debugNotch (const juce::Image&, double rho);
 }

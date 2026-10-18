@@ -15,9 +15,14 @@ RackMemoryProcessor::RackMemoryProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
 {
-    addParameter (gainParam = new juce::AudioParameterFloat (juce::ParameterID { "gain", 1 }, "Gain",
+    addParameter (gainParam = new juce::AudioParameterFloat (juce::ParameterID { "gain", 1 }, "Digital gain",
                                                              juce::NormalisableRange<float> (-24.0f, 24.0f, 0.1f), 0.0f,
                                                              juce::AudioParameterFloatAttributes().withLabel ("dB")));
+    // Skryty parametr "stav": Logic se o zmenach mimo parametry (knoby racku) jinak nedozvi a projekt
+    // by se zavrel bez dotazu na ulozeni. Neautomatizovatelny, zvuk neovlivnuje.
+    addParameter (stateParam = new juce::AudioParameterFloat (juce::ParameterID { "state", 1 }, "Rack Memory state",
+                                                              juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f,
+                                                              juce::AudioParameterFloatAttributes().withAutomatable (false)));
     {
         const juce::SpinLock::ScopedLockType l (registryLock);
         registry().push_back (this);
@@ -26,6 +31,7 @@ RackMemoryProcessor::RackMemoryProcessor()
     working = rm::Snapshot::createNew ({});
     all = library.loadAll (&loadErrors);
     reloadRack();
+    loadedByGroup[currentGroup] = {};
 
     const juce::ScopedLock sl (stateLock);
     stateCache = buildStateJson();
@@ -33,6 +39,8 @@ RackMemoryProcessor::RackMemoryProcessor()
 
 RackMemoryProcessor::~RackMemoryProcessor()
 {
+    stopTimer();
+    if (pendingRecovery) writeRecovery();
     {
         const juce::SpinLock::ScopedLockType l (registryLock);
         auto& r = registry();
@@ -123,10 +131,32 @@ const rm::Snapshot* RackMemoryProcessor::findSnapshot (const String& id) const
 
 int RackMemoryProcessor::nextVersionNumber (const String& song) const
 {
+    // cislovani po skladbe a skupine (Mixing v1, v2 ... / Mastering v1, v2 ...); starsi verze bez skupiny patri k prvni ulozene skupine
     int n = 0;
     for (auto& s : all)
-        if (s.project == song) n = juce::jmax (n, rm::versionNumber (s.version));
+        if (s.project == song && (s.group == currentGroup || s.group.isEmpty())) n = juce::jmax (n, rm::versionNumber (s.version));
     return n + 1;
+}
+
+juce::StringArray RackMemoryProcessor::instancesOf (const rm::Snapshot& s) const
+{
+    // verze skupiny: kusy, ktere v ni pri ulozeni byly; starsi verze (bez skupiny): vsechny ulozene hodnoty
+    if (s.group.isNotEmpty() && ! s.order.isEmpty()) return s.order;
+    juce::StringArray r;
+    for (auto& kv : s.values) r.addIfNotAlreadyThere (kv.first.upToFirstOccurrenceOf (":", false, false));
+    r.removeString ("levels");
+    for (auto& o : s.order) r.addIfNotAlreadyThere (o);
+    return r;
+}
+
+String RackMemoryProcessor::snapshotTitle (const rm::Snapshot& s) const
+{
+    String t = s.project.isEmpty() ? String ("Bez nazvu") : s.project;
+    if (s.group.isNotEmpty())
+        if (auto* g = studio.findGroup (s.group)) t << "  " << g->name;
+    if (s.version.isNotEmpty()) t << "  " << s.version;
+    if (s.name.isNotEmpty()) t << "  " << s.name;
+    return t;
 }
 
 void RackMemoryProcessor::rememberForUndo()
@@ -134,33 +164,106 @@ void RackMemoryProcessor::rememberForUndo()
     undoWorking = working; undoLoadedId = loadedId; undoDirty = dirty; hasUndo = true;
 }
 
+namespace
+{
+void putLevels (rm::Snapshot& copy, const RackMemoryProcessor& p)
+{
+    // hlasitost do a z hardwaru patri k nastaveni (klice "levels:in" / "levels:out", hodnota = dB)
+    auto put = [&copy] (const char* k, float db) { rm::ControlValue v; v.known = true; v.pos = db; copy.values[rm::valueKey ("levels", k)] = v; };
+    const auto* other = p.partner();
+    if (p.role == RackMemoryProcessor::Role::out) { put ("out", p.gainDb()); if (other) put ("in", other->gainDb()); }
+    else                                          { put ("in", p.gainDb());  if (other) put ("out", other->gainDb()); }
+}
+}
+
 juce::Result RackMemoryProcessor::save()
 {
     reloadLibrary();    // jina instance mohla mezitim ulozit dalsi verzi
 
-    auto copy = working;
+    rm::Snapshot copy;
     copy.id = juce::Uuid().toString();
     copy.project = songName.trim();
+    copy.group = currentGroup;
     copy.version = "v" + String (nextVersionNumber (copy.project));
+    copy.notes = working.notes;
     copy.created = juce::Time::currentTimeMillis();
-    copy.order = rack.ids();          // jen pro informaci: s jakym rackem verze vznikla (rack sam je spolecny)
-    // hlasitost do a z hardwaru patri k nastaveni (klice "levels:in" / "levels:out", hodnota = dB)
-    {
-        auto put = [&copy] (const char* k, float db) { rm::ControlValue v; v.known = true; v.pos = db; copy.values[rm::valueKey ("levels", k)] = v; };
-        const auto* other = partner();
-        if (role == Role::out) { put ("out", gainDb()); if (other) put ("in", other->gainDb()); }
-        else                   { put ("in", gainDb());  if (other) put ("out", other->gainDb()); }
-    }
+    copy.order = rack.ids();                         // kusy teto skupiny
+    copy.values = working.valuesFor (copy.order);
+    copy.cables = working.cables;
+    copy.photos = working.photos;
+    for (auto& kv : working.devicePhotos) if (copy.order.contains (kv.first)) copy.devicePhotos[kv.first] = kv.second;
+    putLevels (copy, *this);
 
     auto r = library.save (copy);
-    if (r.failed()) return r;
+    if (r.failed()) return r;      // nastaveni v projektu zustava, nic se neztrati
 
-    working = copy;
+    working.id = copy.id; working.project = copy.project; working.version = copy.version; working.group = copy.group;
+    working.name.clear(); working.created = copy.created; working.modified = copy.modified;
     loadedId = copy.id;
+    loadedByGroup[currentGroup] = loadedId;
+    dirty = false;
+    reloadLibrary();
+    markDirty();          // stav projektu (nactena verze) se zmenil
+    dirty = false;
+    commitState();
+    return r;
+}
+
+juce::Result RackMemoryProcessor::overwriteLoaded()
+{
+    auto* old = findSnapshot (loadedId);
+    if (old == nullptr) return juce::Result::fail (String::fromUTF8 ("Není načtená žádná verze."));
+    auto copy = *old;
+    const auto inst = instancesOf (copy);
+    for (auto it = copy.values.begin(); it != copy.values.end();)
+        if (it->first.startsWith ("levels:") || inst.contains (it->first.upToFirstOccurrenceOf (":", false, false))) it = copy.values.erase (it); else ++it;
+    for (auto& kv : working.valuesFor (inst)) copy.values[kv.first] = kv.second;
+    copy.notes = working.notes;
+    copy.cables = working.cables;
+    putLevels (copy, *this);
+    auto r = library.save (copy);
+    if (r.failed()) return r;
     dirty = false;
     reloadLibrary();
     commitState();
     return r;
+}
+
+juce::Result RackMemoryProcessor::duplicateSnapshot (const String& id)
+{
+    auto* src = findSnapshot (id);
+    if (src == nullptr) return juce::Result::fail (String::fromUTF8 ("Verze neexistuje."));
+    auto copy = *src;
+    const auto keepGroup = currentGroup;
+    currentGroup = copy.group;
+    copy.version = "v" + String (nextVersionNumber (copy.project));
+    currentGroup = keepGroup;
+    copy.id = juce::Uuid().toString();
+    copy.name = (src->name.isNotEmpty() ? src->name : src->version) + String::fromUTF8 (" – kopie");
+    copy.created = juce::Time::currentTimeMillis();
+    auto r = library.save (copy);
+    reloadLibrary();
+    return r;
+}
+
+juce::Result RackMemoryProcessor::renameSnapshot (const String& id, const String& name)
+{
+    auto* src = findSnapshot (id);
+    if (src == nullptr) return juce::Result::fail (String::fromUTF8 ("Verze neexistuje."));
+    auto copy = *src;
+    copy.name = name.trim().substring (0, 80);
+    auto r = library.save (copy);
+    reloadLibrary();
+    if (id == loadedId) working.name = copy.name;
+    commitState();
+    return r;
+}
+
+std::vector<rm::Difference> RackMemoryProcessor::compareWith (const String& id) const
+{
+    auto* s = findSnapshot (id);
+    if (s == nullptr) return {};
+    return rm::compare (*s, working, instancesOf (*s));
 }
 
 bool RackMemoryProcessor::load (const String& id)
@@ -168,14 +271,35 @@ bool RackMemoryProcessor::load (const String& id)
     if (auto* s = findSnapshot (id))
     {
         rememberForUndo();
-        working = *s;
+        const auto inst = instancesOf (*s);
+        if (s->group.isEmpty())
+        {
+            // starsi verze = cely rack najednou (jako drive)
+            for (auto it = working.values.begin(); it != working.values.end();)
+                if (! it->first.startsWith ("levels:")) it = working.values.erase (it); else ++it;
+        }
+        else
+        {
+            for (auto it = working.values.begin(); it != working.values.end();)
+                if (inst.contains (it->first.upToFirstOccurrenceOf (":", false, false))) it = working.values.erase (it); else ++it;
+        }
+        for (auto& kv : s->values)
+            if (! kv.first.startsWith ("levels:")) working.values[kv.first] = kv.second;
+        for (auto& kv : s->devicePhotos) working.devicePhotos[kv.first] = kv.second;
+        for (auto& ph : s->photos) working.photos.addIfNotAlreadyThere (ph);
+        working.notes = s->notes;
+        working.id = s->id; working.version = s->version; working.project = s->project; working.group = s->group;
+        working.name = s->name; working.created = s->created; working.modified = s->modified;
         loadedId = id;
+        loadedByGroup[currentGroup] = id;
         dirty = false;
         // ulozena hlasitost do / z hardwaru
-        auto in = working.get ("levels", "in"), out = working.get ("levels", "out");
+        auto in = s->get ("levels", "in"), out = s->get ("levels", "out");
         auto* other = partner();
         if (role == Role::out) { if (out.known) setGainDb ((float) out.pos); if (other && in.known) other->setGainDb ((float) in.pos); }
         else                   { if (in.known) setGainDb ((float) in.pos);   if (other && out.known) other->setGainDb ((float) out.pos); }
+        markDirty();
+        dirty = false;
         commitState();
         return true;
     }
@@ -189,6 +313,10 @@ void RackMemoryProcessor::undo()
     std::swap (loadedId, undoLoadedId);
     std::swap (dirty, undoDirty);
     if (loadedId.isNotEmpty() && findSnapshot (loadedId) == nullptr) { loadedId.clear(); dirty = true; }
+    loadedByGroup[currentGroup] = loadedId;
+    const bool d = dirty;
+    markDirty();
+    dirty = d;
     commitState();
 }
 
@@ -203,8 +331,10 @@ juce::Result RackMemoryProcessor::deleteSnapshot (const String& id)
         loadedId.clear();
         working.id = juce::Uuid().toString();
         working.version.clear();
+        working.name.clear();
         dirty = true;
     }
+    for (auto& kv : loadedByGroup) if (kv.second == id) kv.second.clear();
     if (undoLoadedId == id) undoLoadedId.clear();
     reloadLibrary();
     commitState();
@@ -214,10 +344,24 @@ juce::Result RackMemoryProcessor::deleteSnapshot (const String& id)
 void RackMemoryProcessor::clearAll()
 {
     rememberForUndo();
-    working = rm::Snapshot::createNew (songName);
+    // jen pristroje aktualni skupiny (ostatni skupiny se nemeni)
+    const auto inst = rack.ids(), everywhere = studio.allInstances();
+    for (auto it = working.values.begin(); it != working.values.end();)
+    {
+        const auto dev = it->first.upToFirstOccurrenceOf (":", false, false);
+        if (dev != "levels" && (inst.contains (dev) || ! everywhere.contains (dev))) it = working.values.erase (it); else ++it;
+    }
     loadedId.clear();
-    dirty = false;
-    commitState();
+    loadedByGroup[currentGroup].clear();
+    markDirty();
+}
+
+void RackMemoryProcessor::clearDevice (const String& deviceId)
+{
+    rememberForUndo();
+    for (auto it = working.values.begin(); it != working.values.end();)
+        if (it->first.upToFirstOccurrenceOf (":", false, false) == deviceId) it = working.values.erase (it); else ++it;
+    markDirty();
 }
 
 void RackMemoryProcessor::applyRecognition (const String& deviceId, const std::map<String, rm::ControlValue>& values)
@@ -229,31 +373,133 @@ void RackMemoryProcessor::applyRecognition (const std::map<String, std::map<Stri
 {
     rememberForUndo();
     for (auto& dev : perDevice)
+    {
+        auto& review = needsReview[dev.first];
+        review.clear();
         for (auto& kv : dev.second)
         {
             const auto key = rm::valueKey (dev.first, kv.first);
-            if (kv.second.known) working.values[key] = kv.second;
-            else                 working.values.erase (key);       // nejiste = nezadano, nikdy odhad
+            if (kv.second.known)
+            {
+                auto v = kv.second;
+                v.source = "recognized";
+                v.confirmed = false;                     // z fotky: ceka na kontrolu okem
+                working.values[key] = v;
+            }
+            else
+                review.add (kv.first);                   // nejiste: nic se nemeni, rucni hodnota zustava
         }
+    }
+    markDirty();
+}
+
+int RackMemoryProcessor::confirmRecognized (const String& deviceId)
+{
+    int n = 0;
+    for (auto& kv : working.values)
+        if (kv.first.upToFirstOccurrenceOf (":", false, false) == deviceId && kv.second.known && ! kv.second.confirmed)
+        { kv.second.confirmed = true; ++n; }
+    if (n > 0) markDirty();
+    return n;
+}
+
+int RackMemoryProcessor::numUnconfirmed (const String& deviceId) const
+{
+    int n = 0;
+    for (auto& kv : working.values)
+        if (kv.first.upToFirstOccurrenceOf (":", false, false) == deviceId && kv.second.known && ! kv.second.confirmed) ++n;
+    return n;
+}
+
+void RackMemoryProcessor::unlinkPhoto (const String& deviceId)
+{
+    // fotka je jen odkaz: nastaveni pristroje i soubor v knihovne (muze ho pouzivat starsi verze) zustavaji
+    working.devicePhotos.erase (deviceId);
+    devicePhotos.erase (deviceId);
+    needsReview.erase (deviceId);
+    markDirty();
+}
+
+juce::Result RackMemoryProcessor::savePreset (const String& deviceId, const String& name)
+{
+    auto* prof = rm::profileForInstance (deviceId);
+    if (prof == nullptr) return juce::Result::fail ("?");
+    rm::DevicePreset p;
+    p.name = name.trim().isNotEmpty() ? name.trim() : String ("Preset");
+    p.model = prof->id;
+    for (auto& c : prof->controls)
+    {
+        auto v = working.get (deviceId, c.id);
+        if (v.known) p.values[c.id] = v;
+    }
+    if (p.values.empty()) return juce::Result::fail (String::fromUTF8 ("Přístroj nemá zadané žádné hodnoty."));
+    return library.savePreset (p);
+}
+
+void RackMemoryProcessor::applyPreset (const String& deviceId, const rm::DevicePreset& p)
+{
+    if (rm::profileIdOf (deviceId) != p.model) return;
+    rememberForUndo();
+    for (auto it = working.values.begin(); it != working.values.end();)
+        if (it->first.upToFirstOccurrenceOf (":", false, false) == deviceId) it = working.values.erase (it); else ++it;
+    for (auto& kv : p.values)
+    {
+        auto v = kv.second; v.source = "preset"; v.confirmed = true;
+        working.values[rm::valueKey (deviceId, kv.first)] = v;
+    }
+    markDirty();
+}
+
+void RackMemoryProcessor::setCables (const std::vector<rm::Cable>& c)
+{
+    if (c == working.cables) return;
+    rememberForUndo();
+    working.cables = c;
     markDirty();
 }
 
 //==============================================================================
 void RackMemoryProcessor::reloadRack()
 {
-    rm::RackLayout r; String err;
-    if (library.loadRack (r, err)) { rack = r; return; }
+    rm::Studio s; String err;
+    if (! library.loadStudio (s, err))
+    {
+        // prvni spusteni / starsi verze: vychozi poradi z settings.json (0.5), jinak vychozi rack
+        juce::StringArray ids;
+        juce::var v;
+        auto f = library.getRoot().getChildFile ("settings.json");
+        if (f.existsAsFile() && juce::JSON::parse (f.loadFileAsString(), v).wasOk())
+            if (auto* a = v.getProperty ("rack", juce::var()).getArray())
+                for (auto& e : *a) ids.add (e.toString());
+        auto r = ids.isEmpty() ? rm::RackLayout::makeDefault() : rm::RackLayout::fromOrder (ids);
+        if (r.items.empty()) r = rm::RackLayout::makeDefault();
+        s = rm::Studio::fromLegacy (r);
+        library.saveStudio (s);
+    }
+    studio = s;
+    if (studio.findGroup (currentGroup) == nullptr)
+    {
+        // vychozi skupina: prvni neprazdna (u stavajicich uzivatelu Mastering = puvodni rack)
+        currentGroup = studio.groups.front().id;
+        for (auto& g : studio.groups) if (! g.layout.items.empty()) { currentGroup = g.id; break; }
+    }
+    rack = studio.findGroup (currentGroup)->layout;
+}
 
-    // prvni spusteni / starsi verze: vychozi poradi z settings.json (0.5), jinak vychozi rack
-    juce::StringArray ids;
-    juce::var v;
-    auto f = library.getRoot().getChildFile ("settings.json");
-    if (f.existsAsFile() && juce::JSON::parse (f.loadFileAsString(), v).wasOk())
-        if (auto* a = v.getProperty ("rack", juce::var()).getArray())
-            for (auto& e : *a) ids.add (e.toString());
-    rack = ids.isEmpty() ? rm::RackLayout::makeDefault() : rm::RackLayout::fromOrder (ids);
-    if (rack.items.empty()) rack = rm::RackLayout::makeDefault();
-    library.saveRack (rack);
+juce::Result RackMemoryProcessor::setStudio (const rm::Studio& s)
+{
+    auto n = s;
+    n.normalise();
+    if (n == studio) return juce::Result::ok();
+    auto res = library.saveStudio (n);
+    if (res.wasOk())
+    {
+        studio = n;
+        if (studio.findGroup (currentGroup) == nullptr) currentGroup = studio.groups.front().id;
+        rack = studio.findGroup (currentGroup)->layout;
+        commitState (false);
+    }
+    return res;
 }
 
 juce::Result RackMemoryProcessor::setRack (const rm::RackLayout& r)
@@ -261,18 +507,35 @@ juce::Result RackMemoryProcessor::setRack (const rm::RackLayout& r)
     auto n = r;
     n.normalise();
     if (n == rack) return juce::Result::ok();
-    auto res = library.saveRack (n);
+    auto s = studio;
+    if (auto* g = s.findGroup (currentGroup)) g->layout = n;
+    auto res = setStudio (s);
     if (res.wasOk()) rack = n;
     return res;
 }
 
+void RackMemoryProcessor::setGroup (const String& groupId)
+{
+    if (studio.findGroup (groupId) == nullptr || groupId == currentGroup) return;
+    loadedByGroup[currentGroup] = loadedId;
+    currentGroup = groupId;
+    rack = studio.findGroup (groupId)->layout;
+    loadedId = loadedByGroup[groupId];
+    if (loadedId.isNotEmpty() && findSnapshot (loadedId) == nullptr) loadedId.clear();
+    commitState (false);
+}
+
 juce::StringArray RackMemoryProcessor::missingInstances() const
 {
+    // kusy s hodnotami v nactene verzi teto skupiny, ktere v racku skupiny nejsou
     juce::StringArray out;
+    const auto* s = findSnapshot (loadedId);
     for (auto& kv : working.values)
     {
         if (! kv.second.known) continue;
         const auto dev = kv.first.upToFirstOccurrenceOf (":", false, false);
+        if (s != nullptr && ! instancesOf (*s).contains (dev)) continue;
+        if (s == nullptr && studio.allInstances().contains (dev)) continue;      // patri do jine skupiny
         if (rack.find (dev) == nullptr && rm::profileForInstance (dev) != nullptr) out.addIfNotAlreadyThere (dev);
     }
     return out;
@@ -281,10 +544,10 @@ juce::StringArray RackMemoryProcessor::missingInstances() const
 void RackMemoryProcessor::markDirty()
 {
     dirty = true;
-    commitState();
+    commitState (true);
 }
 
-void RackMemoryProcessor::commitState()
+void RackMemoryProcessor::commitState (bool notifyHost)
 {
     auto json = buildStateJson();
     {
@@ -292,6 +555,78 @@ void RackMemoryProcessor::commitState()
         stateCache = json;
     }
     updateHostDisplay (ChangeDetails().withNonParameterStateChanged (true));
+    if (notifyHost)
+    {
+        // AU (Logic) "nonParameterStateChanged" nepredava -> zmena skryteho parametru = projekt je zmeneny
+        pendingNotify = true;
+        pendingRecovery = true;
+        if (juce::MessageManager::getInstanceWithoutCreating() != nullptr) startTimer (150);
+    }
+}
+
+void RackMemoryProcessor::timerCallback()
+{
+    stopTimer();
+    if (pendingNotify)
+    {
+        pendingNotify = false;
+        const float next = stateParam->get() >= 0.5f ? stateParam->get() - 0.37f : stateParam->get() + 0.41f;
+        stateParam->beginChangeGesture();
+        stateParam->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, next));
+        stateParam->endChangeGesture();
+        ++hostNotifications;
+    }
+    if (emitted.exchange (false))
+    {
+        // Logic si stav vyzvedl (ulozeni projektu): rozpracovane zmeny uz jsou v projektu
+        recoveryFile().deleteFile();
+    }
+    if (pendingRecovery) { pendingRecovery = false; writeRecovery(); }
+}
+
+//==============================================================================
+// Obnova neulozenych zmen
+juce::File RackMemoryProcessor::recoveryFile() const
+{
+    return library.recoveryDir().getChildFile (instanceId.retainCharacters ("0123456789abcdef") + ".json");
+}
+
+void RackMemoryProcessor::writeRecovery()
+{
+    String base;
+    {
+        const juce::ScopedLock sl (stateLock);
+        base = lastEmittedToken.isNotEmpty() ? lastEmittedToken : loadedToken;
+    }
+    if (base.isEmpty() || ! dirty) return;           // instance, ktera jeste nikdy nebyla v ulozenem projektu
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("schema", 1);
+    o->setProperty ("instanceId", instanceId);
+    o->setProperty ("base", base);
+    o->setProperty ("time", juce::Time::currentTimeMillis());
+    o->setProperty ("song", songName);
+    o->setProperty ("state", buildStateJson());
+    if (library.recoveryDir().createDirectory())
+        recoveryFile().replaceWithText (juce::JSON::toString (juce::var (o)), false, false, "\n");
+}
+
+void RackMemoryProcessor::acceptRecovery()
+{
+    if (! recovery.available) return;
+    const auto text = recovery.state;
+    const auto keepId = instanceId;
+    recovery = {};
+    rememberForUndo();
+    applyStateJson (text);
+    instanceId = keepId;
+    recovery = {};
+    markDirty();                 // Logic: projekt je zmeneny -> ulozit
+}
+
+void RackMemoryProcessor::discardRecovery()
+{
+    recovery = {};
+    recoveryFile().deleteFile();
 }
 
 //==============================================================================
@@ -302,12 +637,20 @@ String RackMemoryProcessor::buildStateJson() const
     o->setProperty ("instanceId", instanceId);
     o->setProperty ("songName", songName);
     o->setProperty ("loadedId", loadedId);
+    o->setProperty ("group", currentGroup);
+    {
+        auto* lg = new juce::DynamicObject();
+        for (auto& kv : loadedByGroup) if (kv.second.isNotEmpty() && kv.first.isNotEmpty()) lg->setProperty (juce::Identifier (kv.first), kv.second);
+        o->setProperty ("loadedByGroup", var (lg));
+    }
     o->setProperty ("dirty", dirty);
     o->setProperty ("showValues", showValues);
+    o->setProperty ("highContrast", highContrast);
     o->setProperty ("role", (int) role);
     o->setProperty ("linkGroup", linkGroup);
     o->setProperty ("gain", gainParam->get());
     o->setProperty ("working", working.toVar());
+    o->setProperty ("studio", studio.toVar());        // kopie racku: kdyby na jinem Macu rack.json chybel
 
     // Kopie verzi teto skladby jde s projektem Logicu -> po presunu na jiny Mac
     // se obnovi do knihovny (fotky ne).
@@ -330,15 +673,45 @@ void RackMemoryProcessor::applyStateJson (const String& text)
         return;
 
     auto id = v.getProperty ("instanceId", "").toString();
-    if (id.isNotEmpty()) instanceId = id;
+    bool duplicate = false;
+    if (id.isNotEmpty())
+    {
+        // zkopirovana stopa / plugin: dve instance se stejnym ID by si michaly zalohy -> nova identita
+        const juce::SpinLock::ScopedLockType l (registryLock);
+        for (auto* p : registry()) if (p != this && p->instanceId == id) duplicate = true;
+    }
+    if (id.isNotEmpty() && ! duplicate) instanceId = id;
+    else if (duplicate) instanceId = juce::Uuid().toString();
     songName   = v.getProperty ("songName", v.getProperty ("projectName", "")).toString();
     loadedId   = v.getProperty ("loadedId", "").toString();
     dirty      = (bool) v.getProperty ("dirty", false);
     showValues = (bool) v.getProperty ("showValues", false);
+    highContrast = (bool) v.getProperty ("highContrast", false);
     role       = (Role) juce::jlimit (0, 2, (int) v.getProperty ("role", 0));
     linkGroup  = juce::jlimit (1, 4, (int) v.getProperty ("linkGroup", 1));
-    if (v.hasProperty ("gain")) setGainDb ((float) (double) v.getProperty ("gain", 0.0));
+    // gain z projektu: bez hlaseni hostiteli (nacteni projektu ho nesmi oznacit jako zmeneny)
+    if (v.hasProperty ("gain")) static_cast<juce::AudioProcessorParameter*> (gainParam)->setValue (gainParam->convertTo0to1 (juce::jlimit (-24.0f, 24.0f, (float) (double) v.getProperty ("gain", 0.0))));
     hasUndo = false;
+    {
+        const juce::ScopedLock sl (stateLock);
+        loadedToken = v.getProperty ("token", "").toString();
+        lastEmittedToken.clear();
+    }
+
+    // rack: plati spolecny rack.json; kdyz na tomto Macu chybi, prevezme se kopie z projektu
+    if (! library.hasStudio())
+    {
+        rm::Studio s; String err;
+        if (v.hasProperty ("studio") && rm::Studio::fromVar (v.getProperty ("studio", var()), s, err))
+            library.saveStudio (s);
+    }
+    const auto wantGroup = v.getProperty ("group", "").toString();
+    if (wantGroup.isNotEmpty()) currentGroup = wantGroup;
+    reloadRack();
+    loadedByGroup.clear();
+    if (auto* lg = v.getProperty ("loadedByGroup", var()).getDynamicObject())
+        for (auto& kv : lg->getProperties()) loadedByGroup[kv.name.toString()] = kv.value.toString();
+    if (! v.hasProperty ("group")) loadedByGroup[currentGroup] = loadedId;   // projekt ze starsi verze
 
     // obnova snapshotu, ktere v knihovne na tomto Macu chybi (a nebyly tu smazany)
     if (auto* arr = v.getProperty ("embedded", var()).getArray())
@@ -372,8 +745,39 @@ void RackMemoryProcessor::applyStateJson (const String& text)
         loadedId.clear();
         dirty = true;
     }
+    for (auto& kv : loadedByGroup) if (kv.second.isNotEmpty() && findSnapshot (kv.second) == nullptr) kv.second.clear();
+    loadedByGroup[currentGroup] = loadedId;
 
-    commitState();
+    // neulozene zmeny z minula (projekt se zavrel bez ulozeni)? Nabidnout, nikdy samo neprepsat.
+    recovery = {};
+    if (! duplicate && loadedToken.isNotEmpty())
+    {
+        var r;
+        auto f = recoveryFile();
+        if (f.existsAsFile() && f.getSize() < 64 * 1024 * 1024 && juce::JSON::parse (f.loadFileAsString(), r).wasOk()
+            && r.getProperty ("base", "").toString() == loadedToken && r.getProperty ("instanceId", "").toString() == instanceId)
+        {
+            var rs; rm::Snapshot rw; String e2;
+            const auto stateText = r.getProperty ("state", "").toString();
+            if (juce::JSON::parse (stateText, rs).wasOk() && rm::Snapshot::fromVar (rs.getProperty ("working", var()), rw, e2))
+            {
+                const auto diffs = rm::compare (working, rw);
+                const bool other = diffs.size() > 0 || rw.cables != working.cables
+                                   || rs.getProperty ("songName", "").toString() != songName;
+                if (other)
+                {
+                    recovery.available = true;
+                    recovery.time = (juce::int64) r.getProperty ("time", 0);
+                    recovery.song = r.getProperty ("song", "").toString();
+                    recovery.state = stateText;
+                    recovery.changes = (int) diffs.size();
+                }
+                else f.deleteFile();
+            }
+        }
+    }
+
+    commitState (false);
     sendChangeMessage();
 }
 
@@ -386,13 +790,21 @@ void RackMemoryProcessor::getStateInformation (juce::MemoryBlock& dest)
         pending = pendingState.isNotEmpty();
         s = pending ? pendingState : stateCache;
     }
-    // gain je parametr (muze ho menit automatizace kdykoli) -> do stavu az pri ukladani
+    // gain je parametr (muze ho menit automatizace kdykoli) -> do stavu az pri ukladani.
+    // token: identita prave ulozeneho stavu (obnova neulozenych zmen se nabidne jen ke spravnemu projektu)
     juce::var v;
     if (! pending && juce::JSON::parse (s, v).wasOk())
         if (auto* o = v.getDynamicObject())
         {
+            const auto token = juce::Uuid().toString();
             o->setProperty ("gain", gainParam->get());
+            o->setProperty ("token", token);
             s = juce::JSON::toString (v, true);
+            {
+                const juce::ScopedLock sl (stateLock);
+                lastEmittedToken = token;
+            }
+            emitted = true;
         }
     dest.append (s.toRawUTF8(), s.getNumBytesAsUTF8());
 }

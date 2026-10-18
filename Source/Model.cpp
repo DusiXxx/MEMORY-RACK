@@ -19,6 +19,26 @@ var Snapshot::toVar() const
     o->setProperty ("version", version);
     o->setProperty ("deviceId", deviceId);
     o->setProperty ("notes", notes);
+    if (name.isNotEmpty())  o->setProperty ("name", name);
+    if (group.isNotEmpty()) o->setProperty ("group", group);
+    if (! devicePhotos.empty())
+    {
+        auto* dp = new juce::DynamicObject();
+        for (auto& kv : devicePhotos) dp->setProperty (juce::Identifier (kv.first), kv.second);
+        o->setProperty ("devicePhotos", var (dp));
+    }
+    if (! cables.empty())
+    {
+        juce::Array<var> cb;
+        for (auto& c : cables)
+        {
+            auto* e = new juce::DynamicObject();
+            e->setProperty ("from", c.from); e->setProperty ("to", c.to);
+            if (c.note.isNotEmpty()) e->setProperty ("note", c.note);
+            cb.add (var (e));
+        }
+        o->setProperty ("cables", cb);
+    }
     juce::Array<var> ph;
     for (auto& p : photos) ph.add (p);
     o->setProperty ("photos", ph);
@@ -39,6 +59,7 @@ var Snapshot::toVar() const
         v->setProperty ("pos", kv.second.pos);
         if (kv.second.source != "manual")  v->setProperty ("source", kv.second.source);
         if (kv.second.confidence >= 0)     v->setProperty ("confidence", kv.second.confidence);
+        if (! kv.second.confirmed)         v->setProperty ("confirmed", false);
         vals->setProperty (juce::Identifier (kv.first), var (v));
     }
     o->setProperty ("values", var (vals));
@@ -63,6 +84,18 @@ bool Snapshot::fromVar (const var& v, Snapshot& s, String& error)
     s.notes    = v.getProperty ("notes", "").toString();
     s.created  = (juce::int64) v.getProperty ("created", 0);
     s.modified = (juce::int64) v.getProperty ("modified", 0);
+    s.name     = v.getProperty ("name", "").toString();
+    s.group    = safeId (v.getProperty ("group", "").toString());
+    if (auto* dp = v.getProperty ("devicePhotos", var()).getDynamicObject())
+        for (auto& kv : dp->getProperties())
+            if (auto f = juce::File::createLegalFileName (kv.value.toString()); f.isNotEmpty())
+                s.devicePhotos[kv.name.toString()] = f;
+    if (auto* cb = v.getProperty ("cables", var()).getArray())
+        for (auto& e : *cb)
+        {
+            Cable c { e.getProperty ("from", "").toString(), e.getProperty ("to", "").toString(), e.getProperty ("note", "").toString() };
+            if (c.from.isNotEmpty() && c.to.isNotEmpty() && c.from != c.to) s.cables.push_back (c);
+        }
 
     if (auto* ph = v.getProperty ("photos", var()).getArray())
         for (auto& p : *ph)
@@ -94,6 +127,7 @@ bool Snapshot::fromVar (const var& v, Snapshot& s, String& error)
             cv.pos        = (double) p.value.getProperty ("pos", 0.0);
             cv.source     = p.value.getProperty ("source", "manual").toString();
             cv.confidence = (double) p.value.getProperty ("confidence", -1.0);
+            cv.confirmed  = (bool) p.value.getProperty ("confirmed", true);
             if (! cv.known || ! std::isfinite (cv.pos)) continue;
 
             auto key = prefix + p.name.toString();
@@ -143,6 +177,33 @@ Snapshot Snapshot::createNew (const String& project)
     s.project = project;
     s.created = s.modified = juce::Time::currentTimeMillis();
     return s;
+}
+
+std::map<String, ControlValue> Snapshot::valuesFor (const juce::StringArray& instances) const
+{
+    std::map<String, ControlValue> out;
+    for (auto& kv : values)
+        if (kv.second.known && instances.contains (kv.first.upToFirstOccurrenceOf (":", false, false))) out[kv.first] = kv.second;
+    return out;
+}
+
+std::vector<Difference> compare (const Snapshot& a, const Snapshot& b, const juce::StringArray& instances)
+{
+    std::vector<Difference> out;
+    juce::StringArray keys;
+    for (auto& kv : a.values) keys.addIfNotAlreadyThere (kv.first);
+    for (auto& kv : b.values) keys.addIfNotAlreadyThere (kv.first);
+    keys.sort (false);
+    for (auto& k : keys)
+    {
+        const auto inst = k.upToFirstOccurrenceOf (":", false, false);
+        if (! instances.isEmpty() && ! instances.contains (inst)) continue;
+        if (profileForInstance (inst) == nullptr) continue;
+        const auto va = a.get (k), vb = b.get (k);
+        if (va.known != vb.known || (va.known && std::abs (va.pos - vb.pos) > 1e-9))
+            out.push_back ({ inst, k.fromFirstOccurrenceOf (":", false, false), va, vb });
+    }
+    return out;
 }
 
 int Snapshot::numKnown (const DeviceProfile& p) const
@@ -498,10 +559,12 @@ int RackLayout::freeSlot (int width) const
     return -1;
 }
 
-String RackLayout::add (const String& model)
+String RackLayout::add (const String& model, const String& wantedId)
 {
-    if (findProfile (model) == nullptr) return {};
-    String id = model;
+    auto* prof = findProfile (model);
+    if (prof == nullptr || prof->formFactor == "patchbay") return {};
+    String id = wantedId.isNotEmpty() && profileIdOf (wantedId) == model ? wantedId : model;
+    if (wantedId.isNotEmpty() && find (id) != nullptr) return {};
     for (int n = 2; find (id) != nullptr; ++n) id = model + "#" + String (n);
     RackItem it; it.id = id; it.model = model;
     const int w = slotsOfModel (model);
@@ -587,7 +650,8 @@ void RackLayout::normalise()
     juce::StringArray seen;
     for (auto& it : items)
     {
-        if (findProfile (it.model) == nullptr || it.id.isEmpty() || seen.contains (it.id)) continue;
+        auto* prof = findProfile (it.model);
+        if (prof == nullptr || prof->formFactor == "patchbay" || it.id.isEmpty() || seen.contains (it.id)) continue;
         seen.add (it.id);
         keep.push_back (it);
     }
@@ -671,6 +735,270 @@ bool RackLayout::operator== (const RackLayout& o) const
     return true;
 }
 
+
+//==============================================================================
+// Studio: skupiny + patchbaye
+//==============================================================================
+Studio Studio::makeDefault()
+{
+    return fromLegacy (RackLayout::makeDefault());
+}
+
+Studio Studio::fromLegacy (const RackLayout& r)
+{
+    Studio s;
+    s.groups.push_back ({ "mixing", "Mixing", RackLayout() });
+    s.groups.push_back ({ "mastering", "Mastering", r });
+    s.normalise();
+    return s;
+}
+
+namespace
+{
+var layoutItems (const RackLayout& l) { return l.toVar(); }
+}
+
+juce::var Studio::toVar() const
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("schema", RackLayout::kSchema);     // starsi pluginy (0.6-0.8) ctou "devices" nize
+    o->setProperty ("studioSchema", kSchema);
+    juce::Array<var> gs;
+    for (auto& g : groups)
+    {
+        auto* e = new juce::DynamicObject();
+        e->setProperty ("id", g.id);
+        e->setProperty ("name", g.name);
+        e->setProperty ("rack", layoutItems (g.layout));
+        gs.add (var (e));
+    }
+    o->setProperty ("groups", gs);
+    juce::Array<var> pbs;
+    for (auto& pb : patchbays)
+    {
+        auto* e = new juce::DynamicObject();
+        e->setProperty ("id", pb.id);
+        e->setProperty ("model", pb.model);
+        if (pb.notes.isNotEmpty()) e->setProperty ("notes", pb.notes);
+        auto* lab = new juce::DynamicObject();
+        for (auto& kv : pb.labels) if (kv.second.isNotEmpty()) lab->setProperty (juce::Identifier (kv.first), kv.second);
+        e->setProperty ("labels", var (lab));
+        auto* md = new juce::DynamicObject();
+        for (auto& kv : pb.modes) md->setProperty (juce::Identifier (String (kv.first)), kv.second);
+        e->setProperty ("modes", var (md));
+        pbs.add (var (e));
+    }
+    o->setProperty ("patchbays", pbs);
+    // pro starsi verze pluginu (0.6-0.8): prvni neprazdny rack i ve starem formatu
+    for (auto& g : groups)
+        if (! g.layout.items.empty())
+        {
+            o->setProperty ("lunchboxSlots", g.layout.lunchboxSlots);
+            o->setProperty ("devices", g.layout.toVar().getProperty ("devices", var()));
+            break;
+        }
+    return var (o);
+}
+
+bool Studio::fromVar (const juce::var& v, Studio& out, String& error)
+{
+    if (v.getDynamicObject() == nullptr) { error = "neni to rack"; return false; }
+    if (! v.hasProperty ("groups"))
+    {
+        RackLayout r;
+        if (! RackLayout::fromVar (v, r, error)) return false;
+        out = fromLegacy (r);
+        return true;
+    }
+    if ((int) v.getProperty ("studioSchema", 0) > kSchema) { error = "rack ulozila novejsi verze pluginu"; return false; }
+    Studio s;
+    if (auto* gs = v.getProperty ("groups", var()).getArray())
+        for (auto& e : *gs)
+        {
+            RackGroup g;
+            g.id = safeId (e.getProperty ("id", "").toString());
+            g.name = e.getProperty ("name", g.id).toString().trim();
+            String err;
+            RackLayout::fromVar (e.getProperty ("rack", var (new juce::DynamicObject())), g.layout, err);
+            s.groups.push_back (g);
+        }
+    if (auto* pbs = v.getProperty ("patchbays", var()).getArray())
+        for (auto& e : *pbs)
+        {
+            PatchbayConfig pb;
+            pb.id = e.getProperty ("id", "").toString();
+            pb.model = e.getProperty ("model", profileIdOf (pb.id)).toString();
+            pb.notes = e.getProperty ("notes", "").toString();
+            if (auto* lab = e.getProperty ("labels", var()).getDynamicObject())
+                for (auto& kv : lab->getProperties()) pb.labels[kv.name.toString()] = kv.value.toString();
+            if (auto* md = e.getProperty ("modes", var()).getDynamicObject())
+                for (auto& kv : md->getProperties()) pb.modes[kv.name.toString().getIntValue()] = kv.value.toString();
+            s.patchbays.push_back (pb);
+        }
+    s.normalise();
+    out = s;
+    return true;
+}
+
+void Studio::normalise()
+{
+    std::vector<RackGroup> keep;
+    juce::StringArray seen;
+    for (auto& g : groups)
+    {
+        auto id = safeId (g.id);
+        if (id.isEmpty()) id = "g" + String (juce::Random::getSystemRandom().nextInt (1000000));
+        while (seen.contains (id)) id << "x";
+        seen.add (id);
+        auto c = g; c.id = id;
+        if (c.name.isEmpty()) c.name = id;
+        c.layout.normalise();
+        keep.push_back (c);
+    }
+    groups = keep;
+    if (groups.empty()) groups.push_back ({ "mastering", "Mastering", RackLayout() });
+
+    std::vector<PatchbayConfig> pk;
+    juce::StringArray pseen;
+    for (auto& pb : patchbays)
+    {
+        auto* prof = findProfile (pb.model);
+        if (prof == nullptr || prof->formFactor != "patchbay" || pb.id.isEmpty() || pseen.contains (pb.id)) continue;
+        pseen.add (pb.id);
+        pk.push_back (pb);
+    }
+    patchbays = pk;
+}
+
+RackGroup* Studio::findGroup (const String& id)             { for (auto& g : groups) if (g.id == id) return &g; return nullptr; }
+const RackGroup* Studio::findGroup (const String& id) const { for (auto& g : groups) if (g.id == id) return &g; return nullptr; }
+
+String Studio::addGroup (const String& name)
+{
+    RackGroup g;
+    g.name = name.trim().isNotEmpty() ? name.trim() : String ("Skupina");
+    g.id = safeId (g.name.toLowerCase().replaceCharacter (' ', '-'));
+    if (g.id.isEmpty()) g.id = "skupina";
+    const auto base = g.id;
+    for (int n = 2; findGroup (g.id) != nullptr; ++n) g.id = base + "-" + String (n);
+    g.layout.items.clear();
+    groups.push_back (g);
+    return g.id;
+}
+
+String Studio::duplicateGroup (const String& id, const String& newName)
+{
+    auto* src = findGroup (id);
+    if (src == nullptr) return {};
+    const auto layout = src->layout;
+    const auto nid = addGroup (newName);
+    findGroup (nid)->layout = layout;          // stejne kusy (fyzicky stejne pristroje)
+    return nid;
+}
+
+bool Studio::removeGroup (const String& id)
+{
+    if (groups.size() <= 1) return false;
+    for (auto i = groups.begin(); i != groups.end(); ++i)
+        if (i->id == id) { groups.erase (i); return true; }
+    return false;
+}
+
+bool Studio::renameGroup (const String& id, const String& name)
+{
+    auto* g = findGroup (id);
+    if (g == nullptr || name.trim().isEmpty()) return false;
+    g->name = name.trim();
+    return true;
+}
+
+void Studio::moveGroup (const String& id, int newIndex)
+{
+    for (size_t i = 0; i < groups.size(); ++i)
+        if (groups[i].id == id)
+        {
+            auto g = groups[i];
+            groups.erase (groups.begin() + (long) i);
+            groups.insert (groups.begin() + juce::jlimit (0, (int) groups.size(), newIndex), g);
+            return;
+        }
+}
+
+juce::StringArray Studio::allInstances() const
+{
+    juce::StringArray r;
+    for (auto& g : groups) for (auto& it : g.layout.items) r.addIfNotAlreadyThere (it.id);
+    return r;
+}
+
+String Studio::newInstanceId (const String& model) const
+{
+    const auto all = allInstances();
+    String id = model;
+    for (int n = 2; all.contains (id); ++n) id = model + "#" + String (n);
+    return id;
+}
+
+String Studio::addPatchbay (const String& model)
+{
+    auto* p = findProfile (model);
+    if (p == nullptr || p->formFactor != "patchbay") return {};
+    String id = model;
+    for (int n = 2; findPatchbay (id) != nullptr; ++n) id = model + "#" + String (n);
+    PatchbayConfig pb; pb.id = id; pb.model = model;
+    patchbays.push_back (pb);
+    return id;
+}
+
+PatchbayConfig* Studio::findPatchbay (const String& id)   { for (auto& p : patchbays) if (p.id == id) return &p; return nullptr; }
+
+bool Studio::operator== (const Studio& o) const
+{
+    if (groups.size() != o.groups.size() || patchbays.size() != o.patchbays.size()) return false;
+    for (size_t i = 0; i < groups.size(); ++i)
+        if (groups[i].id != o.groups[i].id || groups[i].name != o.groups[i].name || groups[i].layout != o.groups[i].layout) return false;
+    for (size_t i = 0; i < patchbays.size(); ++i)
+        if (patchbays[i].id != o.patchbays[i].id || patchbays[i].model != o.patchbays[i].model || patchbays[i].labels != o.patchbays[i].labels
+            || patchbays[i].modes != o.patchbays[i].modes || patchbays[i].notes != o.patchbays[i].notes) return false;
+    return true;
+}
+
+//==============================================================================
+juce::var DevicePreset::toVar() const
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("schema", 1);
+    o->setProperty ("id", id); o->setProperty ("name", name); o->setProperty ("model", model);
+    o->setProperty ("modified", modified);
+    auto* vals = new juce::DynamicObject();
+    for (auto& kv : values) if (kv.second.known) vals->setProperty (juce::Identifier (kv.first), kv.second.pos);
+    o->setProperty ("values", var (vals));
+    return var (o);
+}
+
+bool DevicePreset::fromVar (const juce::var& v, DevicePreset& p, String& error)
+{
+    if (v.getDynamicObject() == nullptr || (int) v.getProperty ("schema", 0) != 1) { error = "neni to preset"; return false; }
+    p = DevicePreset();
+    p.id = safeId (v.getProperty ("id", "").toString());
+    p.name = v.getProperty ("name", "").toString();
+    p.model = v.getProperty ("model", "").toString();
+    p.modified = (juce::int64) v.getProperty ("modified", 0);
+    auto* prof = findProfile (p.model);
+    if (p.id.isEmpty() || prof == nullptr) { error = "neznamy pristroj"; return false; }
+    if (auto* vals = v.getProperty ("values", var()).getDynamicObject())
+        for (auto& kv : vals->getProperties())
+        {
+            auto* c = prof->find (kv.name.toString());
+            const double pos = (double) kv.value;
+            if (c == nullptr || ! std::isfinite (pos)) continue;
+            if (c->type == ControlType::knob ? (pos < 0 || pos > 1) : (pos < 0 || pos >= c->numPositions())) continue;
+            ControlValue cv; cv.known = true; cv.pos = c->type == ControlType::knob ? pos : std::round (pos); cv.source = "preset";
+            p.values[c->id] = cv;
+        }
+    return true;
+}
+
 //==============================================================================
 Library::Library()
 {
@@ -751,6 +1079,63 @@ juce::Result Library::saveRack (const RackLayout& r) const
     if (! f.replaceWithText (juce::JSON::toString (r.toVar()), false, false, "\n"))
         return juce::Result::fail ("Zapis selhal: " + f.getFullPathName());
     return juce::Result::ok();
+}
+
+
+bool Library::loadStudio (Studio& out, String& error) const
+{
+    for (auto f : { rackFile(), rackFile().withFileExtension ("json.bak") })
+    {
+        if (! f.existsAsFile()) continue;
+        var v;
+        if (juce::JSON::parse (f.loadFileAsString(), v).wasOk() && Studio::fromVar (v, out, error))
+            return true;
+        error = "rack.json je poskozeny";
+    }
+    return false;
+}
+
+juce::Result Library::saveStudio (const Studio& s) const
+{
+    if (! root.createDirectory()) return juce::Result::fail ("Nelze vytvorit slozku " + root.getFullPathName());
+    auto f = rackFile();
+    if (f.existsAsFile()) f.copyFileTo (f.withFileExtension ("json.bak"));
+    if (! f.replaceWithText (juce::JSON::toString (s.toVar()), false, false, "\n"))
+        return juce::Result::fail ("Zapis selhal: " + f.getFullPathName());
+    return juce::Result::ok();
+}
+
+std::vector<DevicePreset> Library::loadPresets (const String& model) const
+{
+    std::vector<DevicePreset> out;
+    for (auto& f : presetsDir().getChildFile (safeId (model.replaceCharacter ('.', '_'))).findChildFiles (juce::File::findFiles, false, "*.json"))
+    {
+        var v; DevicePreset p; String err;
+        if (f.getSize() < 1024 * 1024 && juce::JSON::parse (f.loadFileAsString(), v).wasOk() && DevicePreset::fromVar (v, p, err) && p.model == model)
+            out.push_back (p);
+    }
+    std::sort (out.begin(), out.end(), [] (const DevicePreset& a, const DevicePreset& b) { return a.name.compareNatural (b.name) < 0; });
+    return out;
+}
+
+juce::Result Library::savePreset (DevicePreset& p) const
+{
+    if (p.id.isEmpty()) p.id = juce::Uuid().toString();
+    auto dir = presetsDir().getChildFile (safeId (p.model.replaceCharacter ('.', '_')));
+    if (! dir.createDirectory()) return juce::Result::fail ("Nelze vytvorit slozku " + dir.getFullPathName());
+    p.modified = juce::Time::currentTimeMillis();
+    if (! dir.getChildFile (safeId (p.id) + ".json").replaceWithText (juce::JSON::toString (p.toVar()), false, false, "\n"))
+        return juce::Result::fail ("Zapis presetu selhal.");
+    return juce::Result::ok();
+}
+
+juce::Result Library::removePreset (const String& model, const String& id) const
+{
+    auto f = presetsDir().getChildFile (safeId (model.replaceCharacter ('.', '_'))).getChildFile (safeId (id) + ".json");
+    if (! f.existsAsFile()) return juce::Result::ok();
+    if (! trashDir().createDirectory()) return juce::Result::fail ("Nelze vytvorit slozku Trash.");
+    return f.moveFileTo (trashDir().getChildFile ("preset_" + safeId (id) + "_" + String (juce::Time::currentTimeMillis()) + ".json"))
+               ? juce::Result::ok() : juce::Result::fail ("Presun do Trash selhal.");
 }
 
 juce::Result Library::remove (const String& id) const

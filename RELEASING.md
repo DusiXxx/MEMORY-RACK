@@ -28,3 +28,12 @@ se při chybě vrátí) → **RESTARTUJ LOGIC**. Bez hesla, bez Terminálu. Nast
 - Adresa repozitáře je zapečená v pluginu (`RM_UPDATE_REPO` v CMakeLists.txt). Změna repozitáře = nová verze
   ručně všem, kdo mají starou.
 - Plugin nic nespouští, jen nahradí `.component` – a jen když sedí kontrolní součet.
+
+## Knihovna hardwaru (zvlášť od pluginu)
+Nové / opravené profily přístrojů jdou vydat bez nové verze pluginu:
+
+    bash Tools/release_library.sh 2 "WA-2A: opravené rozmístění"
+
+Složka `Tools/hardware-library/` obsahuje `library.json` (`{"schema":1,"libraryVersion":2,"profiles":[…]}`) a `images/`.
+Vydání má tag **hardware** a **nesmí být označené jako Latest** (jinak by se plugin nedostal k `latest.json` pluginu).
+Pravidla: ID přístrojů a ovladačů se nemění; upravený profil = vyšší `profileVersion` a všechna původní ID ovladačů.

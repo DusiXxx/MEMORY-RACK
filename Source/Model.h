@@ -8,7 +8,7 @@ namespace rm
 {
 using juce::String;
 
-constexpr int kSchemaVersion = 2;
+constexpr int kSchemaVersion = 3;      // 3: skupiny (Mixing/Mastering), kabely patchbaye, fotky po pristrojich, potvrzeni
 static const char* const kRackId = "rack";     // snapshot = cely rack najednou
 
 //==============================================================================
@@ -51,7 +51,8 @@ struct ControlDef
     // jak se ovladac kresli na fotce panelu
     struct Draw
     {
-        String kind;                       // sprite | ring | leds | toggle | glow
+        String kind;                       // sprite | ring | leds | toggle | glow | vknob | vbuttons | vlever (vektorove, kresli plugin)
+        String style;                      // vknob: skirt | small | chicken
         String sprite; float spriteR = 0, refAngle = 0;          // sprite: vyrez knobu a uhel, pod kterym je vyfocen
         struct Pt { float x = 0, y = 0; };
         std::vector<Pt> points; float ledR = 0;                  // ring / leds: pozice LED
@@ -86,6 +87,22 @@ struct DeviceProfile
     juce::StringArray sources;
     juce::StringArray openQuestions;
     std::vector<ControlDef> controls;
+    String origin = "built-in";    // "built-in" | "library" (stazena knihovna hardwaru)
+    String category;               // "mixing" | "mastering" | "" - doporucena skupina pro novy kus
+
+    // patchbay (formFactor == "patchbay"): body na prednim panelu, 2 rady
+    struct Patchbay
+    {
+        int channels = 0;
+        float topY = 0, bottomY = 0, x0 = 0, dx = 0, jackR = 10;   // stred jacku kanalu k: x0 + (k-1)*dx
+        juce::StringArray modes;                                   // napr. N, HN, T (prvni = vychozi)
+        juce::StringArray modeNames;                               // dlouhe nazvy rezimu
+        String modeHow;                                            // jak se rezim meni (prepinac vpredu / otoceni desky)
+        String topLabel, bottomLabel;                              // co je horni / dolni rada podle vyrobce
+        bool bottomContinues = false;                              // cisla dole pokracuji (25-48), jinak 1-24
+        String note;
+    } patchbay;
+    bool isPatchbay() const        { return formFactor == "patchbay"; }
 
     const ControlDef* find (const String& controlId) const
     {
@@ -95,6 +112,12 @@ struct DeviceProfile
 };
 
 const std::vector<DeviceProfile>& profiles();
+juce::File hardwareLibraryDir();                  // <knihovna>/Hardware - stazene profily hardwaru (oddelene od pluginu)
+int hardwareLibraryVersion();                     // verze nactene stazene knihovny (0 = jen vestavene)
+// Slouceni stazene knihovny s vestavenymi profily (bez GUI, testovatelne). Novejsi profil nahradi vestaveny,
+// jen kdyz zachova vsechna ID ovladacu (ulozena nastaveni se nesmi ztratit); jinak zustane vestaveny.
+std::vector<DeviceProfile> mergeProfiles (const std::vector<DeviceProfile>& builtIn, const juce::var& libraryJson, juce::StringArray* notes = nullptr);
+std::vector<DeviceProfile> parseProfiles (const juce::var& json, const String& origin);
 const DeviceProfile* findProfile (const String& id);
 
 inline String valueKey (const String& deviceId, const String& controlId)   { return deviceId + ":" + controlId; }
@@ -106,9 +129,19 @@ struct ControlValue
 {
     bool known = false;        // false = NEZNAME (nikdy se nedoplnuje odhadem)
     double pos = 0;            // knob 0..1, jinak index polohy
-    String source = "manual";  // "manual" | "recognized" (pozdejsi faze)
+    String source = "manual";  // "manual" | "recognized" (z fotky) | "preset"
     double confidence = -1;
-    bool confirmed = true;
+    bool confirmed = true;     // false = precteno z fotky a jeste nezkontrolovano rukou
+    bool operator== (const ControlValue& o) const { return known == o.known && (! known || (pos == o.pos && source == o.source && confirmed == o.confirmed)); }
+    bool operator!= (const ControlValue& o) const { return ! (*this == o); }
+};
+
+// Kabel na prednim panelu patchbaye (dokumentace zapojeni, nic se neprepina).
+// Bod = "<patchbayId>:<T|B><kanal>", napr. "samson.spatchplus:T5" (T = horni rada, B = dolni rada).
+struct Cable
+{
+    String from, to, note;      // from = zdroj signalu (vystup), to = cil (vstup)
+    bool operator== (const Cable& o) const { return from == o.from && to == o.to && note == o.note; }
 };
 
 struct Snapshot
@@ -118,7 +151,11 @@ struct Snapshot
     String version;            // "v3" - prideluje se automaticky
     String notes;
     String deviceId = kRackId;
+    String name;               // vlastni nazev verze (prejmenovani); prazdne = jen "v3"
+    String group;              // skupina (pracovni postup), ke ktere verze patri; prazdne = cely rack (starsi verze)
     juce::StringArray photos;  // nazvy souboru ve slozce Photos (relativni!)
+    std::map<String, String> devicePhotos;   // kus -> posledni fotka (nazev v Photos); fotka je jen odkaz
+    std::vector<Cable> cables;               // kabely v patchbayi
     juce::StringArray order;   // poradi pristroju v racku (= co v racku je); prazdne = vychozi
     juce::int64 created = 0, modified = 0;
     std::map<String, ControlValue> values;    // klic "deviceId:controlId"
@@ -136,12 +173,18 @@ struct Snapshot
     static bool fromJson (const String&, Snapshot&, String& error);
 
     static Snapshot createNew (const String& project);
+    // hodnoty jen danych kusu (pro ukladani po skupinach)
+    std::map<String, ControlValue> valuesFor (const juce::StringArray& instances) const;
     int numKnown() const;
     int numKnown (const DeviceProfile&) const;
     String title() const;      // "Track_07 - v3"
 };
 
 int totalControls();
+
+// Rozdil dvou nastaveni (porovnani verzi): jen ovladace, ktere se lisi
+struct Difference { String instance, control; ControlValue a, b; };
+std::vector<Difference> compare (const Snapshot& a, const Snapshot& b, const juce::StringArray& instances = {});
 
 //==============================================================================
 // Pomocne funkce
@@ -193,7 +236,7 @@ struct RackLayout
     int width500 (const RackItem&) const;                         // pocet slotu (0 = 19" pristroj)
     bool fits (int slot, int width, const String& ignoreId = {}) const;
     int freeSlot (int width) const;                               // -1 = neni misto
-    String add (const String& model);                             // novy kus; vraci jeho ID ("" = neznamy model)
+    String add (const String& model, const String& wantedId = {});  // novy kus (nebo kus z jine skupiny); vraci jeho ID ("" = nejde)
     bool remove (const String& id);
     bool place500 (const String& id, int slot);                   // presun modulu na slot (ostatni se odsunou, je-li misto)
     void move (const String& id, int newIndex);                   // poradi radku
@@ -203,6 +246,64 @@ struct RackLayout
     bool operator!= (const RackLayout& o) const   { return ! (*this == o); }
 };
 int versionNumber (const String& version);                   // "v12" -> 12
+
+//==============================================================================
+// Studio = skupiny (Mixing, Mastering, vlastni) s vlastnim rackem + patchbaye. Dlouhodobe, spolecne
+// pro vsechny projekty: ~/Music/Rack Memory/rack.json. Kus (instance) muze byt ve vic skupinach -
+// je to porad ten samy fyzicky pristroj (stejne hodnoty), definice pristroje je jen jedna (profil).
+//==============================================================================
+struct RackGroup
+{
+    String id, name;
+    RackLayout layout;
+};
+
+struct PatchbayConfig
+{
+    String id;                                  // napr. "samson.spatchplus", druhy kus "...#2"
+    String model;                               // profil patchbaye
+    std::map<String, String> labels;            // "T5" -> "WA-2A IN" (co je zezadu zapojene)
+    std::map<int, String> modes;                // kanal 1..N -> "N" | "HN" | "T" (podle modelu)
+    String notes;
+};
+
+struct Studio
+{
+    static constexpr int kSchema = 2;
+    std::vector<RackGroup> groups;              // poradi = poradi zalozek
+    std::vector<PatchbayConfig> patchbays;
+
+    static Studio makeDefault();
+    static Studio fromLegacy (const RackLayout&);       // rack.json schema 1 -> skupina Mastering (+ prazdny Mixing)
+    juce::var toVar() const;
+    static bool fromVar (const juce::var&, Studio&, String& error);
+
+    RackGroup* findGroup (const String& id);
+    const RackGroup* findGroup (const String& id) const;
+    String addGroup (const String& name);               // vraci ID
+    String duplicateGroup (const String& id, const String& newName);
+    bool removeGroup (const String& id);                // posledni skupina zustane
+    bool renameGroup (const String& id, const String& name);
+    void moveGroup (const String& id, int newIndex);
+    juce::StringArray allInstances() const;             // vsechny kusy ve vsech skupinach
+    String newInstanceId (const String& model) const;   // unikatni pres vsechny skupiny
+    String addPatchbay (const String& model);
+    PatchbayConfig* findPatchbay (const String& id);
+    void normalise();
+    bool operator== (const Studio& o) const;
+    bool operator!= (const Studio& o) const   { return ! (*this == o); }
+};
+
+//==============================================================================
+// Preset pristroje: znovupouzitelne nastaveni jednoho modelu (nezavisle na skladbach)
+struct DevicePreset
+{
+    String id, name, model;
+    juce::int64 modified = 0;
+    std::map<String, ControlValue> values;      // klic = ID ovladace
+    juce::var toVar() const;
+    static bool fromVar (const juce::var&, DevicePreset&, String& error);
+};
 
 String makeReport (const Snapshot&);
 
@@ -222,6 +323,8 @@ public:
     juce::File photosDir() const        { return root.getChildFile ("Photos"); }
     juce::File trashDir() const         { return root.getChildFile ("Trash"); }
     juce::File reportsDir() const       { return root.getChildFile ("Reports"); }
+    juce::File presetsDir() const       { return root.getChildFile ("Presets"); }
+    juce::File recoveryDir() const      { return root.getChildFile ("Recovery"); }
     juce::File snapshotFile (const String& id) const;
     juce::File photoFile (const String& relName) const;
 
@@ -236,6 +339,14 @@ public:
     juce::File rackFile() const         { return root.getChildFile ("rack.json"); }
     bool loadRack (RackLayout&, String& error) const;    // false = soubor neni / je poskozeny (zkusi se zaloha)
     juce::Result saveRack (const RackLayout&) const;
+    bool loadStudio (Studio&, String& error) const;      // rack.json (i stary format = 1 rack)
+    juce::Result saveStudio (const Studio&) const;
+    bool hasStudio() const               { return rackFile().existsAsFile() || rackFile().withFileExtension ("json.bak").existsAsFile(); }
+
+    // presety pristroju: <root>/Presets/<model>/<id>.json
+    std::vector<DevicePreset> loadPresets (const String& model) const;
+    juce::Result savePreset (DevicePreset&) const;
+    juce::Result removePreset (const String& model, const String& id) const;
 
     // Zkopiruje fotku do knihovny (original se nemeni). Vraci nazev souboru, nebo "" + error.
     String importPhoto (const juce::File& source, const String& snapshotId, String& error) const;
