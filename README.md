@@ -1,19 +1,19 @@
-# Rack Memory 0.9.0
+# Rack Memory 0.10.0
 
 AU plugin pro Logic Pro: paměť nastavení analogového racku + hlasitost a měření do/z hardwaru. Celý rack je na jedné stránce. Hardware se **neovládá**; zvuk prochází beze změny (jen volitelný gain, 0 dB = bitově beze změny).
 
 Skupiny (záložky): **Mixing**, **Mastering** a vlastní – každá má svůj rack a své verze. Nahoře **PATCHBAY** (Samson S-patch Plus, Neutrik NYS-SPP-L1).
-Přístroje: SPL Vitalizer Mk3-T, elysia xfilter Mastering Edition (1U), elysia xmax 500, nvelope 500, WesAudio _RHEA, Warm Audio WA76, WA-2A.
+Přístroje: SPL Vitalizer Mk3-T, elysia xfilter (1U i Mastering Edition), xmax 500, nvelope 500, WesAudio _RHEA, Warm Audio WA76, WA-2A, API 512c, AMS Neve 1073LB, Cranborne Camden 500 + vlastní přístroje (+ PŘÍSTROJ → Vlastní přístroj).
 
-**Co je nového v 0.9 a jak to otestovat v Logicu: `docs/OPRAVY-0.9.md`.**
+**Co je nového: `docs/FOTO-A-KNIHOVNA-0.10.md` (0.10) a `docs/OPRAVY-0.9.md` (0.9) – včetně postupu testu v Logicu.**
 
 ## Instalace (u tebe)
 
 Dvojklik na `Instalovat Rack Memory.command` (ve složce RackMemory), nebo v Terminálu:
 
-    cd ~/Downloads && unzip -oq RackMemory-0.9.0.zip && bash RackMemory/build.sh
+    cd ~/Downloads && unzip -oq RackMemory-0.10.0.zip && bash RackMemory/build.sh
 
-Build je univerzální (Intel i Apple Silicon) a na konci uloží do Stažených **`Rack Memory 0.9.0.zip`**, hotový balíček pro kamarády.
+Build je univerzální (Intel i Apple Silicon) a na konci uloží do Stažených **`Rack Memory 0.10.0.zip`**, hotový balíček pro kamarády.
 
 ## Pro kamaráda (bez Terminálu)
 

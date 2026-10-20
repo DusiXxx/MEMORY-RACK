@@ -36,6 +36,9 @@ def slots(style):
         s = {-a: (-d[0], d[1]) for a, d in s.items()}
     return dict(sorted(s.items()))
 
+import os
+STANDARD = os.environ.get('XF_EDITION', 'me') == 'standard'     # standardni 1U xfilter (+-16 / +-13 dB)
+NAME = 'xfilter1u' if STANDARD else 'xfilterme'
 KNOBS = [  # id, skupina, nazev, styl, popisky po smeru hodin, min, max, stred
     ('ls_gain', 'Low Shelf', 'Gain', 'L', ['-5.0', '-4.8', '-4.2', '-3.5', '-0.5', '0.5', '2.5', '3.5', '4.2', '4.8', '5.0'], '-5', '+5', '0'),
     ('ls_freq', 'Low Shelf', 'Freq', 'L', ['20', '25', '30', '40', '80', '100', '150', '200', '400', '600', '900'], '20', '900', ''),
@@ -46,6 +49,13 @@ KNOBS = [  # id, skupina, nazev, styl, popisky po smeru hodin, min, max, stred
     ('hs_gain', 'High Shelf', 'Gain', 'R', ['-5.0', '-4.8', '-3.9', '-2.5', '-1.5', '-0.3', '0.3', '2.5', '3.9', '4.8', '5.0'], '-5', '+5', '0'),
     ('hs_freq', 'High Shelf', 'Freq', 'R', ['700', '800', '1k0', '2k0', '3k0', '4k0', '5k0', '10k', '16k', '22k', '28k'], '700', '28k', ''),
 ]
+if STANDARD:
+    # potisk standardniho xfilteru (cteno z celni fotky elysia a z fotky uzivatele 20.10.2026)
+    STD = {'ls_gain': (['-16', '-14', '-12', '-8.0', '-1.0', '1.0', '4.0', '8.0', '12', '14', '16'], '-16', '+16'),
+           'lm_gain': (['-13', '-11', '-9.0', '-5.0', '-1.0', '1.0', '3.0', '5.0', '9.0', '11', '13'], '-13', '+13'),
+           'hm_gain': (['-13', '-11', '-9.0', '-5.0', '-3.0', '-1.0', '1.0', '5.0', '9.0', '11', '13'], '-13', '+13'),
+           'hs_gain': (['-16', '-14', '-12', '-8.0', '-4.0', '-1.0', '1.0', '8.0', '12', '14', '16'], '-16', '+16')}
+    KNOBS = [(k[0], k[1], k[2], k[3], STD[k[0]][0], STD[k[0]][1], STD[k[0]][2], k[7]) if k[0] in STD else k for k in KNOBS]
 LEDS = [  # id, nazev, skupina, x LED, barva, poznamka
     ('hitit', 'Hit It!', 'Switches', 964.0, '#ffd21a', 'ZAP = aktivní, VYP = hardwire bypass.'),
     ('low_cut', 'Low Cut', 'Low Shelf', 1021.8, '#ff2a1a', 'VYP = shelf, ZAP = low cut s rezonancí.'),
@@ -109,7 +119,7 @@ def build():
             x, y = (ax + dx) * ss, (AXY + dy) * ss
             dr.text((x, y), t, font=fnum, fill=255, anchor='mm')
     ft = ImageFont.truetype(FONT_R, int(16.5 * ss))
-    for i, t in enumerate(['MASTERING', 'EDITION']):
+    for i, t in enumerate([] if STANDARD else ['MASTERING', 'EDITION']):
         dr.text((2251 * ss, (91 + 20 * i) * ss), t, font=ft, fill=255, anchor='mm')
     a = np.asarray(lay.resize((W0, H0), Image.LANCZOS), np.float32) / 255.0
     ink = np.array([226, 226, 224], np.float32)
@@ -125,20 +135,20 @@ def build():
     R = KNOB_R * sx
     for ax in AXES:
         shadow(img, ax * sx, AXY * sy, R, 0.55, 3, 6, 6)
-    cv2.imwrite(f'{OUT}/xfilterme.jpg', np.clip(img, 0, 255).astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, 93])
+    cv2.imwrite(f'{OUT}/{NAME}.jpg', np.clip(img, 0, 255).astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, 93])
     spr = knob_sprite(R)
-    cv2.imwrite(f'{OUT}/xfilterme_knob.png', spr)
+    cv2.imwrite(f'{OUT}/{NAME}_knob.png', spr)
 
-    geo = {'w': TW, 'h': TH, 'image': 'xfilterme.jpg', 'knobs': [], 'buttons': []}
+    geo = {'w': TW, 'h': TH, 'image': NAME + '.jpg', 'knobs': [], 'buttons': []}
     for ax, (kid, grp, nm, style, labels, mn, mx, ctr) in zip(AXES, KNOBS):
         geo['knobs'].append({'id': kid, 'group': grp, 'name': nm, 'x': round(ax * sx, 1), 'y': round(AXY * sy, 1), 'r': round(R, 1),
-                             'sprite': 'xfilterme_knob.png', 'spriteR': round(spr.shape[0] / 2.0, 1),
+                             'sprite': NAME + '_knob.png', 'spriteR': round(spr.shape[0] / 2.0, 1),
                              'labels': labels, 'min': mn, 'max': mx, 'centre': ctr})
     for (bid, nm, grp, lx, col, note) in LEDS:
         geo['buttons'].append({'id': bid, 'name': nm, 'group': grp, 'note': note,
                                'x': round((lx - 29) * sx, 1), 'y': round(109 * sy, 1), 'r': round(16 * sx, 1),
                                'led': {'x': round(lx * sx, 1), 'y': round(LED_Y * sy, 1), 'r': round(LED_R * sx, 1), 'colour': col}})
-    json.dump(geo, open(f'{WORK}/geo_xfilterme.json', 'w'), indent=1, ensure_ascii=False)
+    json.dump(geo, open(f'{WORK}/geo_{NAME}.json', 'w'), indent=1, ensure_ascii=False)
 
     # nahled s knoby
     prev = img.copy()
@@ -149,7 +159,7 @@ def build():
         x0 = int(round(ax * sx - spr.shape[1] / 2)); y0 = int(round(AXY * sy - spr.shape[0] / 2))
         al = rs[..., 3:4].astype(np.float32) / 255
         prev[y0:y0 + rs.shape[0], x0:x0 + rs.shape[1]] = prev[y0:y0 + rs.shape[0], x0:x0 + rs.shape[1]] * (1 - al) + rs[..., :3] * al
-    cv2.imwrite('/tmp/claude-0/-home-claude/6fa62de7-c282-503f-ae0f-69c1e5902034/scratchpad/t/xfme_prev.png', prev.astype(np.uint8))
+    os.makedirs('/tmp/claude-0/t', exist_ok=True); cv2.imwrite(f'/tmp/claude-0/t/{NAME}_prev.png', prev.astype(np.uint8))
 
 
 if __name__ == '__main__':

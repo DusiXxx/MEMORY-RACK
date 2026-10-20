@@ -173,7 +173,7 @@ void GroupTabs::paint (juce::Graphics& g)
 
     if (status.isNotEmpty())
     {
-        auto sr = getLocalBounds().withTrimmedLeft (addRect.getRight() + 16).reduced (8, 0);
+        auto sr = getLocalBounds().withTrimmedLeft (addRect.getRight() + 16).withTrimmedRight (reservedRight).reduced (8, 0);
         g.setColour (statusColour); g.setFont (font (13.0f, true));
         g.drawFittedText (status, sr, juce::Justification::centredRight, 1);
     }
@@ -900,7 +900,11 @@ void ReviewPanel::paint (juce::Graphics& g)
         auto top = row.removeFromTop (20.0f);
         g.setColour (it.failed ? kAccent : kText); g.setFont (font (13.0f, true));
         String head = it.title + ":  " + (it.failed ? it.message : U ("přečteno ") + String (it.read) + "/" + String (it.readable));
-        if (! it.failed && it.unconfirmed > 0) head << U ("  ·  modré = z fotky, zkontroluj a potvrď");
+        if (! it.failed) head << (it.manual ? U ("  ·  zarovnáno ručně") : U ("  ·  zarovnáno automaticky"));
+        if (it.tooSmall > 0)    head << U ("  ·  ") << it.tooSmall << U (" moc malých – vyfoť zblízka");
+        if (it.notVisible > 0)  head << U ("  ·  ") << it.notVisible << U (" mimo fotku");
+        if (it.unsupported > 0) head << U ("  ·  ") << it.unsupported << U (" se z fotky nečte");
+        if (! it.failed && it.unconfirmed > 0) head << U ("  ·  modré = zkontroluj a potvrď");
         g.drawText (head, top, juce::Justification::centredLeft);
         if (it.uncertain.isEmpty()) continue;
         g.setColour (kDim); g.setFont (font (12.5f));
@@ -925,4 +929,313 @@ void ReviewPanel::paint (juce::Graphics& g)
 void ReviewPanel::mouseUp (const juce::MouseEvent& e)
 {
     for (auto& l : links) if (l.r.contains (e.position)) { if (onOpen) onOpen (l.instance, l.control); return; }
+}
+
+//==============================================================================
+// HardwareBrowser
+//==============================================================================
+namespace
+{
+const char* const kKinds[][2] = { { "", "Vše" }, { "compressor", "Kompresory" }, { "eq", "Ekvalizéry" }, { "preamp", "Předzesilovače" },
+                                  { "exciter", "Exciter / saturace" }, { "transient", "Tvarování transientů" }, { "patchbay", "Patchbaye" }, { "other", "Ostatní / vlastní" } };
+String kindName (const String& k)
+{
+    for (auto& e : kKinds) if (k == e[0] && k.isNotEmpty()) return String::fromUTF8 (e[1]);
+    return String::fromUTF8 ("ostatní");
+}
+String formatShort (const rm::DeviceProfile& p)
+{
+    if (p.isPatchbay()) return "patchbay";
+    if (p.formFactor.startsWith ("500")) return String::fromUTF8 ("500 · ") + String (juce::jmax (1, p.slots500)) + (p.slots500 == 1 ? " slot" : String::fromUTF8 (" sloty"));
+    return p.formFactor.replace ("rack, ", "").replace ("19\" ", "19\" ");
+}
+}
+
+HardwareBrowser::HardwareBrowser()
+{
+    search.setTextToShowWhenEmpty (U ("Hledat výrobce nebo model…"), kDim);
+    search.setColour (juce::TextEditor::backgroundColourId, kField);
+    search.setColour (juce::TextEditor::textColourId, kText);
+    search.onTextChange = [this] { refresh(); };
+    for (int i = 0; i < (int) (sizeof (kKinds) / sizeof (kKinds[0])); ++i) kindBox.addItem (String::fromUTF8 (kKinds[i][1]), i + 1);
+    kindBox.setSelectedId (1, juce::dontSendNotification);
+    formatBox.addItem (U ("Všechny formáty"), 1); formatBox.addItem (U ("500 moduly"), 2); formatBox.addItem (U ("19\" rack"), 3); formatBox.addItem (U ("Patchbaye"), 4);
+    formatBox.setSelectedId (1, juce::dontSendNotification);
+    kindBox.onChange = [this] { refresh(); };
+    formatBox.onChange = [this] { refresh(); };
+    list.setModel (this);
+    list.setRowHeight (40);
+    list.setColour (juce::ListBox::backgroundColourId, Colour (0xff121417));
+    style (addButton, U ("Přidat"), kOk);
+    style (customButton, U ("Vlastní přístroj…"));
+    style (duplicateButton, U ("Duplikovat jako vlastní"));
+    style (deleteButton, U ("Smazat vlastní…"));
+    style (closeButton, U ("Zavřít"));
+    addButton.onClick = [this] { if (onAdd && selectedId().isNotEmpty()) onAdd (selectedId()); };
+    customButton.onClick = [this] { if (onCustom) onCustom(); };
+    duplicateButton.onClick = [this] { if (onDuplicate && selectedId().isNotEmpty()) onDuplicate (selectedId()); };
+    deleteButton.onClick = [this] { if (onDelete && selectedId().isNotEmpty()) onDelete (selectedId()); };
+    closeButton.onClick = [this] { setVisible (false); };
+    for (juce::Component* c : { (juce::Component*) &search, (juce::Component*) &kindBox, (juce::Component*) &formatBox, (juce::Component*) &list,
+                                (juce::Component*) &addButton, (juce::Component*) &customButton, (juce::Component*) &duplicateButton,
+                                (juce::Component*) &deleteButton, (juce::Component*) &closeButton })
+        addAndMakeVisible (c);
+    setWantsKeyboardFocus (true);
+}
+
+void HardwareBrowser::open (const juce::StringArray& recentIds, const String& targetName)
+{
+    recent = recentIds; target = targetName;
+    addButton.setButtonText (U ("Přidat do: ") + targetName);
+    refresh();
+    setVisible (true); toFront (true);
+    search.grabKeyboardFocus();
+}
+
+void HardwareBrowser::refresh()
+{
+    const auto prevSel = selectedId();
+    shown.clear();
+    const auto words = juce::StringArray::fromTokens (search.getText().toLowerCase(), " ", "");
+    const String kind = kKinds[juce::jmax (0, kindBox.getSelectedId() - 1)][0];
+    const int fmt = formatBox.getSelectedId();
+    for (auto& p : rm::profiles())
+    {
+        if (p.hidden || p.id == "elysia.xfilter.500") continue;
+        if (kind.isNotEmpty() && p.kind != kind) continue;
+        if (fmt == 2 && ! p.formFactor.startsWith ("500")) continue;
+        if (fmt == 3 && (p.formFactor.startsWith ("500") || p.isPatchbay())) continue;
+        if (fmt == 4 && ! p.isPatchbay()) continue;
+        const auto hay = (p.name + " " + p.manufacturer + " " + p.id + " " + kindName (p.kind) + " " + p.formFactor).toLowerCase();
+        bool ok = true;
+        for (auto& w : words) if (w.isNotEmpty() && ! hay.contains (w)) ok = false;
+        if (ok) shown.push_back (&p);
+    }
+    // nedavno pouzite nahore, pak podle vyrobce a nazvu
+    std::stable_sort (shown.begin(), shown.end(), [this] (const rm::DeviceProfile* a, const rm::DeviceProfile* b)
+    {
+        const int ra = recent.indexOf (a->id), rb = recent.indexOf (b->id);
+        if ((ra >= 0) != (rb >= 0)) return ra >= 0;
+        if (ra >= 0 && rb >= 0) return ra < rb;
+        return (a->manufacturer + a->name).compareNatural (b->manufacturer + b->name) < 0;
+    });
+    list.updateContent();
+    list.repaint();
+    int sel = 0;
+    for (int i = 0; i < (int) shown.size(); ++i) if (shown[(size_t) i]->id == prevSel) sel = i;
+    if (! shown.empty()) list.selectRow (sel); else selectedRowsChanged (-1);
+}
+
+juce::StringArray HardwareBrowser::visibleIds() const
+{
+    juce::StringArray r;
+    for (auto* p : shown) r.add (p->id);
+    return r;
+}
+
+void HardwareBrowser::select (const String& id)
+{
+    for (int i = 0; i < (int) shown.size(); ++i) if (shown[(size_t) i]->id == id) list.selectRow (i);
+}
+
+String HardwareBrowser::selectedId() const
+{
+    const int r = list.getSelectedRow();
+    return r >= 0 && r < (int) shown.size() ? shown[(size_t) r]->id : String();
+}
+
+int HardwareBrowser::getNumRows()   { return (int) shown.size(); }
+
+void HardwareBrowser::paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected)
+{
+    if (row < 0 || row >= (int) shown.size()) return;
+    auto& p = *shown[(size_t) row];
+    g.fillAll (selected ? Colour (0xff2c313a) : Colour (0xff121417));
+    if (recent.contains (p.id)) { g.setColour (kAccent); g.fillRect (0, 6, 3, h - 12); }
+    g.setColour (kText); g.setFont (font (14.0f, true));
+    g.drawText (p.name, 10, 3, w - 20, 20, juce::Justification::centredLeft);
+    g.setColour (kDim); g.setFont (font (12.0f));
+    String sub = formatShort (p) + U ("  ·  ") + kindName (p.kind);
+    if (p.isUser()) sub << U ("  ·  vlastní");
+    else if (p.origin == "library") sub << U ("  ·  z knihovny");
+    if (! p.layoutVerified) sub << U ("  ·  rozmístění orientační");
+    g.drawText (sub, 10, 21, w - 20, 16, juce::Justification::centredLeft);
+}
+
+void HardwareBrowser::selectedRowsChanged (int)
+{
+    const auto id = selectedId();
+    auto* p = rm::findProfile (id);
+    preview = p != nullptr ? rm::loadAsset (p->image) : juce::Image();
+    addButton.setEnabled (p != nullptr);
+    duplicateButton.setEnabled (p != nullptr && ! p->isPatchbay());
+    deleteButton.setEnabled (p != nullptr && p->isUser());
+    repaint();
+}
+
+void HardwareBrowser::listBoxItemDoubleClicked (int, const juce::MouseEvent&)   { if (onAdd && selectedId().isNotEmpty()) onAdd (selectedId()); }
+
+void HardwareBrowser::resized()
+{
+    card = getLocalBounds().reduced (juce::jmax (12, getWidth() / 20), juce::jmax (12, getHeight() / 20));
+    auto b = card.reduced (14);
+    auto top = b.removeFromTop (30);
+    closeButton.setBounds (top.removeFromRight (80)); top.removeFromRight (8);
+    formatBox.setBounds (top.removeFromRight (150)); top.removeFromRight (6);
+    kindBox.setBounds (top.removeFromRight (170)); top.removeFromRight (6);
+    search.setBounds (top);
+    b.removeFromTop (10);
+    auto bottom = b.removeFromBottom (32);
+    b.removeFromBottom (8);
+    addButton.setBounds (bottom.removeFromRight (220)); bottom.removeFromRight (6);
+    customButton.setBounds (bottom.removeFromLeft (150)); bottom.removeFromLeft (6);
+    duplicateButton.setBounds (bottom.removeFromLeft (180)); bottom.removeFromLeft (6);
+    deleteButton.setBounds (bottom.removeFromLeft (130));
+    list.setBounds (b.removeFromLeft (juce::jmax (260, b.getWidth() * 2 / 5)));
+    b.removeFromLeft (12);
+    previewArea = b.removeFromTop (juce::jmin (b.getHeight() / 2, 260));
+    b.removeFromTop (8);
+    detailArea = b;
+}
+
+void HardwareBrowser::paint (juce::Graphics& g)
+{
+    g.fillAll (Colour (0xc0000000));
+    g.setColour (Colour (0xff17191d)); g.fillRoundedRectangle (card.toFloat(), 8.0f);
+    g.setColour (kAccent.withAlpha (0.6f)); g.drawRoundedRectangle (card.toFloat(), 8.0f, 1.2f);
+    auto* p = rm::findProfile (selectedId());
+    if (p == nullptr)
+    {
+        g.setColour (kDim); g.setFont (font (14.0f));
+        g.drawText (U ("Nic nenalezeno. Přístroj, který tu není, přidáš jako vlastní."), detailArea, juce::Justification::centredTop);
+        return;
+    }
+    g.setColour (Colour (0xff0b0c0e)); g.fillRect (previewArea);
+    if (preview.isValid())
+        g.drawImage (preview, previewArea.reduced (6).toFloat(), juce::RectanglePlacement::centred);
+    else
+    {
+        // vlastni pristroj: nahled se nakresli schematicky
+        PanelView pv; rm::Snapshot empty;
+        const float k = juce::jmin ((previewArea.getWidth() - 12) / p->w, (previewArea.getHeight() - 12) / p->h);
+        pv.setBounds (0, 0, juce::jmax (10, (int) (p->w * k)), juce::jmax (10, (int) (p->h * k)));
+        pv.setData (p, &empty, p->id);
+        auto img = pv.createComponentSnapshot (pv.getLocalBounds(), true, 1.0f);
+        g.drawImage (img, previewArea.reduced (6).toFloat(), juce::RectanglePlacement::centred);
+    }
+    int unverified = 0;
+    for (auto& c : p->controls) if (! c.verified) ++unverified;
+    juce::AttributedString as;
+    as.setWordWrap (juce::AttributedString::byWord);
+    as.append (p->name + "\n", font (17.0f, true), kText);
+    as.append (U ("Výrobce: ") + p->manufacturer + U ("   ·   Formát: ") + formatShort (*p) + U ("   ·   Typ: ") + kindName (p->kind) + "\n", font (13.0f), kText);
+    if (p->isPatchbay())
+        as.append (String (p->patchbay.channels * 2) + U (" bodů. ") + p->patchbay.modeHow + U (" Přidá se na záložku PATCHBAY.\n"), font (13.0f), kText.withAlpha (0.85f));
+    else
+        as.append (String ((int) p->controls.size()) + U (" ovladačů") + (unverified > 0 ? U (", z toho ") + String (unverified) + U (" s neověřeným rozsahem") : String()) + "\n", font (13.0f), kText.withAlpha (0.85f));
+    as.append (String (p->layoutVerified ? U ("Rozmístění: ověřené podle podkladů výrobce.") : U ("Rozmístění: orientační (neověřené na fotce).")) + "\n",
+               font (13.0f), p->layoutVerified ? kOk.brighter (0.4f) : kAccent);
+    bool reads = false;
+    for (auto& c : p->controls) reads = reads || c.read.isNotEmpty();
+    as.append (String (reads ? U ("Čtení z fotky: ano.") : U ("Čtení z fotky: zatím ne (nastavuje se ručně).")) + "\n", font (13.0f), kText.withAlpha (0.85f));
+    if (p->imageNote.isNotEmpty()) as.append (U ("Obrázek: ") + p->imageNote + "\n", font (12.5f), kDim);
+    if (! p->sources.isEmpty()) as.append (U ("Zdroje: ") + p->sources.joinIntoString ("; ") + "\n", font (12.5f), kDim);
+    for (auto& q : p->openQuestions) as.append (U ("• ") + q + "\n", font (12.5f), kAccent.withAlpha (0.9f));
+    juce::TextLayout tl; tl.createLayout (as, (float) detailArea.getWidth());
+    tl.draw (g, detailArea.toFloat());
+}
+
+bool HardwareBrowser::keyPressed (const juce::KeyPress& k)
+{
+    if (k == juce::KeyPress::escapeKey) { setVisible (false); return true; }
+    return false;
+}
+
+void HardwareBrowser::mouseUp (const juce::MouseEvent& e)   { if (! card.contains (e.getPosition())) setVisible (false); }
+
+//==============================================================================
+// CustomHardwareDialog
+//==============================================================================
+CustomHardwareDialog::CustomHardwareDialog()
+{
+    for (auto* t : { &name, &maker, &controls })
+    {
+        t->setColour (juce::TextEditor::backgroundColourId, kField);
+        t->setColour (juce::TextEditor::textColourId, kText);
+        addAndMakeVisible (*t);
+    }
+    name.setTextToShowWhenEmpty (U ("Model (např. Distressor EL8)"), kDim);
+    maker.setTextToShowWhenEmpty (U ("Výrobce (např. Empirical Labs)"), kDim);
+    controls.setMultiLine (true, false);
+    controls.setReturnKeyStartsNewLine (true);
+    controls.setTextToShowWhenEmpty (U ("Jeden ovladač na řádek:\nINPUT\nATTACK | 11      (11 poloh)\nRATIO | 1:1/2:1/4:1/10:1   (přepínač)\nBYPASS | on/off  (tlačítko)"), kDim);
+    format.addItem (U ("19\" rack 1U"), 1); format.addItem (U ("19\" rack 2U"), 2); format.addItem (U ("19\" rack 3U"), 3);
+    format.addItem (U ("500 modul, 1 slot"), 4); format.addItem (U ("500 modul, 2 sloty"), 5);
+    format.setSelectedId (1, juce::dontSendNotification);
+    addAndMakeVisible (format);
+    style (create, U ("Vytvořit"), kOk);
+    style (cancel, U ("Zrušit"));
+    cancel.onClick = [this] { setVisible (false); };
+    create.onClick = [this]
+    {
+        auto p = build();
+        if (p.name.isEmpty() || p.controls.empty()) return;
+        if (onCreate) onCreate (p);
+    };
+    addAndMakeVisible (create); addAndMakeVisible (cancel);
+}
+
+void CustomHardwareDialog::open (const rm::DeviceProfile* base)
+{
+    name.clear(); maker.clear(); controls.clear();
+    if (base != nullptr)
+    {
+        name.setText (base->name + U (" (vlastní)")); maker.setText (base->manufacturer);
+        juce::StringArray lines;
+        for (auto& c : base->controls)
+        {
+            String l = c.name;
+            if (c.type == ControlType::button) l << " | on/off";
+            else if (c.type == ControlType::selector || (c.type == ControlType::stepped && c.options.size() == c.steps)) l << " | " << c.options.joinIntoString ("/");
+            else if (c.type == ControlType::stepped) l << " | " << c.steps;
+            lines.add (l);
+        }
+        controls.setText (lines.joinIntoString ("\n"));
+        format.setSelectedId (base->formFactor.startsWith ("500") ? (base->slots500 >= 2 ? 5 : 4) : juce::jlimit (1, 3, juce::roundToInt (base->h / 221.0f)));
+    }
+    setVisible (true); toFront (true);
+    name.grabKeyboardFocus();
+}
+
+rm::DeviceProfile CustomHardwareDialog::build() const
+{
+    const int f = format.getSelectedId();
+    const String fmt = f == 4 ? "500:1" : f == 5 ? "500:2" : "19:" + String (f);
+    return rm::makeCustomProfile (name.getText(), maker.getText(), fmt, juce::StringArray::fromLines (controls.getText()));
+}
+
+void CustomHardwareDialog::resized()
+{
+    card = juce::Rectangle<int> (juce::jmin (getWidth() - 24, 620), juce::jmin (getHeight() - 24, 460)).withCentre (getLocalBounds().getCentre());
+    auto b = card.reduced (16);
+    b.removeFromTop (28);
+    auto row = b.removeFromTop (30);
+    name.setBounds (row.removeFromLeft (row.getWidth() / 2 - 4)); row.removeFromLeft (8); maker.setBounds (row);
+    b.removeFromTop (8);
+    format.setBounds (b.removeFromTop (28).removeFromLeft (220));
+    b.removeFromTop (8);
+    auto bottom = b.removeFromBottom (32);
+    b.removeFromBottom (8);
+    controls.setBounds (b);
+    cancel.setBounds (bottom.removeFromRight (90)); bottom.removeFromRight (6);
+    create.setBounds (bottom.removeFromRight (120));
+}
+
+void CustomHardwareDialog::paint (juce::Graphics& g)
+{
+    g.fillAll (Colour (0xc0000000));
+    g.setColour (Colour (0xff17191d)); g.fillRoundedRectangle (card.toFloat(), 8.0f);
+    g.setColour (kAccent.withAlpha (0.6f)); g.drawRoundedRectangle (card.toFloat(), 8.0f, 1.2f);
+    g.setColour (kText); g.setFont (font (15.0f, true));
+    g.drawText (U ("Vlastní přístroj (panel se nakreslí schematicky; stupnice se ukládají jako polohy)"), card.reduced (16).removeFromTop (24), juce::Justification::centredLeft);
 }

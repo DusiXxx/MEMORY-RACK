@@ -73,6 +73,9 @@ std::vector<DeviceProfile> parseProfiles (const juce::var& root, const String& o
             DeviceProfile p;
             p.origin = origin;
             p.category = str (v, "category");
+            p.kind = str (v, "kind");
+            p.slots500 = (int) v.getProperty ("slots500", 0);
+            if (p.slots500 <= 0 && str (v, "formFactor").startsWith ("500")) p.slots500 = 2;
             auto pb = v.getProperty ("patchbay", juce::var());
             if (pb.getDynamicObject() != nullptr)
             {
@@ -149,10 +152,170 @@ std::vector<DeviceProfile> loadProfiles()
 }
 }
 
-const std::vector<DeviceProfile>& profiles()
+juce::File userProfilesDir()
 {
-    static const std::vector<DeviceProfile> all = loadProfiles();
+    return hardwareLibraryDir().getSiblingFile ("UserHardware");     // mimo Hardware/ (to prepisuje aktualizace knihovny)
+}
+
+namespace
+{
+std::vector<DeviceProfile> loadUserProfiles()
+{
+    std::vector<DeviceProfile> out;
+    for (auto& f : userProfilesDir().findChildFiles (juce::File::findFiles, false, "*.json"))
+    {
+        juce::var v;
+        if (f.getSize() > 2 * 1024 * 1024 || juce::JSON::parse (f.loadFileAsString(), v).failed()) continue;
+        juce::Array<juce::var> one; one.add (v);
+        auto* o = new juce::DynamicObject(); o->setProperty ("profiles", one);
+        for (auto& p : parseProfiles (juce::var (o), "user")) out.push_back (p);
+    }
+    return out;
+}
+
+std::vector<DeviceProfile>& storage()
+{
+    static std::vector<DeviceProfile> all = []
+    {
+        auto v = loadProfiles();
+        for (auto& u : loadUserProfiles())
+            if (std::none_of (v.begin(), v.end(), [&] (const DeviceProfile& p) { return p.id == u.id; })) v.push_back (u);
+        v.reserve (4000);      // ukazatele na profily se nesmi zneplatnit (vlastni pristroje se pridavaji za behu)
+        return v;
+    }();
     return all;
+}
+}
+
+const std::vector<DeviceProfile>& profiles()   { return storage(); }
+
+juce::var controlToVar (const ControlDef& c)
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("id", c.id); o->setProperty ("name", c.name); o->setProperty ("group", c.group);
+    o->setProperty ("type", c.type == ControlType::stepped ? "stepped" : c.type == ControlType::selector ? "selector" : c.type == ControlType::button ? "button" : "knob");
+    if (c.steps > 0) o->setProperty ("steps", c.steps);
+    if (! c.options.isEmpty()) { juce::Array<juce::var> a; for (auto& x : c.options) a.add (x); o->setProperty ("options", a); }
+    o->setProperty ("minLabel", c.minLabel); o->setProperty ("maxLabel", c.maxLabel); o->setProperty ("note", c.note);
+    o->setProperty ("verified", c.verified);
+    o->setProperty ("x", c.x); o->setProperty ("y", c.y); o->setProperty ("r", c.r);
+    o->setProperty ("angleMin", c.angleMin); o->setProperty ("angleMax", c.angleMax);
+    auto* d = new juce::DynamicObject();
+    d->setProperty ("kind", c.draw.kind); d->setProperty ("style", c.draw.style);
+    if (! c.draw.points.empty()) { juce::Array<juce::var> a; for (auto& p : c.draw.points) { juce::Array<juce::var> q; q.add (p.x); q.add (p.y); a.add (q); } d->setProperty ("points", a); }
+    if (! c.draw.map.empty()) { juce::Array<juce::var> a; for (auto m : c.draw.map) a.add (m); d->setProperty ("map", a); }
+    d->setProperty ("w", c.draw.w); d->setProperty ("h", c.draw.h);
+    d->setProperty ("colour", "#" + juce::String::toHexString ((int) (c.draw.colour & 0xffffff)).paddedLeft ('0', 6));
+    o->setProperty ("draw", juce::var (d));
+    return juce::var (o);
+}
+
+juce::var profileToVar (const DeviceProfile& p)
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("id", p.id); o->setProperty ("name", p.name); o->setProperty ("manufacturer", p.manufacturer);
+    o->setProperty ("formFactor", p.formFactor); o->setProperty ("kind", p.kind); o->setProperty ("category", p.category);
+    o->setProperty ("profileVersion", p.profileVersion); o->setProperty ("w", p.w); o->setProperty ("h", p.h);
+    o->setProperty ("image", p.image); o->setProperty ("imageNote", p.imageNote); o->setProperty ("layoutVerified", p.layoutVerified);
+    if (p.slots500 > 0) o->setProperty ("slots500", p.slots500);
+    juce::Array<juce::var> src; for (auto& x : p.sources) src.add (x); o->setProperty ("sources", src);
+    juce::Array<juce::var> oq; for (auto& x : p.openQuestions) oq.add (x); o->setProperty ("openQuestions", oq);
+    juce::Array<juce::var> cs; for (auto& c : p.controls) cs.add (controlToVar (c)); o->setProperty ("controls", cs);
+    return juce::var (o);
+}
+
+const DeviceProfile* saveUserProfile (const DeviceProfile& prof, String& error)
+{
+    auto& all = storage();
+    for (auto& p : all)
+        if (p.id == prof.id && ! p.isUser()) { error = "ID patri vestavenemu pristroji"; return nullptr; }
+    auto dir = userProfilesDir();
+    if (! dir.createDirectory()) { error = "nelze vytvorit " + dir.getFullPathName(); return nullptr; }
+    auto f = dir.getChildFile (prof.id.retainCharacters ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.") + ".json");
+    if (! f.replaceWithText (juce::JSON::toString (profileToVar (prof)), false, false, "\n")) { error = "zapis selhal"; return nullptr; }
+    auto copy = prof; copy.origin = "user"; copy.hidden = false;
+    for (auto& p : all) if (p.id == prof.id) { p = copy; return &p; }
+    if (all.size() + 1 >= all.capacity()) { error = "prilis mnoho profilu"; return nullptr; }
+    all.push_back (copy);
+    return &all.back();
+}
+
+bool hideUserProfile (const String& id)
+{
+    for (auto& p : storage())
+        if (p.id == id && p.isUser())
+        {
+            auto f = userProfilesDir().getChildFile (id.retainCharacters ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.") + ".json");
+            auto trash = hardwareLibraryDir().getSiblingFile ("Trash");
+            trash.createDirectory();
+            f.moveFileTo (trash.getChildFile ("profile_" + f.getFileNameWithoutExtension() + "_" + String (juce::Time::currentTimeMillis()) + ".json"));
+            p.hidden = true;
+            return true;
+        }
+    return false;
+}
+
+// Vlastni pristroj z jednoducheho popisu: radek = ovladac. "NAZEV" = knob, "NAZEV | 11" = 11 poloh,
+// "NAZEV | A/B/C" = prepinac, "NAZEV | on/off" = tlacitko. Panel se kresli (bez fotky).
+DeviceProfile makeCustomProfile (const String& name, const String& manufacturer, const String& format, const juce::StringArray& lines)
+{
+    DeviceProfile p;
+    p.name = name.trim(); p.manufacturer = manufacturer.trim();
+    p.id = "user." + (manufacturer + "-" + name).toLowerCase().retainCharacters ("abcdefghijklmnopqrstuvwxyz0123456789- ").trim().replaceCharacter (' ', '-');
+    p.origin = "user"; p.kind = "other"; p.layoutVerified = false; p.profileVersion = 1;
+    p.sources.add ("vlastni definice uzivatele");
+    p.openQuestions.add ("Vlastni pristroj: ovladace a stupnice zadal uzivatel, panel je schematicky.");
+    const bool is500 = format.startsWith ("500");
+    const int units = juce::jmax (1, format.fromFirstOccurrenceOf (":", false, false).getIntValue());
+    if (is500) { p.formFactor = "500 series, " + String (units) + " slot"; p.slots500 = units; p.w = 450.0f * units; p.h = 1576; }
+    else       { p.formFactor = "19\" rack, " + String (units) + "U"; p.w = 2400; p.h = 221.0f * units; }
+    juce::StringArray rows;
+    for (auto& l : lines) if (l.trim().isNotEmpty()) rows.add (l.trim());
+    const int n = juce::jmax (1, rows.size());
+    const int perLine = is500 ? juce::jmax (1, units) : juce::jmax (1, (n + units - 1) / units);
+    const int lineCount = (n + perLine - 1) / perLine;
+    juce::StringArray used;
+    for (int i = 0; i < rows.size(); ++i)
+    {
+        ControlDef c;
+        const auto label = rows[i].upToFirstOccurrenceOf ("|", false, false).trim();
+        const auto spec = rows[i].fromFirstOccurrenceOf ("|", false, false).trim();
+        c.name = label;
+        c.id = label.toLowerCase().retainCharacters ("abcdefghijklmnopqrstuvwxyz0123456789");
+        if (c.id.isEmpty()) c.id = "c" + String (i + 1);
+        while (used.contains (c.id)) c.id << "x";
+        used.add (c.id);
+        const int row = i / perLine, col = i % perLine;
+        const int inRow = juce::jmin (perLine, n - row * perLine);
+        if (is500) { c.x = p.w * (col + 0.5f) / (float) juce::jmax (1, inRow); c.y = 180.0f + (p.h - 400.0f) * (row + 0.5f) / (float) lineCount; }
+        else       { c.x = 200.0f + (p.w - 400.0f) * (col + 0.5f) / (float) inRow; c.y = p.h * (row + 0.5f) / (float) lineCount; }
+        const float cell = is500 ? juce::jmin (p.w / (float) juce::jmax (1, inRow), (p.h - 400.0f) / (float) lineCount)
+                                 : juce::jmin ((p.w - 400.0f) / (float) inRow, p.h / (float) lineCount);
+        c.r = juce::jlimit (24.0f, 110.0f, cell * 0.28f);
+        c.verified = false;
+        if (spec.equalsIgnoreCase ("on/off") || spec.equalsIgnoreCase ("button") || spec.equalsIgnoreCase ("tlacitko"))
+        {
+            c.type = ControlType::button;
+            c.draw.kind = "vbuttons"; c.draw.points.push_back ({ c.x, c.y }); c.draw.w = c.r * 1.6f; c.draw.h = c.r * 1.1f;
+            c.draw.map = { -1, 0 }; c.draw.colour = 0xffff3b2a;
+        }
+        else if (spec.containsChar ('/'))
+        {
+            c.type = ControlType::selector;
+            c.options = juce::StringArray::fromTokens (spec, "/", "");
+            c.options.trim(); c.options.removeEmptyStrings();
+            c.angleMin = -60; c.angleMax = 60;
+            c.draw.kind = "vknob"; c.draw.style = "chicken"; c.draw.colour = 0xff202020;
+        }
+        else if (spec.getIntValue() >= 2)
+        {
+            c.type = ControlType::stepped; c.steps = juce::jmin (64, spec.getIntValue());
+            c.draw.kind = "vknob"; c.draw.style = "small"; c.draw.colour = 0xff2a2a2a;
+        }
+        else { c.type = ControlType::knob; c.draw.kind = "vknob"; c.draw.style = "small"; c.draw.colour = 0xff2a2a2a; }
+        p.controls.push_back (c);
+    }
+    return p;
 }
 
 const DeviceProfile* findProfile (const String& id)

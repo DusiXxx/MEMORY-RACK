@@ -28,7 +28,7 @@ public:
     void setData (const rm::DeviceProfile* profile, rm::Snapshot* snapshot, const juce::String& instanceId);
     const juce::String& getInstanceId() const    { return instanceId; }
     void setShowValues (bool);
-    void setPhoto (const juce::Image& rectified, bool show);     // fotka uzivatele narovnana na panel
+    void setPhoto (const juce::Image& rectified, bool show, float alpha = 1.0f);     // fotka uzivatele narovnana na panel (alpha < 1 = vrstva pres kresbu)
     const rm::DeviceProfile* getProfile() const   { return profile; }
     void setFocus (juce::Rectangle<float> profileArea)   { focus = profileArea; updateTransform(); repaint(); }   // detail: jen cast panelu
     static bool highContrast;                    // vyrazne ukazatele (cerny obrys + zluta rucicka)
@@ -79,6 +79,7 @@ private:
     float scale = 1.0f;
     juce::Rectangle<float> panel, focus;
     bool showValues = false, showPhoto = false, dragOver = false;
+    float photoAlpha = 1.0f;
     juce::Image background, scaledBackground, photo;
     std::map<juce::String, juce::Image> sprites;
 
@@ -174,6 +175,7 @@ public:
     std::vector<Tab> tabs;
     juce::String selected, status;
     juce::Colour statusColour { 0xff8b929e };
+    int reservedRight = 0;               // misto vpravo pro tlacitka editoru
     std::function<void (const juce::String&)> onSelect, onMenu;
     std::function<void()> onAdd;
     void paint (juce::Graphics&) override;
@@ -273,7 +275,7 @@ class ReviewPanel : public juce::Component
 {
 public:
     ReviewPanel();
-    struct Item { juce::String instance, title, message; int read = 0, readable = 0, unconfirmed = 0; juce::StringArray uncertain; bool failed = false; };
+    struct Item { juce::String instance, title, message; int read = 0, readable = 0, unconfirmed = 0, notVisible = 0, tooSmall = 0, unsupported = 0; juce::StringArray uncertain; bool failed = false; bool manual = false; };
     void setItems (const std::vector<Item>&);
     const std::vector<Item>& getItems() const     { return items; }
     std::function<void (const juce::String& instance, const juce::String& controlId)> onOpen;
@@ -314,6 +316,71 @@ private:
 };
 
 //==============================================================================
+// Knihovna hardwaru: hledani, filtry, nahled panelu, detail (zdroje, overeni), pridani do skupiny
+class HardwareBrowser : public juce::Component, private juce::ListBoxModel
+{
+public:
+    HardwareBrowser();
+    void open (const juce::StringArray& recentIds, const juce::String& targetName);
+    void refresh();
+    juce::StringArray visibleIds() const;
+    void select (const juce::String& id);
+    juce::String selectedId() const;
+    std::function<void (const juce::String& profileId)> onAdd, onDuplicate, onDelete;
+    std::function<void()> onCustom;
+    void paint (juce::Graphics&) override;
+    void resized() override;
+    bool keyPressed (const juce::KeyPress&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    juce::TextEditor search;
+    juce::ComboBox kindBox, formatBox;
+    juce::ListBox list;
+    juce::TextButton addButton, customButton, duplicateButton, deleteButton, closeButton;
+private:
+    int getNumRows() override;
+    void paintListBoxItem (int row, juce::Graphics&, int w, int h, bool selected) override;
+    void selectedRowsChanged (int) override;
+    void listBoxItemDoubleClicked (int, const juce::MouseEvent&) override;
+    std::vector<const rm::DeviceProfile*> shown;
+    juce::StringArray recent;
+    juce::String target;
+    juce::Image preview;
+    juce::Rectangle<int> card, detailArea, previewArea;
+};
+
+//==============================================================================
+// Vlastni pristroj: nazev, vyrobce, format, ovladace (radek = ovladac)
+class CustomHardwareDialog : public juce::Component
+{
+public:
+    CustomHardwareDialog();
+    void open (const rm::DeviceProfile* base = nullptr);     // base = duplikovat existujici
+    std::function<void (const rm::DeviceProfile&)> onCreate;
+    rm::DeviceProfile build() const;
+    void paint (juce::Graphics&) override;
+    void resized() override;
+    juce::TextEditor name, maker, controls;
+    juce::ComboBox format;
+    juce::TextButton create, cancel;
+private:
+    juce::Rectangle<int> card;
+};
+
+//==============================================================================
+// Plocha s rackem (v posuvnem okne): panely, lunchbox, policka na fotky, patchbay
+class RackMemoryEditor;
+class RackContent : public juce::Component
+{
+public:
+    RackMemoryEditor* ed = nullptr;
+    void paint (juce::Graphics&) override;
+    void paintOverChildren (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+};
+
+//==============================================================================
 class RackMemoryEditor : public juce::AudioProcessorEditor,
                          public juce::FileDragAndDropTarget,
                          private juce::ChangeListener,
@@ -344,7 +411,17 @@ public:
     ControlDetail detail;
     ReviewPanel review;
     juce::TextButton photoButton;
+    HardwareBrowser browser;
+    CustomHardwareDialog customDialog;
+    void openBrowser();
+    void addHardware (const juce::String& profileId);
     juce::String statusText() const               { return tabs.status; }
+    PhotoSlot* slotFor (const juce::String& id) const   { auto it = slots.find (id); return it != slots.end() ? it->second.get() : nullptr; }
+    juce::Viewport viewport;
+    RackContent content;
+    void paintRack (juce::Graphics&);
+    void paintRackOver (juce::Graphics&);
+    void rackMouse (const juce::MouseEvent&, int phase);
     juce::Rectangle<int> getRackArea() const      { return rackArea; }
 
     // aktualizace z noveho balicku (Stazene / Plocha)
@@ -357,7 +434,8 @@ private:
 
     juce::TextEditor songEdit, noteEdit;
     juce::ComboBox snapshotBox;
-    juce::TextButton saveButton, undoButton, updateButton, valuesButton, menuButton;
+    juce::TextButton saveButton, undoButton, updateButton, valuesButton, menuButton, addHwButton, overlayButton;
+    juce::Slider overlaySlider;
     juce::Label tip;
 
     juce::StringArray order;                                     // aktualni poradi v racku
@@ -397,7 +475,7 @@ private:
     void timerCallback() override;
 
     void syncComponents();
-    void layoutRack (juce::Rectangle<int> area);
+    void layoutRack (juce::Rectangle<int> area, bool fitHeight);
     int rackHeight (int width, int availableHeight) const;
 
     void rebuildSnapshotBox();
@@ -410,9 +488,6 @@ private:
     void showAddMenu();
     void removeDevice (const juce::String& id);
     void showLunchboxMenu();
-    void mouseDown (const juce::MouseEvent&) override;
-    void mouseDrag (const juce::MouseEvent&) override;
-    void mouseUp (const juce::MouseEvent&) override;
     int slotAt (float x) const;                  // slot lunchboxu pod x (-1 = mimo)
 
     void doSave();
@@ -434,7 +509,7 @@ private:
                           bool top, bool left, bool bottom, bool right) override;
     } constrainer;
     void choosePhoto (const juce::String& deviceId);
-    void importPhoto (const juce::File&, const juce::String& deviceId);
+    void importPhoto (const juce::File&, const juce::String& deviceId, bool copyToLibrary = true);
     void refreshPhotos();
     void showError (const juce::String&);
     void showInfo (const juce::String&);

@@ -151,7 +151,7 @@ juce::StringArray RackMemoryProcessor::instancesOf (const rm::Snapshot& s) const
 
 String RackMemoryProcessor::snapshotTitle (const rm::Snapshot& s) const
 {
-    String t = s.project.isEmpty() ? String ("Bez nazvu") : s.project;
+    String t = s.project.isEmpty() ? String::fromUTF8 ("Bez názvu") : s.project;
     if (s.group.isNotEmpty())
         if (auto* g = studio.findGroup (s.group)) t << "  " << g->name;
     if (s.version.isNotEmpty()) t << "  " << s.version;
@@ -191,6 +191,7 @@ juce::Result RackMemoryProcessor::save()
     copy.values = working.valuesFor (copy.order);
     copy.cables = working.cables;
     copy.photos = working.photos;
+    copy.defs = rm::definitionsFor (copy);
     for (auto& kv : working.devicePhotos) if (copy.order.contains (kv.first)) copy.devicePhotos[kv.first] = kv.second;
     putLevels (copy, *this);
 
@@ -450,6 +451,51 @@ void RackMemoryProcessor::applyPreset (const String& deviceId, const rm::DeviceP
     markDirty();
 }
 
+juce::Result RackMemoryProcessor::moveDeviceToGroup (const String& id, const String& groupId)
+{
+    auto st = studio;
+    auto* from = st.findGroup (currentGroup);
+    auto* to = st.findGroup (groupId);
+    if (from == nullptr || to == nullptr || groupId == currentGroup) return juce::Result::fail ("?");
+    auto* item = from->layout.find (id);
+    if (item == nullptr) return juce::Result::fail ("?");
+    const auto model = item->model;
+    if (to->layout.find (id) == nullptr && to->layout.add (model, id).isEmpty()) return juce::Result::fail (String::fromUTF8 ("Do cílové skupiny ho nejde přidat."));
+    from->layout.remove (id);
+    return setStudio (st);       // hodnoty kusu se nemeni (klic = ID kusu)
+}
+
+juce::Result RackMemoryProcessor::replaceDevice (const String& id, const String& newModel, bool carry, String& newId)
+{
+    auto* oldProf = rm::profileForInstance (id);
+    auto* newProf = rm::findProfile (newModel);
+    if (oldProf == nullptr || newProf == nullptr || newProf->isPatchbay()) return juce::Result::fail ("?");
+    // 1) puvodni nastaveni skupiny jako verze (da se kdykoli nacist zpet)
+    if (working.numKnown (*oldProf) > 0 || ! working.valuesFor ({ id }).empty())
+    {
+        auto r = save();
+        if (r.failed()) return r;
+        renameSnapshot (loadedId, String::fromUTF8 ("před nahrazením ") + oldProf->name);
+    }
+    // 2) v racku misto stareho kusu novy (stejne misto)
+    auto lay = rack;
+    newId = studio.newInstanceId (newModel);
+    for (auto& it : lay.items)
+        if (it.id == id) { it.id = newId; it.model = newModel; }
+    // 3) polohy ovladacu se stejnym ID a stejnym poctem poloh (napr. xfilter ME -> xfilter 1U)
+    if (carry)
+        for (auto& c : newProf->controls)
+            if (auto* oc = oldProf->find (c.id))
+                if (oc->type == c.type && oc->numPositions() == c.numPositions())
+                {
+                    auto v = working.get (id, c.id);
+                    if (v.known) working.values[rm::valueKey (newId, c.id)] = v;
+                }
+    auto r = setRack (lay);
+    markDirty();
+    return r;
+}
+
 void RackMemoryProcessor::setCables (const std::vector<rm::Cable>& c)
 {
     if (c == working.cables) return;
@@ -646,10 +692,14 @@ String RackMemoryProcessor::buildStateJson() const
     o->setProperty ("dirty", dirty);
     o->setProperty ("showValues", showValues);
     o->setProperty ("highContrast", highContrast);
+    o->setProperty ("fitToWindow", fitToWindow);
+    o->setProperty ("photoOverlay", photoOverlay);
+    o->setProperty ("overlayOpacity", overlayOpacity);
     o->setProperty ("role", (int) role);
     o->setProperty ("linkGroup", linkGroup);
     o->setProperty ("gain", gainParam->get());
     o->setProperty ("working", working.toVar());
+    o->setProperty ("defs", rm::definitionsFor (working));
     o->setProperty ("studio", studio.toVar());        // kopie racku: kdyby na jinem Macu rack.json chybel
 
     // Kopie verzi teto skladby jde s projektem Logicu -> po presunu na jiny Mac
@@ -687,6 +737,9 @@ void RackMemoryProcessor::applyStateJson (const String& text)
     dirty      = (bool) v.getProperty ("dirty", false);
     showValues = (bool) v.getProperty ("showValues", false);
     highContrast = (bool) v.getProperty ("highContrast", false);
+    fitToWindow = (bool) v.getProperty ("fitToWindow", false);
+    photoOverlay = (bool) v.getProperty ("photoOverlay", false);
+    overlayOpacity = juce::jlimit (0.05f, 1.0f, (float) (double) v.getProperty ("overlayOpacity", 0.6));
     role       = (Role) juce::jlimit (0, 2, (int) v.getProperty ("role", 0));
     linkGroup  = juce::jlimit (1, 4, (int) v.getProperty ("linkGroup", 1));
     // gain z projektu: bez hlaseni hostiteli (nacteni projektu ho nesmi oznacit jako zmeneny)
@@ -747,6 +800,9 @@ void RackMemoryProcessor::applyStateJson (const String& text)
     }
     for (auto& kv : loadedByGroup) if (kv.second.isNotEmpty() && findSnapshot (kv.second) == nullptr) kv.second.clear();
     loadedByGroup[currentGroup] = loadedId;
+
+    // knihovna hardwaru se od ulozeni projektu zmenila? (hodnoty se nikdy tise neprevykladaji)
+    profileNotes = rm::checkDefinitions (v.getProperty ("defs", var()));
 
     // neulozene zmeny z minula (projekt se zavrel bez ulozeni)? Nabidnout, nikdy samo neprepsat.
     recovery = {};

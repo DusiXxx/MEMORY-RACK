@@ -1,0 +1,20 @@
+{
+ "note": "Pravda odectena okem z fotky v plnem rozliseni (20.10.2026). Uhly ve stupnich, 0 = 12 hodin, + = po smeru hodin. Tolerance 20 stupnu (odhad okem). Uvedeny jen ovladace, u kterych je poloha na fotce jasne videt.",
+ "photos": [
+  {
+   "file": "rack_full_phone_2026-10-20.jpg",
+   "conditions": "iPhone, cely rack najednou, tlumene teple svetlo, foceno shora (silna perspektiva, vysoke knoby), 2480x3307",
+   "tolerance": 20,
+   "devices": {
+    "spl.vitalizer.mk3t": { "angles": { "drive": -85, "bass": 75, "basscomp": -30, "midhi": -145, "process": -150, "lceq": 115, "intensity": 60, "expander": -45 } },
+    "elysia.xmax.500": { "angles": { "link": -140, "thr_mid": -120, "thr_side": -120, "thr_low": -90, "xfreq": -45, "release": 40, "tone": 150, "gain_mid": -5, "gain_side": 0, "gain_low": 45, "sclip": -75 },
+                         "positions": { "lowmo": 0, "punch": 0, "hitit": 0 } },
+    "elysia.nvelope.500": { "angles": { "ch1_attack": 140, "ch2_attack": 150, "ch1_freq_a": -30, "ch2_freq_a": -40, "ch1_sustain": 0, "ch2_sustain": -10, "ch1_freq_s": 120, "ch2_freq_s": 100 },
+                            "positions": { "autogain": 0, "ch2_fullrange": 1, "ch2_eqmode": 1, "ch2_on": 0, "link": 0, "ch1_fullrange": 1, "ch1_eqmode": 0 } },
+    "elysia.xfilter.1u": { "angles": { "ls_gain": 50, "ls_freq": -50, "lm_gain": 45, "lm_freq": -30, "hm_gain": 40, "hm_freq": -30, "hs_gain": 30, "hs_freq": -60 } },
+    "wesaudio.rhea": { "unknown": [ "input", "threshold", "output", "attack", "mix", "release" ],
+                       "positions": { "thd": 0, "scfilter": 0 } }
+   }
+  }
+ ]
+}

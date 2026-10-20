@@ -183,7 +183,7 @@ std::vector<Peak> findPeaks (const Plane& img, double rho, const Kernel& k)
 }
 
 //==============================================================================
-struct Anchor { const rm::ControlDef* c; cd p; cd q; bool found = false; float resp = 0; };
+struct Anchor { const rm::ControlDef* c; cd p; cd q; bool found = false; float resp = 0; double rho = 0; cd off { 0, 0 }; };
 
 struct Similarity { cd a { 1, 0 }, b { 0, 0 }; cd map (cd p) const { return a * p + b; } };
 
@@ -310,7 +310,7 @@ rm::ControlValue fromAngle (const rm::ControlDef& c, double angleDeg, double con
     const double slack = 10.0 / span;
     const double a = wrapDeg (angleDeg);
     double pos01;
-    if (a >= c.angleMin - 10.0 && a <= c.angleMax + 10.0) pos01 = juce::jlimit (0.0, 1.0, (a - c.angleMin) / span);
+    if (a >= c.angleMin - 16.0 && a <= c.angleMax + 16.0) pos01 = juce::jlimit (0.0, 1.0, (a - c.angleMin) / span);
     else { juce::ignoreUnused (rel, slack); v.known = false; return v; }
 
     v.known = v.confidence >= 0.30;
@@ -534,6 +534,143 @@ rm::ControlValue readLine (const Photo& ph, const rm::ControlDef& c, const Frame
     return fromAngle (c, angle, conf);
 }
 
+
+// SPL a podobne: bila ryska na cernem knobu. Knoby vycnivaji z panelu -> na fotce shora / zboku je cepicka
+// posunuta proti potisku (paralaxa). Smer rysky (jeji osa) na posunu nezavisi; ktery konec je "venku",
+// se pozna podle skutecneho stredu cepicky. Ten se spocita spolecne pro cely pristroj: osy rysek vsech knobu
+// prochazeji stredy svych cepicek, ktere jsou posunute o stejny vektor.
+struct LineSeg { bool ok = false; double mx = 0, my = 0, ax = 1, ay = 0, lo = 0, hi = 0, elong = 0, R = 1, score = 0; };
+
+std::vector<LineSeg> findLineSegs (const Photo& ph, const rm::ControlDef& c, const Frame& f)
+{
+    std::vector<LineSeg> cands;
+    LineSeg out;
+    const double R = c.readR > 0 ? c.readR : c.r;
+    out.R = R;
+    const double W = 1.45 * R;
+    const double step = juce::jmax (0.4, 0.6 / juce::jmax (0.05, f.scale()));
+    const int n = (int) std::floor (2 * W / step) + 1;
+    if (n < 8 || n > 600) return cands;
+    std::vector<float> v ((size_t) (n * n), -1.0f);
+    double mean = 0, sq = 0; int cnt = 0;
+    for (int iy = 0; iy < n; ++iy)
+        for (int ix = 0; ix < n; ++ix)
+        {
+            const double x = -W + ix * step, y = -W + iy * step;
+            if (x * x + y * y > W * W) continue;
+            const float g = ph.gray.bil (f.cx + f.j[0] * x + f.j[1] * y, f.cy + f.j[2] * x + f.j[3] * y);
+            v[(size_t) (iy * n + ix)] = g; mean += g; sq += g * g; ++cnt;
+        }
+    if (cnt < 80) return cands;
+    mean /= cnt;
+    const double sd = std::sqrt (juce::jmax (1e-9, sq / cnt - mean * mean));
+    const double thr = juce::jmax (mean + 2.2 * sd, mean + 0.10);
+    std::vector<int> comp ((size_t) (n * n), -1);
+    double bestScore = 0;
+    for (int start = 0; start < n * n; ++start)
+    {
+        if (v[(size_t) start] < thr || comp[(size_t) start] >= 0) continue;
+        std::vector<int> q { start }; comp[(size_t) start] = start;
+        for (size_t k = 0; k < q.size(); ++k)
+        {
+            const int ix = q[k] % n, iy = q[k] / n;
+            for (int dy = -1; dy <= 1; ++dy) for (int dx = -1; dx <= 1; ++dx)
+            {
+                const int jx = ix + dx, jy = iy + dy;
+                if (jx < 0 || jy < 0 || jx >= n || jy >= n) continue;
+                const int jj = jy * n + jx;
+                if (comp[(size_t) jj] < 0 && v[(size_t) jj] >= thr) { comp[(size_t) jj] = start; q.push_back (jj); }
+            }
+        }
+        if (q.size() < 4) continue;
+        double sw = 0, mx = 0, my = 0;
+        for (int id : q) { const double w = v[(size_t) id] - thr + 0.02; sw += w; mx += w * (-W + (id % n) * step); my += w * (-W + (id / n) * step); }
+        mx /= sw; my /= sw;
+        double sxx = 0, syy = 0, sxy = 0;
+        for (int id : q)
+        {
+            const double w = v[(size_t) id] - thr + 0.02, x = -W + (id % n) * step - mx, y = -W + (id / n) * step - my;
+            sxx += w * x * x; syy += w * y * y; sxy += w * x * y;
+        }
+        const double th = 0.5 * std::atan2 (2.0 * sxy, sxx - syy);
+        const double ax = std::cos (th), ay = std::sin (th);
+        double lo = 1e9, hi = -1e9;
+        for (int id : q) { const double t = (-W + (id % n) * step - mx) * ax + (-W + (id / n) * step - my) * ay; lo = juce::jmin (lo, t); hi = juce::jmax (hi, t); }
+        const double tr = sxx + syy, det = sxx * syy - sxy * sxy;
+        const double l1 = tr / 2 + std::sqrt (juce::jmax (0.0, tr * tr / 4 - det)), l2 = tr / 2 - std::sqrt (juce::jmax (0.0, tr * tr / 4 - det));
+        const double elong = l1 > 1e-9 ? 1.0 - std::sqrt (juce::jmax (0.0, l2 / l1)) : 0.0;
+        const double len = hi - lo;
+        if (len < 0.28 * R || len > 1.3 * R || elong < 0.55) continue;
+        const double score = len * elong;
+        cands.push_back ({ true, mx, my, ax, ay, lo, hi, elong, R, score });
+    }
+    juce::ignoreUnused (bestScore, out);
+    std::sort (cands.begin(), cands.end(), [] (const LineSeg& a, const LineSeg& b) { return a.score > b.score; });
+    if (cands.size() > 6) cands.resize (6);
+    return cands;
+}
+
+double axisResidual (const LineSeg& s, double sx, double sy)
+{
+    return std::abs (-s.ay * (sx - s.mx / s.R) + s.ax * (sy - s.my / s.R));
+}
+
+// spolecny posun cepicek (v jednotkach polomeru knobu) z os rysek: n_i . (S - M_i) = 0
+bool solveParallax (const std::vector<LineSeg>& segs, double& sx, double& sy)
+{
+    std::vector<const LineSeg*> ok;
+    for (auto& s : segs) if (s.ok) ok.push_back (&s);
+    if (ok.size() < 2) return false;
+    auto fit = [] (const std::vector<const LineSeg*>& use, double& x, double& y)
+    {
+        double a = 0, b = 0, c = 0, d = 0, e = 0;
+        for (auto* s : use)
+        {
+            const double nx = -s->ay, ny = s->ax, k = nx * s->mx / s->R + ny * s->my / s->R;
+            a += nx * nx; b += nx * ny; c += ny * ny; d += nx * k; e += ny * k;
+        }
+        const double det = a * c - b * b;
+        if (std::abs (det) < 1e-3 * (a + c) * (a + c)) return false;
+        x = (c * d - b * e) / det; y = (a * e - b * d) / det;
+        return true;
+    };
+    auto resid = [] (const LineSeg& s, double x, double y) { return std::abs (-s.ay * (x - s.mx / s.R) + s.ax * (y - s.my / s.R)); };
+    // robustne: vsechny dvojice, vyhrava ta, se kterou souhlasi nejvic rysek
+    int bestIn = 0; double bx = 0, by = 0;
+    for (size_t i = 0; i < ok.size(); ++i)
+        for (size_t j = i + 1; j < ok.size(); ++j)
+        {
+            double x, y;
+            if (! fit ({ ok[i], ok[j] }, x, y) || std::hypot (x, y) > 0.9) continue;
+            int in = 0; for (auto* s : ok) if (resid (*s, x, y) < 0.18) ++in;
+            if (in > bestIn) { bestIn = in; bx = x; by = y; }
+        }
+    if (bestIn < 2) return false;
+    std::vector<const LineSeg*> inl;
+    for (auto* s : ok) if (resid (*s, bx, by) < 0.18) inl.push_back (s);
+    if (inl.size() >= 2 && fit (inl, sx, sy) && std::hypot (sx, sy) <= 0.9) return true;
+    sx = bx; sy = by;
+    return true;
+}
+
+rm::ControlValue lineValue (const rm::ControlDef& c, const LineSeg& s, double sx, double sy)
+{
+    rm::ControlValue none; none.source = "recognized"; none.confidence = 0;
+    if (! s.ok) return none;
+    const double R = s.R, cx = sx * R, cy = sy * R;
+    // konce rysky
+    const double e1x = s.mx + s.ax * s.lo, e1y = s.my + s.ay * s.lo, e2x = s.mx + s.ax * s.hi, e2y = s.my + s.ay * s.hi;
+    const double d1 = std::hypot (e1x - cx, e1y - cy), d2 = std::hypot (e2x - cx, e2y - cy);
+    const double fx = d2 >= d1 ? e2x : e1x, fy = d2 >= d1 ? e2y : e1y;     // vnejsi konec
+    const double nearD = juce::jmin (d1, d2) / R, farD = juce::jmax (d1, d2) / R;
+    const double axisRes = std::abs (-s.ay * (cx - s.mx) + s.ax * (cy - s.my)) / R;   // osa rysky musi mirit do stredu cepicky
+    const double angle = std::atan2 (fx - cx, -(fy - cy)) * 180.0 / kPi;
+    double conf = juce::jlimit (0.0, 1.0, (s.elong - 0.55) / 0.3)
+                * juce::jlimit (0.0, 1.0, (farD - nearD - 0.15) / 0.35)
+                * juce::jlimit (0.0, 1.0, (0.35 - axisRes) / 0.2);
+    return fromAngle (c, angle, conf);
+}
+
 struct Hsv { double v, s; };
 Hsv sample (const Photo& ph, double x, double y, double radius)
 {
@@ -620,77 +757,130 @@ rm::ControlValue readRectGlow (const Photo& ph, const rm::ControlDef& c, const T
     return onOff (h.v > thr, std::abs (h.v - thr));
 }
 
-// Svitivost barevne LED v okoli bodu panelu (jas * sytost; bily potisk je jasny, ale bezbarvy)
+// Svitici LED: barva odpovida barve LED z profilu (modra, cervena, zelena...) a je vyrazne vic nez v okoli.
+// Teple svetlo v mistnosti barvi bily / stribrny panel do oranzova - proto barva LED, ne jen "sytost".
+double ledContrastAt (const Photo& ph, double px, double py, double r, juce::Colour col)
+{
+    const double H = col.getHue() * 360.0;
+    auto score = [&] (double x, double y)
+    {
+        const double R = ph.r.bil (x, y), G = ph.g.bil (x, y), B = ph.b.bil (x, y);
+        const double mx = juce::jmax (R, G, B), mn = juce::jmin (R, G, B);
+        if (mx < 1e-6 || mx - mn < 1e-6) return 0.0;
+        double h;
+        if (mx == R)      h = 60.0 * std::fmod ((G - B) / (mx - mn), 6.0);
+        else if (mx == G) h = 60.0 * ((B - R) / (mx - mn) + 2.0);
+        else              h = 60.0 * ((R - G) / (mx - mn) + 4.0);
+        if (h < 0) h += 360.0;
+        double dh = std::abs (h - H); if (dh > 180.0) dh = 360.0 - dh;
+        const double match = dh < 45.0 ? std::cos (dh / 45.0 * kPi * 0.5) : 0.0;
+        return mx * ((mx - mn) / mx) * match;
+    };
+    auto disc = [&] (double cx, double cy, double rad)
+    {
+        // svitici LED mivá prepaleny (bily) stred a barevnou auru -> horni ctvrtina bodu, ne prumer
+        std::vector<double> vals;
+        const double st = juce::jmax (0.6, rad / 3.0);
+        for (double dy = -rad; dy <= rad + 1e-9; dy += st)
+            for (double dx = -rad; dx <= rad + 1e-9; dx += st)
+                if (dx * dx + dy * dy <= rad * rad) vals.push_back (score (cx + dx, cy + dy));
+        if (vals.empty()) return 0.0;
+        std::sort (vals.begin(), vals.end());
+        return vals[vals.size() * 3 / 4];
+    };
+    // stred LED v malem okoli (nepresne zarovnani, paralaxa)
+    double best = -1, bx = px, by = py;
+    for (double dy = -1.2 * r; dy <= 1.2 * r + 1e-9; dy += juce::jmax (0.7, r / 2))
+        for (double dx = -1.2 * r; dx <= 1.2 * r + 1e-9; dx += juce::jmax (0.7, r / 2))
+        {
+            const double v = disc (px + dx, py + dy, r * 1.1);
+            if (v > best) { best = v; bx = px + dx; by = py + dy; }
+        }
+    std::vector<double> ring;
+    for (int i = 0; i < 20; ++i)
+    {
+        const double a = 2 * kPi * i / 20;
+        ring.push_back (score (bx + 2.6 * r * std::cos (a), by + 2.6 * r * std::sin (a)));
+    }
+    std::sort (ring.begin(), ring.end());
+    return best - ring[ring.size() / 2];
+}
+
 double ledLevel (const Photo& ph, const rm::ControlDef& c, const Transform& t, size_t i)
 {
     double px, py; t.map (c.draw.points[i].x, c.draw.points[i].y, px, py);
     double j[4]; t.jacobian (c.draw.points[i].x, c.draw.points[i].y, j);
     const double s = std::sqrt (std::abs (j[0] * j[3] - j[1] * j[2]));
-    const double r = juce::jmax (1.2, c.draw.ledR * s);
-    double best = 0;
-    for (double dy = -r; dy <= r + 1e-9; dy += juce::jmax (0.7, r / 2))
-        for (double dx = -r; dx <= r + 1e-9; dx += juce::jmax (0.7, r / 2))
-        {
-            const auto h = sample (ph, px + dx, py + dy, r * 0.8);
-            best = juce::jmax (best, h.v * juce::jmin (1.0, h.s * 1.6));
-        }
-    return best;
+    return ledContrastAt (ph, px, py, juce::jmax (1.2, c.draw.ledR * s), juce::Colour (c.draw.colour));
+}
+
+// prah svitivosti spolecny pro cely pristroj (fotky maji ruznou expozici; svitici LED je vyrazne nad ostatnimi)
+struct LedThreshold { double thr = 0.08; double max = 0; };
+LedThreshold ledThreshold (const std::vector<double>& all)
+{
+    LedThreshold t;
+    for (auto v : all) t.max = juce::jmax (t.max, v);
+    t.thr = juce::jmax (0.05, t.max * 0.5);
+    return t;
+}
+
+rm::ControlValue ledOnOff (double level, const LedThreshold& t)
+{
+    rm::ControlValue v; v.source = "recognized";
+    const double margin = std::abs (level - t.thr) / juce::jmax (0.03, t.thr);
+    v.confidence = juce::jlimit (0.0, 1.0, margin);
+    v.known = v.confidence >= 0.35;
+    v.pos = level > t.thr ? 1.0 : 0.0;
+    return v;
 }
 
 // WesAudio _RHEA: krouzek LED kolem enkoderu. Nevime jiste, jestli krouzek ukazuje jednu tecku nebo pas
-// (manual to neuvadi) -> umi oboje; cokoli jineho = nejiste (nezadano, ke kontrole).
-rm::ControlValue readLedRing (const Photo& ph, const rm::ControlDef& c, const Transform& t)
+// (manual to neuvadi) -> umi oboje; nic nesviti / cokoli jineho = nejiste (nezadano, ke kontrole).
+rm::ControlValue readLedRing (const std::vector<double>& lv, const rm::ControlDef& c, const LedThreshold& t)
 {
     rm::ControlValue v; v.source = "recognized";
-    const int n = (int) c.draw.points.size();
+    const int n = (int) lv.size();
     if (n < 2 || n != c.numPositions()) return v;
-    std::vector<double> lv;
-    for (int i = 0; i < n; ++i) lv.push_back (ledLevel (ph, c, t, (size_t) i));
     const double mx = *std::max_element (lv.begin(), lv.end());
-    if (mx < 0.30) return v;                                          // nic nesviti (vypnuto / tma)
-    const double thr = juce::jmax (0.24, mx * 0.55);
+    if (mx < t.thr || mx < 0.06) return v;                            // nic nesviti (vypnuto / zakryto knobem)
+    const double thr = juce::jmax (t.thr, mx * 0.55);
     std::vector<int> lit;
     for (int i = 0; i < n; ++i) if (lv[(size_t) i] > thr) lit.push_back (i);
-    // souvisly usek?
     for (size_t k = 1; k < lit.size(); ++k) if (lit[k] != lit[k - 1] + 1) return v;
     const int a = lit.front(), b = lit.back();
     int pos = -1;
-    if (a == b) pos = a;                                              // jedna tecka
-    else if (a == 0) pos = b;                                         // pas od zacatku
-    else if (b == n - 1) pos = a;                                     // pas od konce
-    else if (c.minLabel.startsWith ("-") && (a == n / 2 || a == n / 2 - 1)) pos = b;   // od stredu doprava
-    else if (c.minLabel.startsWith ("-") && (b == n / 2 || b == n / 2 - 1)) pos = a;   // od stredu doleva
+    if (a == b) pos = a;
+    else if (a == 0) pos = b;
+    else if (b == n - 1) pos = a;
+    else if (c.minLabel.startsWith ("-") && (a == n / 2 || a == n / 2 - 1)) pos = b;
+    else if (c.minLabel.startsWith ("-") && (b == n / 2 || b == n / 2 - 1)) pos = a;
     if (pos < 0) return v;
-    double lo = 1.0;
-    for (int i = 0; i < n; ++i) if (std::find (lit.begin(), lit.end(), i) == lit.end()) lo = juce::jmin (lo, thr - lv[(size_t) i]);
-    double hi = 1.0;
-    for (int i : lit) hi = juce::jmin (hi, lv[(size_t) i] - thr);
-    v.confidence = juce::jlimit (0.0, 1.0, juce::jmin (lo, hi) / 0.12);
+    double lo = 1.0, hi = 1.0;
+    for (int i = 0; i < n; ++i) if (std::find (lit.begin(), lit.end(), i) == lit.end()) lo = juce::jmin (lo, (thr - lv[(size_t) i]) / thr);
+    for (int i : lit) hi = juce::jmin (hi, (lv[(size_t) i] - thr) / thr);
+    v.confidence = juce::jlimit (0.0, 1.0, juce::jmin (lo, hi) * 2.0);
     v.known = v.confidence >= 0.35;
     v.pos = pos;
     return v;
 }
 
 // Prepinac / tlacitko s LED (jedna sviti = poloha; zadna = poloha bez LED, napr. OFF)
-rm::ControlValue readLedSelect (const Photo& ph, const rm::ControlDef& c, const Transform& t)
+rm::ControlValue readLedSelect (const std::vector<double>& lv, const rm::ControlDef& c, const LedThreshold& t)
 {
     rm::ControlValue v; v.source = "recognized";
-    const int n = (int) c.draw.points.size();
+    const int n = (int) lv.size();
     if (n < 1 || (int) c.draw.map.size() != c.numPositions()) return v;
-    std::vector<double> lv;
-    for (int i = 0; i < n; ++i) lv.push_back (ledLevel (ph, c, t, (size_t) i));
-    const double thr = 0.36;
     int litCount = 0, litIdx = -1; double margin = 1.0;
     for (int i = 0; i < n; ++i)
     {
-        margin = juce::jmin (margin, std::abs (lv[(size_t) i] - thr));
-        if (lv[(size_t) i] > thr) { ++litCount; litIdx = i; }
+        margin = juce::jmin (margin, std::abs (lv[(size_t) i] - t.thr) / juce::jmax (0.03, t.thr));
+        if (lv[(size_t) i] > t.thr) { ++litCount; litIdx = i; }
     }
     if (litCount > 1) return v;
     for (int p = 0; p < (int) c.draw.map.size(); ++p)
         if (c.draw.map[(size_t) p] == litIdx) { v.pos = p; v.known = true; }
-    v.confidence = juce::jlimit (0.0, 1.0, margin / 0.18);
-    v.known = v.known && v.confidence >= 0.30;
+    v.confidence = juce::jlimit (0.0, 1.0, margin);
+    v.known = v.known && v.confidence >= 0.35;
     return v;
 }
 
@@ -1439,6 +1629,30 @@ double detailMatch (const Plane& photo, const RefPanel& rp, const Transform& t)
 namespace
 {
 // body referencniho panelu se pocitaji jen jednou za beh pluginu
+// Vyrazne body fotky (sdilene mezi pristroji: cely rack se hleda na jedne fotce pro kazdy pristroj zvlast)
+std::shared_ptr<const std::vector<KeyPt>> photoKeypoints (const Photo& ph, double fs, int maxPts)
+{
+    static std::mutex m;
+    static std::map<std::string, std::shared_ptr<const std::vector<KeyPt>>> cache;
+    // otisk fotky: rozmer + par pixelu
+    double sig = 0;
+    for (int i = 0; i < 64; ++i) sig += ph.gray.v[(size_t) ((i * 7919L) % (long) ph.gray.v.size())] * (i + 1);
+    const std::string key = std::to_string (ph.gray.w) + "x" + std::to_string (ph.gray.h) + ":" + std::to_string (sig) + ":" + std::to_string (fs) + ":" + std::to_string (maxPts);
+    {
+        const std::lock_guard<std::mutex> l (m);
+        auto it = cache.find (key);
+        if (it != cache.end()) return it->second;
+    }
+    const Plane small = fs < 1.0 ? resampleBox (ph.gray, fs) : ph.gray;
+    auto kps = detectKeypoints (small, nullptr, maxPts, std::getenv ("RM_CPH") ? (float) atof (std::getenv ("RM_CPH")) : 0.03f);
+    for (auto& k : kps) { k.x = (float) ((k.x + 0.5) / fs - 0.5); k.y = (float) ((k.y + 0.5) / fs - 0.5); k.sigma = (float) (k.sigma / fs); }
+    auto ptr = std::make_shared<const std::vector<KeyPt>> (std::move (kps));
+    const std::lock_guard<std::mutex> l (m);
+    if (cache.size() > 6) cache.clear();
+    cache[key] = ptr;
+    return ptr;
+}
+
 const std::vector<KeyPt>& referenceKeypoints (const rm::DeviceProfile& prof, const RefPanel& rp)
 {
     static std::mutex lock;
@@ -1494,7 +1708,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     if (! image.isValid())                        { res.message = String::fromUTF8 ("fotku nejde načíst"); return res; }
     if (res.readable == 0 || ! reference.isValid()) { res.message = String::fromUTF8 ("čtení z fotky tu zatím není"); return res; }
 
-    const Photo ph = toPhoto (image, std::getenv ("RM_MAXSIDE") ? atoi (std::getenv ("RM_MAXSIDE")) : 2400);
+    const Photo ph = toPhoto (image, std::getenv ("RM_MAXSIDE") ? atoi (std::getenv ("RM_MAXSIDE")) : 3400);
     const RefPanel rp = makeRefPanel (prof, reference);
 
     // ---- 1) kandidati polohy: (a) podle vyraznych bodu potisku, (b) podle knobu
@@ -1510,15 +1724,25 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     else
     {
         const auto& refKps = referenceKeypoints (prof, rp);
-        const double fs = juce::jmin (1.0, 1600.0 / juce::jmax (ph.gray.w, ph.gray.h));
-        const Plane small = fs < 1.0 ? resampleBox (ph.gray, fs) : ph.gray;
-        auto kps = detectKeypoints (small, nullptr, 5000, std::getenv ("RM_CPH") ? (float) atof (std::getenv ("RM_CPH")) : 0.03f);
-        for (auto& k : kps) { k.x = (float) ((k.x + 0.5) / fs - 0.5); k.y = (float) ((k.y + 0.5) / fs - 0.5); k.sigma = (float) (k.sigma / fs); }
-        const auto matches = matchKeypoints (refKps, kps, 0.8f);
-        if (debug) std::cout << "  body: reference " << refKps.size() << ", fotka " << kps.size() << std::endl;
-        Transform t;
-        siftInliers = ransacPanel (refKps, kps, matches, prof, ph.gray.w, ph.gray.h, t, debug);
-        if (siftInliers >= 8) hyps.push_back (t);
+        // Vyrazne body fotky: nejdriv v nizsim rozliseni (rychle, staci na fotku jednoho pristroje); kdyz pristroj
+        // nevyjde a fotka je vetsi (cely rack z telefonu = maly pristroj na fotce), znovu ve vyssim rozliseni.
+        const int longSide = juce::jmax (ph.gray.w, ph.gray.h);
+        std::vector<double> sizes { 1600.0 };
+        if (std::getenv ("RM_SIFT") != nullptr) sizes = { atof (std::getenv ("RM_SIFT")) };
+        else if (longSide > 1900) sizes.push_back (juce::jmin (2800.0, (double) longSide));
+        Transform best;
+        for (const double size : sizes)
+        {
+            const double fs = juce::jmin (1.0, size / longSide);
+            const auto kps = photoKeypoints (ph, fs, size > 2000 ? 12000 : 5000);
+            const auto matches = matchKeypoints (refKps, *kps, 0.8f);
+            if (debug) std::cout << "  body: reference " << refKps.size() << ", fotka " << kps->size() << " (" << size << " px)" << std::endl;
+            Transform t;
+            const int in = ransacPanel (refKps, *kps, matches, prof, ph.gray.w, ph.gray.h, t, debug);
+            if (in > siftInliers) { siftInliers = in; best = t; }
+            if (siftInliers >= 25) break;
+        }
+        if (siftInliers >= 8) hyps.push_back (best);
     }
 
     std::vector<Anchor> anchors;
@@ -1664,7 +1888,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     }
 
     // ---- 2) doladeni kazdeho kandidata podle potisku, vyhrava nejlepsi shoda
-    Transform xp; double best = -2; bool bestIsSift = false;
+    Transform xp, siftT; double best = -2, siftNcc = -2; bool bestIsSift = false;
     for (size_t hi = 0; hi < hyps.size(); ++hi)
     {
         double ncc = -1;
@@ -1683,7 +1907,11 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         }
         if (debug) std::cout << "  kandidat " << hi << " -> potisk " << ncc << std::endl;
         if (ncc > best) { best = ncc; xp = t; bestIsSift = siftInliers >= 8 && hi == 0; }
+        if (hi == 0 && siftInliers >= 8 && manual == nullptr) { siftT = t; siftNcc = ncc; }
     }
+    // geometricky overena shoda vyraznych bodu ma prednost pred o chlup lepsim jasem jine hypotezy
+    if (! bestIsSift && siftInliers >= kMinInliers && siftNcc >= 0.12 && siftNcc >= best - 0.05)
+    { xp = siftT; best = siftNcc; bestIsSift = true; }
     res.printMatch = best;
     res.keypoints = siftInliers;
     const double detail = best > -1 ? detailMatch (ph.gray, rp, xp) : 0.0;
@@ -1702,22 +1930,24 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     res.transform = xp;
     res.photoScale = ph.scale;
 
-    // ---- knoby vycnivaji z panelu: jejich skutecny stred na fotce se dohleda v okoli (paralaxa)
+    // ---- knoby vycnivaji z panelu: jejich skutecny stred na fotce se dohleda v okoli (paralaxa).
+    // Vysoke knoby na fotce shora jsou posunute i o vic nez polomer -> nejdriv hrube ve velkem okoli,
+    // pak spolecny posun (median), pak jemne kolem nej (jeden spatny knob nestrhne ostatni).
     Transform xf = xp;
     res.anchorsFound = 0;
     std::map<const rm::ControlDef*, cd> knobCentre;
-    for (auto& an : anchors)
+    auto searchAnchor = [&] (Anchor& an, double ox, double oy, double win)
     {
         double gx, gy; xp.map (an.p.real(), an.p.imag(), gx, gy);
         double j[4]; xp.jacobian (an.p.real(), an.p.imag(), j);
         const double rho = an.c->anchorR * std::sqrt (std::abs (j[0] * j[3] - j[1] * j[2]));
-        if (prof.anchor.isEmpty() || rho < 4) continue;
-        double bx = gx, by = gy; float br = -1e9f;
+        if (prof.anchor.isEmpty() || rho < 4) return;
+        double bx = gx + ox * rho, by = gy + oy * rho; float br = -1e9f;
         for (double step : { juce::jmax (1.0, rho / 10.0), juce::jmax (0.5, rho / 40.0) })
         {
-            const double x0 = bx, y0 = by, win = step > rho / 20.0 ? 0.45 * rho : step * 5.0;
-            for (double dy = -win; dy <= win; dy += step)
-                for (double dx = -win; dx <= win; dx += step)
+            const double x0 = bx, y0 = by, w = step > rho / 20.0 ? win * rho : step * 5.0;
+            for (double dy = -w; dy <= w; dy += step)
+                for (double dx = -w; dx <= w; dx += step)
                 {
                     const float r = responseNorm (ph.gray, x0 + dx, y0 + dy, rho, kernel);
                     if (r > br) { br = r; bx = x0 + dx; by = y0 + dy; }
@@ -1725,8 +1955,23 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         }
         an.q = cd (bx, by); an.resp = br;
         an.found = br > 0.25f;
-        if (an.found) { knobCentre[an.c] = an.q; ++res.anchorsFound; }
+        an.rho = rho; an.off = cd ((bx - gx) / rho, (by - gy) / rho);
+    };
+    for (auto& an : anchors) searchAnchor (an, 0, 0, 1.15);
+    {
+        std::vector<double> ox, oy;
+        for (auto& an : anchors) if (an.found && an.resp > 0.35f) { ox.push_back (an.off.real()); oy.push_back (an.off.imag()); }
+        if (ox.size() >= 3)
+        {
+            std::nth_element (ox.begin(), ox.begin() + (long) ox.size() / 2, ox.end());
+            std::nth_element (oy.begin(), oy.begin() + (long) oy.size() / 2, oy.end());
+            const double mx = ox[ox.size() / 2], my = oy[oy.size() / 2];
+            for (auto& an : anchors) searchAnchor (an, mx, my, 0.5);
+            if (debug) std::cout << "  posun knobu (paralaxa): " << mx << ", " << my << " R" << std::endl;
+        }
+        else for (auto& an : anchors) searchAnchor (an, 0, 0, 0.45);
     }
+    for (auto& an : anchors) if (an.found) { knobCentre[an.c] = an.q; ++res.anchorsFound; }
     {
         double ox = 0, oy = 0; int n = 0;
         for (auto& an : anchors) if (an.found) { double gx, gy; xp.map (an.p.real(), an.p.imag(), gx, gy); ox += an.q.real() - gx; oy += an.q.imag() - gy; ++n; }
@@ -1747,12 +1992,63 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     const bool tooOblique = res.skew > kMaxSkew;
 
     // ---- 3) cteni ovladacu
+    // LED: nejdriv svitivost vsech LED pristroje, prah je spolecny (expozice fotky)
+    std::map<const rm::ControlDef*, std::vector<double>> leds;
+    std::vector<double> allLeds;
+    for (auto& c : prof.controls)
+        if (c.read == "led" || c.read == "ledsel" || c.read == "ledring")
+            for (size_t i = 0; i < c.draw.points.size(); ++i) { leds[&c].push_back (ledLevel (ph, c, xp, i)); allLeds.push_back (leds[&c].back()); }
+    const auto ledThr = ledThreshold (allLeds);
+    // rysky (SPL): kandidati u vsech knobu, spolecny posun cepicek (paralaxa), pak u kazdeho knobu ryska,
+    // jejiz osa miri do stredu cepicky (odlesky na sukni a cisla stupnice tim neprojdou)
+    std::map<const rm::ControlDef*, LineSeg> segs;
+    double plx = 0, ply = 0; bool haveParallax = false;
+    {
+        std::map<const rm::ControlDef*, std::vector<LineSeg>> cands;
+        for (auto& c : prof.controls)
+            if (c.read == "line")
+            {
+                Frame f; xf.map (c.x, c.y, f.cx, f.cy); xf.jacobian (c.x, c.y, f.j);
+                cands[&c] = findLineSegs (ph, c, f);
+                segs[&c] = cands[&c].empty() ? LineSeg() : cands[&c].front();
+            }
+        for (int it = 0; it < 3; ++it)
+        {
+            std::vector<LineSeg> all;
+            for (auto& kv : segs) all.push_back (kv.second);
+            if (! solveParallax (all, plx, ply)) break;
+            haveParallax = true;
+            for (auto& kv : cands)
+            {
+                double bestR = 1e9;
+                for (auto& cd2 : kv.second)
+                {
+                    const double r = axisResidual (cd2, plx, ply) - 0.05 * cd2.score / cd2.R;
+                    if (r < bestR) { bestR = r; segs[kv.first] = cd2; }
+                }
+            }
+        }
+        if (debug)
+        {
+            std::cout << "  rysky: posun cepicek " << (haveParallax ? juce::String (plx, 2) + ", " + juce::String (ply, 2) : juce::String ("?")) << " R" << std::endl;
+            for (auto& kv : segs) { auto& g = kv.second; std::cout << "  ryska " << kv.first->id << " ok=" << g.ok << " M=" << g.mx / g.R << "," << g.my / g.R << " osa " << g.ax << "," << g.ay << " delka " << (g.hi - g.lo) / g.R << " el " << g.elong << " res " << axisResidual (g, plx, ply) << std::endl; }
+        }
+    }
     for (auto& c : prof.controls)
     {
-        if (c.read.isEmpty()) continue;
+        if (c.read.isEmpty()) { res.states[c.id] = "unsupported"; continue; }
         rm::ControlValue v;
         v.source = "recognized";
-        if (tooOblique) { res.values[c.id] = v; continue; }
+        if (tooOblique) { res.values[c.id] = v; res.states[c.id] = "uncertain"; continue; }
+        {
+            // ovladac mimo fotku / prilis maly na cteni (cely rack z dalky): neprecte se, nic se nevymysli
+            double px, py; xp.map (c.x, c.y, px, py);
+            double j[4]; xp.jacobian (c.x, c.y, j);
+            const double rpx = c.r * std::sqrt (std::abs (j[0] * j[3] - j[1] * j[2])) / ph.scale;
+            if (px < 0 || py < 0 || px >= ph.gray.w || py >= ph.gray.h) { res.values[c.id] = v; res.states[c.id] = "notvisible"; continue; }
+            const bool rotary = c.type == ControlType::knob || c.type == ControlType::stepped;
+            if (rotary && c.read != "ledring" && rpx < 9.0) { res.values[c.id] = v; res.states[c.id] = "small"; ++res.tooSmall; continue; }
+        }
 
         if (c.read == "notch" || c.read == "line")
         {
@@ -1761,16 +2057,19 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
             xf.jacobian (c.x, c.y, f.j);
             for (auto& an : anchors)
                 if (an.c == &c && an.found && prof.anchor == "disc") { f.cx = an.q.real(); f.cy = an.q.imag(); }   // skutecny stred knobu (paralaxa)
-            v = c.read == "notch" ? readNotch (ph, c, f) : readLine (ph, c, f);
+            if (c.read == "notch") v = readNotch (ph, c, f);
+            else if (haveParallax)  v = lineValue (c, segs[&c], plx, ply);
+            else                    v = readLine (ph, c, f);
         }
-        else if (c.read == "led")       v = readLed (ph, c, xp);
+        else if (c.read == "led")       v = leds[&c].empty() ? rm::ControlValue() : ledOnOff (leds[&c][0], ledThr);
         else if (c.read == "ringglow")  v = readRingGlow (ph, c, xp);
         else if (c.read == "rectglow")  v = readRectGlow (ph, c, xp);
-        else if (c.read == "ledring")   v = readLedRing (ph, c, xp);
-        else if (c.read == "ledsel")    v = readLedSelect (ph, c, xp);
+        else if (c.read == "ledring")   v = readLedRing (leds[&c], c, ledThr);
+        else if (c.read == "ledsel")    v = readLedSelect (leds[&c], c, ledThr);
 
         v.source = "recognized";
         res.values[c.id] = v;
+        res.states[c.id] = v.known ? "recognized" : "uncertain";
         if (v.known) ++res.read;
     }
 
@@ -1790,7 +2089,9 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         res.rectified = out;
     }
 
-    res.message = tooOblique ? String::fromUTF8 ("moc ze strany – foť kolmo zepředu") : String (res.read) + "/" + String (res.readable);
+    res.message = tooOblique ? String::fromUTF8 ("moc ze strany – foť kolmo zepředu")
+                : res.tooSmall > 0 && res.read == 0 ? String::fromUTF8 ("na fotce moc malý – vyfoť ho zblízka")
+                : String (res.read) + "/" + String (res.readable) + (res.tooSmall > 0 ? String::fromUTF8 (" (část moc malá – vyfoť zblízka)") : String());
     return res;
 }
 

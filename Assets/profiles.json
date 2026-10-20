@@ -407,7 +407,9 @@
    ],
    "anchor": "disc",
    "profileVersion": 2,
-   "slots500": 2
+   "slots500": 2,
+   "kind": "compressor",
+   "category": "mastering"
   },
   {
    "id": "elysia.xfilter.500",
@@ -809,7 +811,8 @@
    ],
    "anchor": "disc",
    "profileVersion": 2,
-   "slots500": 2
+   "slots500": 2,
+   "kind": "eq"
   },
   {
    "id": "elysia.xfilter.me",
@@ -1578,7 +1581,779 @@
     }
    ],
    "anchor": "disc",
-   "profileVersion": 2
+   "profileVersion": 2,
+   "kind": "eq",
+   "category": "mastering"
+  },
+  {
+   "id": "elysia.xfilter.1u",
+   "name": "elysia xfilter (1U)",
+   "manufacturer": "elysia",
+   "formFactor": "19\" rack, 1U",
+   "image": "xfilter1u.jpg",
+   "w": 2400,
+   "h": 214,
+   "layoutVerified": true,
+   "profileVersion": 1,
+   "imageNote": "Panel z čelní fotografie elysia xfilter 1U (původní potisk); knoby a LED jsou vykreslené.",
+   "sources": [
+    "elysia.com – xfilter (čelní fotografie 1U, potisk stupnic)",
+    "fotka uživatele 20.10.2026 (stejný potisk: ±16 / ±13 dB)"
+   ],
+   "openQuestions": [
+    "Kroky, na kterých leží čísla stupnice, jsou odečtené z fotky (±1 krok). Ukládá se poloha knobu."
+   ],
+   "controls": [
+    {
+     "id": "ls_gain",
+     "name": "Gain",
+     "group": "Low Shelf",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "-16",
+     "maxLabel": "+16",
+     "centreLabel": "0",
+     "note": "Gain, dB (standardní xfilter: low/high shelf ±16 dB, mid ±13 dB). Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 320.4,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "-16"
+      ],
+      [
+       0.1,
+       "-14"
+      ],
+      [
+       0.2,
+       "-12"
+      ],
+      [
+       0.275,
+       "-8.0"
+      ],
+      [
+       0.45,
+       "-1.0"
+      ],
+      [
+       0.55,
+       "1.0"
+      ],
+      [
+       0.625,
+       "4.0"
+      ],
+      [
+       0.725,
+       "8.0"
+      ],
+      [
+       0.8,
+       "12"
+      ],
+      [
+       0.9,
+       "14"
+      ],
+      [
+       1.0,
+       "16"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "ls_freq",
+     "name": "Freq",
+     "group": "Low Shelf",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "20",
+     "maxLabel": "900",
+     "centreLabel": "",
+     "note": "Frekvence, Hz. Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 475.1,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "20"
+      ],
+      [
+       0.1,
+       "25"
+      ],
+      [
+       0.2,
+       "30"
+      ],
+      [
+       0.275,
+       "40"
+      ],
+      [
+       0.45,
+       "80"
+      ],
+      [
+       0.55,
+       "100"
+      ],
+      [
+       0.625,
+       "150"
+      ],
+      [
+       0.725,
+       "200"
+      ],
+      [
+       0.8,
+       "400"
+      ],
+      [
+       0.9,
+       "600"
+      ],
+      [
+       1.0,
+       "900"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "lm_gain",
+     "name": "Gain",
+     "group": "Low Mid",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "-13",
+     "maxLabel": "+13",
+     "centreLabel": "0",
+     "note": "Gain, dB (standardní xfilter: low/high shelf ±16 dB, mid ±13 dB). Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 628.3,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "-13"
+      ],
+      [
+       0.1,
+       "-11"
+      ],
+      [
+       0.2,
+       "-9.0"
+      ],
+      [
+       0.275,
+       "-5.0"
+      ],
+      [
+       0.45,
+       "-1.0"
+      ],
+      [
+       0.55,
+       "1.0"
+      ],
+      [
+       0.625,
+       "3.0"
+      ],
+      [
+       0.725,
+       "5.0"
+      ],
+      [
+       0.8,
+       "9.0"
+      ],
+      [
+       0.9,
+       "11"
+      ],
+      [
+       1.0,
+       "13"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "lm_freq",
+     "name": "Freq",
+     "group": "Low Mid",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "45",
+     "maxLabel": "2k2",
+     "centreLabel": "",
+     "note": "Frekvence, Hz. Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 785.4,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "45"
+      ],
+      [
+       0.1,
+       "50"
+      ],
+      [
+       0.2,
+       "70"
+      ],
+      [
+       0.275,
+       "100"
+      ],
+      [
+       0.45,
+       "200"
+      ],
+      [
+       0.55,
+       "300"
+      ],
+      [
+       0.625,
+       "400"
+      ],
+      [
+       0.725,
+       "600"
+      ],
+      [
+       0.8,
+       "1k0"
+      ],
+      [
+       0.9,
+       "1k5"
+      ],
+      [
+       1.0,
+       "2k2"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "hm_gain",
+     "name": "Gain",
+     "group": "High Mid",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "-13",
+     "maxLabel": "+13",
+     "centreLabel": "0",
+     "note": "Gain, dB (standardní xfilter: low/high shelf ±16 dB, mid ±13 dB). Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 1614.6,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "-13"
+      ],
+      [
+       0.1,
+       "-11"
+      ],
+      [
+       0.2,
+       "-9.0"
+      ],
+      [
+       0.275,
+       "-5.0"
+      ],
+      [
+       0.375,
+       "-3.0"
+      ],
+      [
+       0.45,
+       "-1.0"
+      ],
+      [
+       0.55,
+       "1.0"
+      ],
+      [
+       0.725,
+       "5.0"
+      ],
+      [
+       0.8,
+       "9.0"
+      ],
+      [
+       0.9,
+       "11"
+      ],
+      [
+       1.0,
+       "13"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "hm_freq",
+     "name": "Freq",
+     "group": "High Mid",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "300",
+     "maxLabel": "16k",
+     "centreLabel": "",
+     "note": "Frekvence, Hz. Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 1771.7,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "300"
+      ],
+      [
+       0.1,
+       "350"
+      ],
+      [
+       0.2,
+       "500"
+      ],
+      [
+       0.275,
+       "1k0"
+      ],
+      [
+       0.375,
+       "1k5"
+      ],
+      [
+       0.45,
+       "2k0"
+      ],
+      [
+       0.55,
+       "2k5"
+      ],
+      [
+       0.725,
+       "4k5"
+      ],
+      [
+       0.8,
+       "8k0"
+      ],
+      [
+       0.9,
+       "12k"
+      ],
+      [
+       1.0,
+       "16k"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "hs_gain",
+     "name": "Gain",
+     "group": "High Shelf",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "-16",
+     "maxLabel": "+16",
+     "centreLabel": "0",
+     "note": "Gain, dB (standardní xfilter: low/high shelf ±16 dB, mid ±13 dB). Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 1924.9,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "-16"
+      ],
+      [
+       0.1,
+       "-14"
+      ],
+      [
+       0.2,
+       "-12"
+      ],
+      [
+       0.275,
+       "-8.0"
+      ],
+      [
+       0.375,
+       "-4.0"
+      ],
+      [
+       0.45,
+       "-1.0"
+      ],
+      [
+       0.55,
+       "1.0"
+      ],
+      [
+       0.725,
+       "8.0"
+      ],
+      [
+       0.8,
+       "12"
+      ],
+      [
+       0.9,
+       "14"
+      ],
+      [
+       1.0,
+       "16"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "hs_freq",
+     "name": "Freq",
+     "group": "High Shelf",
+     "type": "stepped",
+     "steps": 41,
+     "options": [],
+     "minLabel": "700",
+     "maxLabel": "28k",
+     "centreLabel": "",
+     "note": "Frekvence, Hz. Potenciometr s aretací, 41 kroků (elysia).",
+     "verified": true,
+     "x": 2079.6,
+     "y": 109.0,
+     "r": 46.8,
+     "angleMin": -150.0,
+     "angleMax": 150.0,
+     "draw": {
+      "kind": "sprite",
+      "sprite": "xfilter1u_knob.png",
+      "spriteR": 51.0,
+      "refAngle": 0.0
+     },
+     "scale": [
+      [
+       0.0,
+       "700"
+      ],
+      [
+       0.1,
+       "800"
+      ],
+      [
+       0.2,
+       "1k0"
+      ],
+      [
+       0.275,
+       "2k0"
+      ],
+      [
+       0.375,
+       "3k0"
+      ],
+      [
+       0.45,
+       "4k0"
+      ],
+      [
+       0.55,
+       "5k0"
+      ],
+      [
+       0.725,
+       "10k"
+      ],
+      [
+       0.8,
+       "16k"
+      ],
+      [
+       0.9,
+       "22k"
+      ],
+      [
+       1.0,
+       "28k"
+      ]
+     ],
+     "anchorR": 46.8,
+     "read": "notch",
+     "readR": 46.8
+    },
+    {
+     "id": "hitit",
+     "name": "Hit It!",
+     "group": "Switches",
+     "type": "button",
+     "note": "ZAP = aktivní, VYP = hardwire bypass.",
+     "verified": true,
+     "x": 930.7,
+     "y": 108.5,
+     "r": 15.9,
+     "draw": {
+      "kind": "leds",
+      "points": [
+       [
+        959.6,
+        108.0
+       ]
+      ],
+      "ledR": 4.6,
+      "colour": "#ffd21a",
+      "map": [
+       -1,
+       0
+      ]
+     },
+     "read": "led"
+    },
+    {
+     "id": "low_cut",
+     "name": "Low Cut",
+     "group": "Low Shelf",
+     "type": "button",
+     "note": "VYP = shelf, ZAP = low cut s rezonancí.",
+     "verified": true,
+     "x": 988.3,
+     "y": 108.5,
+     "r": 15.9,
+     "draw": {
+      "kind": "leds",
+      "points": [
+       [
+        1017.1,
+        108.0
+       ]
+      ],
+      "ledR": 4.6,
+      "colour": "#ff2a1a",
+      "map": [
+       -1,
+       0
+      ]
+     },
+     "read": "led"
+    },
+    {
+     "id": "lm_q",
+     "name": "Low Mid Narrow Q",
+     "group": "Low Mid",
+     "type": "button",
+     "note": "VYP = široké Q (0.5), ZAP = úzké Q (1.0).",
+     "verified": true,
+     "x": 1045.4,
+     "y": 108.5,
+     "r": 15.9,
+     "draw": {
+      "kind": "leds",
+      "points": [
+       [
+        1074.3,
+        108.0
+       ]
+      ],
+      "ledR": 4.6,
+      "colour": "#ff2a1a",
+      "map": [
+       -1,
+       0
+      ]
+     },
+     "read": "led"
+    },
+    {
+     "id": "hm_q",
+     "name": "High Mid Narrow Q",
+     "group": "High Mid",
+     "type": "button",
+     "note": "VYP = široké Q (0.5), ZAP = úzké Q (1.0).",
+     "verified": true,
+     "x": 1339.4,
+     "y": 108.5,
+     "r": 15.9,
+     "draw": {
+      "kind": "leds",
+      "points": [
+       [
+        1368.2,
+        108.0
+       ]
+      ],
+      "ledR": 4.6,
+      "colour": "#ff2a1a",
+      "map": [
+       -1,
+       0
+      ]
+     },
+     "read": "led"
+    },
+    {
+     "id": "high_cut",
+     "name": "High Cut",
+     "group": "High Shelf",
+     "type": "button",
+     "note": "VYP = shelf, ZAP = high cut s rezonancí.",
+     "verified": true,
+     "x": 1396.6,
+     "y": 108.5,
+     "r": 15.9,
+     "draw": {
+      "kind": "leds",
+      "points": [
+       [
+        1425.5,
+        108.0
+       ]
+      ],
+      "ledR": 4.6,
+      "colour": "#ff2a1a",
+      "map": [
+       -1,
+       0
+      ]
+     },
+     "read": "led"
+    },
+    {
+     "id": "passive",
+     "name": "Passive Massage",
+     "group": "Switches",
+     "type": "button",
+     "note": "Pevný pasivní LC filtr (vysoké pásmo).",
+     "verified": true,
+     "x": 1454.3,
+     "y": 108.5,
+     "r": 15.9,
+     "draw": {
+      "kind": "leds",
+      "points": [
+       [
+        1483.2,
+        108.0
+       ]
+      ],
+      "ledR": 4.6,
+      "colour": "#ff2a1a",
+      "map": [
+       -1,
+       0
+      ]
+     },
+     "read": "led"
+    }
+   ],
+   "anchor": "disc",
+   "kind": "eq",
+   "category": "mastering"
   },
   {
    "id": "elysia.nvelope.500",
@@ -2033,7 +2808,9 @@
    ],
    "anchor": "disc",
    "profileVersion": 2,
-   "slots500": 2
+   "slots500": 2,
+   "kind": "transient",
+   "category": "mastering"
   },
   {
    "id": "spl.vitalizer.mk3t",
@@ -2637,7 +3414,9 @@
     }
    ],
    "anchor": "ring",
-   "profileVersion": 2
+   "profileVersion": 2,
+   "kind": "exciter",
+   "category": "mastering"
   },
   {
    "id": "wesaudio.rhea",
@@ -3236,7 +4015,9 @@
    ],
    "anchor": "",
    "profileVersion": 2,
-   "slots500": 2
+   "slots500": 2,
+   "kind": "compressor",
+   "category": "mastering"
   },
   {
    "id": "warmaudio.wa76",
@@ -3244,6 +4025,7 @@
    "manufacturer": "Warm Audio",
    "formFactor": "19\" 2U",
    "category": "mixing",
+   "kind": "compressor",
    "w": 2400,
    "h": 442,
    "image": "wa76.jpg",
@@ -3445,6 +4227,7 @@
    "manufacturer": "Warm Audio",
    "formFactor": "19\" 2U",
    "category": "mixing",
+   "kind": "compressor",
    "w": 2400,
    "h": 442,
    "image": "wa2a.jpg",
@@ -3563,6 +4346,7 @@
    "manufacturer": "Samson",
    "formFactor": "patchbay",
    "category": "",
+   "kind": "patchbay",
    "w": 2400,
    "h": 221,
    "image": "spatchplus.jpg",
@@ -3608,6 +4392,7 @@
    "manufacturer": "Neutrik (Rean)",
    "formFactor": "patchbay",
    "category": "",
+   "kind": "patchbay",
    "w": 2400,
    "h": 221,
    "image": "nysspp.jpg",
@@ -3644,6 +4429,613 @@
     "note": "Výrobní nastavení: half-normal na dolní řadě. Zastrčení do šedého jacku odpojí horní řadu od dolní."
    },
    "controls": []
+  },
+  {
+   "id": "api.512c",
+   "name": "API 512c",
+   "manufacturer": "API",
+   "formFactor": "500 series, 1 slot",
+   "slots500": 1,
+   "kind": "preamp",
+   "category": "mixing",
+   "w": 450,
+   "h": 1576,
+   "image": "api512c.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba podle popisu výrobce (rozmístění orientační).",
+   "sources": [
+    "API 512c – manuál / datasheet (barryrudolph.com/recall/manuals/api512c.pdf)",
+    "apiaudio.com/512c"
+   ],
+   "openQuestions": [
+    "Rozmístění ovladačů není z fotky ověřené.",
+    "Číselná stupnice zisku na panelu neověřena."
+   ],
+   "controls": [
+    {
+     "id": "gain",
+     "name": "GAIN",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Plynulý zisk: MIC 10–65 dB, HI-Z 14–50 dB (výrobce). Čísla stupnice na panelu neověřena – ukládá se poloha.",
+     "x": 225.0,
+     "y": 520,
+     "r": 110,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1c1c1c"
+     }
+    },
+    {
+     "id": "polarity",
+     "name": "Ø",
+     "group": "Switches",
+     "type": "button",
+     "note": "Otočení polarity výstupu o 180°.",
+     "verified": true,
+     "x": 130,
+     "y": 820,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        130,
+        820
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "phantom",
+     "name": "48V",
+     "group": "Switches",
+     "type": "button",
+     "note": "Fantomové napájení 48 V.",
+     "verified": true,
+     "x": 320,
+     "y": 820,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        320,
+        820
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "pad",
+     "name": "PAD",
+     "group": "Switches",
+     "type": "button",
+     "note": "Útlum 20 dB (MIC i HI-Z).",
+     "verified": true,
+     "x": 130,
+     "y": 980,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        130,
+        980
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "hiz",
+     "name": "MIC/HI-Z",
+     "group": "Switches",
+     "type": "button",
+     "note": "Výběr vstupu: MIC (zad. XLR) / HI-Z (přední jack). ON = HI-Z.",
+     "verified": true,
+     "x": 320,
+     "y": 980,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        320,
+        980
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "amsneve.1073lb",
+   "name": "AMS Neve 1073LB",
+   "manufacturer": "AMS Neve",
+   "formFactor": "500 series, 1 slot",
+   "slots500": 1,
+   "kind": "preamp",
+   "category": "mixing",
+   "w": 450,
+   "h": 1576,
+   "image": "neve1073lb.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba podle manuálu AMS Neve (rozmístění orientační).",
+   "sources": [
+    "AMS Neve 1073LB User Manual (barryrudolph.com/recall/manuals/neve_1073_lb_mic_pre-manual.pdf)"
+   ],
+   "openQuestions": [
+    "Pořadí poloh přepínače zisku ve směru otáčení ověřit na kusu.",
+    "Rozmístění ovladačů orientační."
+   ],
+   "controls": [
+    {
+     "id": "gain",
+     "name": "INPUT GAIN",
+     "group": "",
+     "type": "stepped",
+     "steps": 21,
+     "options": [
+      "LINE -20",
+      "LINE -15",
+      "LINE -10",
+      "LINE -5",
+      "LINE 0",
+      "LINE +5",
+      "LINE +10",
+      "MIC -20",
+      "MIC -25",
+      "MIC -30",
+      "MIC -35",
+      "MIC -40",
+      "MIC -45",
+      "MIC -50",
+      "OFF",
+      "MIC -55",
+      "MIC -60",
+      "MIC -65",
+      "MIC -70",
+      "MIC -75",
+      "MIC -80"
+     ],
+     "verified": false,
+     "note": "Poloha přepínače: LINE −20…+10 (7 poloh), MIC −20…−80 (14 poloh), OFF mezi −50 a −55 (manuál AMS Neve). Pořadí po otočení neověřeno na kusu.",
+     "x": 225.0,
+     "y": 420,
+     "r": 95,
+     "angleMin": -160,
+     "angleMax": 160,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#b3261e"
+     }
+    },
+    {
+     "id": "trim",
+     "name": "TRIM",
+     "group": "",
+     "type": "knob",
+     "minLabel": "-10",
+     "maxLabel": "+5",
+     "verified": true,
+     "note": "−10 až +5 dB, středová aretace v 0 dB (manuál). Poloha 0 na stupnici neověřena – ukládá se poloha.",
+     "x": 225.0,
+     "y": 760,
+     "r": 62,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "phantom",
+     "name": "48V",
+     "group": "Switches",
+     "type": "button",
+     "note": "Fantom (manuál: zapíná se stiskem knobu TRIM, LED červená).",
+     "verified": true,
+     "x": 130,
+     "y": 960,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        130,
+        960
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "phase",
+     "name": "Ø",
+     "group": "Switches",
+     "type": "button",
+     "note": "Otočení fáze.",
+     "verified": true,
+     "x": 320,
+     "y": 960,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        320,
+        960
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "loz",
+     "name": "LO Z",
+     "group": "Switches",
+     "type": "button",
+     "note": "Impedance mikrofonního vstupu: ON = 300 Ω, OFF = 1200 Ω.",
+     "verified": true,
+     "x": 130,
+     "y": 1120,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        130,
+        1120
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ffd21a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "frip",
+     "name": "FR I/P",
+     "group": "Switches",
+     "type": "button",
+     "note": "Přední vstup (combo) místo zadního.",
+     "verified": true,
+     "x": 320,
+     "y": 1120,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        320,
+        1120
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#3dff6e",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "cranborne.camden500",
+   "name": "Cranborne Audio Camden 500",
+   "manufacturer": "Cranborne Audio",
+   "formFactor": "500 series, 1 slot",
+   "slots500": 1,
+   "kind": "preamp",
+   "category": "mixing",
+   "w": 450,
+   "h": 1576,
+   "image": "camden500.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba podle manuálu Cranborne (rozmístění orientační).",
+   "sources": [
+    "Cranborne Audio Camden 500 User Manual (scan.co.uk/PDFs/Products/96391.pdf)"
+   ],
+   "openQuestions": [
+    "Rozmístění ovladačů orientační – ověřit podle fotky."
+   ],
+   "controls": [
+    {
+     "id": "mojo",
+     "name": "MOJO",
+     "group": "",
+     "type": "knob",
+     "minLabel": "OFF",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Saturace Mojo, zcela vlevo = bypass (manuál). Bez číselné stupnice.",
+     "x": 225.0,
+     "y": 330,
+     "r": 62,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "mojo_style",
+     "name": "MOJO STYLE",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "THUMP",
+      "CREAM"
+     ],
+     "verified": true,
+     "note": "Charakter Mojo: Thump / Cream.",
+     "x": 225.0,
+     "y": 450,
+     "r": 36,
+     "draw": {
+      "kind": "vlever",
+      "points": [
+       [
+        185.0,
+        450
+       ],
+       [
+        265.0,
+        450
+       ]
+      ],
+      "colour": "#e0e0e0"
+     }
+    },
+    {
+     "id": "hpf",
+     "name": "HPF",
+     "group": "Switches",
+     "type": "button",
+     "note": "Horní propust 80 Hz, 12 dB/okt.",
+     "verified": true,
+     "x": 130,
+     "y": 580,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        130,
+        580
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#3d9bff",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "polarity",
+     "name": "Ø",
+     "group": "Switches",
+     "type": "button",
+     "note": "Otočení polarity.",
+     "verified": true,
+     "x": 320,
+     "y": 580,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        320,
+        580
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#3d9bff",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "gain",
+     "name": "GAIN",
+     "group": "",
+     "type": "stepped",
+     "steps": 12,
+     "options": [],
+     "verified": true,
+     "note": "12 poloh po 5,5 dB: MIC 8–68,5 dB, LINE 0–60,5 dB, HI-Z 3–63,5 dB (manuál).",
+     "scale": [
+      [
+       0.0,
+       "MIN"
+      ],
+      [
+       0.09090909090909091,
+       "2"
+      ],
+      [
+       0.18181818181818182,
+       "3"
+      ],
+      [
+       0.2727272727272727,
+       "4"
+      ],
+      [
+       0.36363636363636365,
+       "5"
+      ],
+      [
+       0.45454545454545453,
+       "6"
+      ],
+      [
+       0.5454545454545454,
+       "7"
+      ],
+      [
+       0.6363636363636364,
+       "8"
+      ],
+      [
+       0.7272727272727273,
+       "9"
+      ],
+      [
+       0.8181818181818182,
+       "10"
+      ],
+      [
+       0.9090909090909091,
+       "11"
+      ],
+      [
+       1.0,
+       "MAX"
+      ]
+     ],
+     "x": 225.0,
+     "y": 880,
+     "r": 100,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#bfbfbf"
+     }
+    },
+    {
+     "id": "phantom",
+     "name": "48V",
+     "group": "Switches",
+     "type": "button",
+     "note": "Fantom pro zadní XLR.",
+     "verified": true,
+     "x": 130,
+     "y": 1080,
+     "r": 34,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        130,
+        1080
+       ]
+      ],
+      "w": 68,
+      "h": 52,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "input",
+     "name": "INPUT",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "MIC",
+      "LINE",
+      "HI-Z"
+     ],
+     "verified": true,
+     "note": "Typ vstupu (v LINE se automaticky zapne pad 8 dB).",
+     "x": 320,
+     "y": 1080,
+     "r": 36,
+     "draw": {
+      "kind": "vlever",
+      "points": [
+       [
+        320,
+        1030
+       ],
+       [
+        320,
+        1080
+       ],
+       [
+        320,
+        1130
+       ]
+      ],
+      "colour": "#e0e0e0"
+     }
+    }
+   ]
   }
  ]
 }

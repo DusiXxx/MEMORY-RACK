@@ -48,6 +48,7 @@ var Snapshot::toVar() const
         for (auto& d : order) od.add (d);
         o->setProperty ("order", od);
     }
+    if (defs.getDynamicObject() != nullptr) o->setProperty ("defs", defs);
     o->setProperty ("created", created);
     o->setProperty ("modified", modified);
 
@@ -85,6 +86,7 @@ bool Snapshot::fromVar (const var& v, Snapshot& s, String& error)
     s.created  = (juce::int64) v.getProperty ("created", 0);
     s.modified = (juce::int64) v.getProperty ("modified", 0);
     s.name     = v.getProperty ("name", "").toString();
+    s.defs     = v.getProperty ("defs", var());
     s.group    = safeId (v.getProperty ("group", "").toString());
     if (auto* dp = v.getProperty ("devicePhotos", var()).getDynamicObject())
         for (auto& kv : dp->getProperties())
@@ -232,6 +234,64 @@ String Snapshot::title() const
     auto t = project.isEmpty() ? String ("Bez nazvu") : project;
     if (version.isNotEmpty()) t << "  " << version;
     return t;
+}
+
+juce::var definitionsFor (const Snapshot& s)
+{
+    auto* o = new juce::DynamicObject();
+    juce::StringArray models;
+    for (auto& kv : s.values)
+        if (kv.second.known) models.addIfNotAlreadyThere (profileIdOf (kv.first.upToFirstOccurrenceOf (":", false, false)));
+    for (auto& m : models)
+    {
+        auto* p = findProfile (m);
+        if (p == nullptr) continue;
+        auto* d = new juce::DynamicObject();
+        d->setProperty ("name", p->name);
+        d->setProperty ("profileVersion", p->profileVersion);
+        d->setProperty ("origin", p->origin);
+        auto* cs = new juce::DynamicObject();
+        for (auto& c : p->controls)
+        {
+            auto* e = new juce::DynamicObject();
+            e->setProperty ("type", (int) c.type);
+            e->setProperty ("n", c.numPositions());
+            if (! c.scale.empty()) { juce::StringArray l; for (auto& mk : c.scale) l.add (mk.label); e->setProperty ("scale", l.joinIntoString (" ")); }
+            cs->setProperty (juce::Identifier (c.id), var (e));
+        }
+        d->setProperty ("controls", var (cs));
+        o->setProperty (juce::Identifier (m), var (d));
+    }
+    return var (o);
+}
+
+juce::StringArray checkDefinitions (const juce::var& defs)
+{
+    juce::StringArray notes;
+    auto* o = defs.getDynamicObject();
+    if (o == nullptr) return notes;
+    for (auto& kv : o->getProperties())
+    {
+        const auto model = kv.name.toString();
+        const auto name = kv.value.getProperty ("name", model).toString();
+        auto* p = findProfile (model);
+        if (p == nullptr) { notes.add (name + String::fromUTF8 (": přístroj v knihovně chybí – uložené hodnoty zůstávají, jen se nezobrazí")); continue; }
+        const int was = (int) kv.value.getProperty ("profileVersion", 0);
+        bool changed = false;
+        if (auto* cs = kv.value.getProperty ("controls", var()).getDynamicObject())
+            for (auto& ck : cs->getProperties())
+            {
+                auto* c = p->find (ck.name.toString());
+                if (c == nullptr) { notes.add (name + " / " + ck.name.toString() + String::fromUTF8 (": ovladač v novém profilu není – hodnota zůstává uložená")); continue; }
+                if ((int) ck.value.getProperty ("n", 0) != c->numPositions() || (int) ck.value.getProperty ("type", 0) != (int) c->type) changed = true;
+                juce::StringArray l; for (auto& mk : c->scale) l.add (mk.label);
+                if (ck.value.getProperty ("scale", "").toString() != l.joinIntoString (" ")) changed = true;
+            }
+        if (was != p->profileVersion || changed)
+            notes.add (name + String::fromUTF8 (": profil se od uložení změnil (v") + String (was) + String::fromUTF8 (" → v") + String (p->profileVersion)
+                       + String::fromUTF8 (") – polohy knobů zůstaly, čísla stupnice zkontroluj"));
+    }
+    return notes;
 }
 
 int totalControls()
@@ -522,7 +582,7 @@ namespace
 int slotsOfModel (const String& model)
 {
     auto* p = findProfile (model);
-    return p != nullptr && p->formFactor.startsWith ("500") ? 2 : 0;
+    return p != nullptr && p->formFactor.startsWith ("500") ? juce::jmax (1, p->slots500) : 0;
 }
 }
 
@@ -694,6 +754,7 @@ juce::var RackLayout::toVar() const
     auto* o = new juce::DynamicObject();
     o->setProperty ("schema", kSchema);
     o->setProperty ("lunchboxSlots", lunchboxSlots);
+    if (lunchboxModel.isNotEmpty()) o->setProperty ("lunchboxModel", lunchboxModel);
     juce::Array<juce::var> arr;
     for (auto& it : items)
     {
@@ -713,6 +774,7 @@ bool RackLayout::fromVar (const juce::var& v, RackLayout& out, String& error)
     if ((int) v.getProperty ("schema", 0) > kSchema)   { error = "rack ulozila novejsi verze pluginu"; return false; }
     RackLayout r;
     r.lunchboxSlots = (int) v.getProperty ("lunchboxSlots", 8);
+    r.lunchboxModel = v.getProperty ("lunchboxModel", "").toString().substring (0, 60);
     if (auto* arr = v.getProperty ("devices", juce::var()).getArray())
         for (auto& e : *arr)
         {
@@ -729,7 +791,7 @@ bool RackLayout::fromVar (const juce::var& v, RackLayout& out, String& error)
 
 bool RackLayout::operator== (const RackLayout& o) const
 {
-    if (lunchboxSlots != o.lunchboxSlots || items.size() != o.items.size()) return false;
+    if (lunchboxSlots != o.lunchboxSlots || lunchboxModel != o.lunchboxModel || items.size() != o.items.size()) return false;
     for (size_t i = 0; i < items.size(); ++i)
         if (items[i].id != o.items[i].id || items[i].model != o.items[i].model || items[i].slot != o.items[i].slot) return false;
     return true;

@@ -121,6 +121,20 @@ profiles.append({
     'openQuestions': ['Přesné kroky, na kterých leží čísla stupnice gainu, jsou odečtené z fotky (±1 krok). Ukládá se poloha knobu, ne dB.'],
     'controls': [me_knob(k, 'L' if i < 4 else 'R') for i, k in enumerate(g['knobs'])] + [me_button(b) for b in g['buttons']]})
 
+# ============================================================================ xfilter (standardni, 19", 1U)
+g = geo('xfilter1u')
+def std_knob(k, style):
+    c = me_knob(k, style)
+    c['note'] = ('Gain, dB (standardní xfilter: low/high shelf ±16 dB, mid ±13 dB). ' if k['name'] == 'Gain' else 'Frekvence, Hz. ') + E41
+    return c
+profiles.append({
+    'id': 'elysia.xfilter.1u', 'name': 'elysia xfilter (1U)', 'manufacturer': 'elysia', 'formFactor': '19" rack, 1U',
+    'image': g['image'], 'w': g['w'], 'h': g['h'], 'layoutVerified': True, 'profileVersion': 1,
+    'imageNote': 'Panel z čelní fotografie elysia xfilter 1U (původní potisk); knoby a LED jsou vykreslené.',
+    'sources': ['elysia.com – xfilter (čelní fotografie 1U, potisk stupnic)', 'fotka uživatele 20.10.2026 (stejný potisk: ±16 / ±13 dB)'],
+    'openQuestions': ['Kroky, na kterých leží čísla stupnice, jsou odečtené z fotky (±1 krok). Ukládá se poloha knobu.'],
+    'controls': [std_knob(k, 'L' if i < 4 else 'R') for i, k in enumerate(g['knobs'])] + [me_button(b) for b in g['buttons']]})
+
 # ============================================================================ nvelope 500
 g = geo('nvelope500')
 NV = 'Počet kroků potenciometru není v manuálu uveden – ukládá se plynulá poloha.'
@@ -302,7 +316,12 @@ for p in profiles:
 for p in profiles:
     p.setdefault('profileVersion', 2)
     if p['formFactor'].startswith('500'):
-        p['slots500'] = 2           # sirka v 500 slotech (lunchbox)
+        p.setdefault('slots500', 2)  # sirka v 500 slotech (lunchbox)
+    KINDS = {'elysia.xmax.500': 'compressor', 'elysia.xfilter.500': 'eq', 'elysia.xfilter.me': 'eq', 'elysia.xfilter.1u': 'eq',
+             'elysia.nvelope.500': 'transient', 'spl.vitalizer.mk3t': 'exciter', 'wesaudio.rhea': 'compressor'}
+    p.setdefault('kind', KINDS.get(p['id'], 'other'))
+    if p['id'] in ('elysia.xmax.500', 'elysia.xfilter.me', 'elysia.xfilter.1u', 'spl.vitalizer.mk3t', 'wesaudio.rhea', 'elysia.nvelope.500'):
+        p.setdefault('category', 'mastering')
     ids = [c['id'] for c in p['controls']]
     assert len(ids) == len(set(ids)), p['id']
     for c in p['controls']:

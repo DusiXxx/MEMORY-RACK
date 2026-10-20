@@ -86,7 +86,7 @@ def wa76():
                   note='Měřák: GR / +8 / +4; OFF vypíná celý přístroj (manuál).', verified=True, x=2190, y=214, r=34,
                   draw=dict(kind='vbuttons', points=[[2190, y] for y in ry], w=60, h=44, colour='#f2f2ee', map=[0, 1, 2, 3])))
     save(img, 'wa76.jpg')
-    return dict(id='warmaudio.wa76', name='Warm Audio WA76', manufacturer='Warm Audio', formFactor='19" 2U', category='mixing',
+    return dict(id='warmaudio.wa76', name='Warm Audio WA76', manufacturer='Warm Audio', formFactor='19" 2U', category='mixing', kind='compressor',
                 w=W, h=H, image='wa76.jpg', profileVersion=1, layoutVerified=False, anchor='',
                 imageNote='Vlastní kresba (ne fotografie výrobce). Popisky podle manuálu WA76, rozmístění podle fotek z obchodu.',
                 sources=['Warm Audio WA76 User Manual (gear4music.com, download_148406.pdf)', 'Fotka produktu gear4music.cz (rozmístění)'],
@@ -134,7 +134,7 @@ def wa2a():
                   note='Měřák: gain reduction / výstup +10 / výstup +4 (manuál).',
                   x=2050, y=362, r=40, angleMin=-60, angleMax=60, draw=dict(kind='vknob', style='chicken', colour='#202020')))
     save(img, 'wa2a.jpg')
-    return dict(id='warmaudio.wa2a', name='Warm Audio WA-2A', manufacturer='Warm Audio', formFactor='19" 2U', category='mixing',
+    return dict(id='warmaudio.wa2a', name='Warm Audio WA-2A', manufacturer='Warm Audio', formFactor='19" 2U', category='mixing', kind='compressor',
                 w=W, h=H, image='wa2a.jpg', profileVersion=1, layoutVerified=False, anchor='',
                 imageNote='Vlastní kresba (ne fotografie výrobce). Popisky podle manuálu WA-2A, rozmístění orientační.',
                 sources=['Warm Audio WA-2A User Manual (bhphotovideo.com lit_files/755190.pdf)', 'Fotka produktu thomann.cz (rozmístění)'],
@@ -166,7 +166,7 @@ def samson():
             d.text((x + 24, y - 34), str(num), font=font(17), fill=white)
         d.rounded_rectangle((x - 14, modeY - 10, x + 14, modeY + 10), 3, fill=(235, 238, 245))
     save(img, 'spatchplus.jpg')
-    return dict(id='samson.spatchplus', name='Samson S-patch Plus', manufacturer='Samson', formFactor='patchbay', category='',
+    return dict(id='samson.spatchplus', name='Samson S-patch Plus', manufacturer='Samson', formFactor='patchbay', category='', kind='patchbay',
                 w=W, h=H, image='spatchplus.jpg', profileVersion=1, layoutVerified=False, anchor='',
                 imageNote='Vlastní kresba (modro-bílý vzhled), ne fotografie výrobce.',
                 sources=['Samson S-patch Plus User Manual (goknight.com/content/documentation)', 'Samson S-patch Plus Spec Sheet'],
@@ -199,7 +199,7 @@ def neutrik():
             d.ellipse((x - 15, y - 15, x + 15, y + 15), fill=(8, 8, 8))
         text_c(d, (x, 112), str(k + 1), font(18), (180, 180, 180))
     save(img, 'nysspp.jpg')
-    return dict(id='neutrik.nysspp.l1', name='Neutrik NYS-SPP-L1', manufacturer='Neutrik (Rean)', formFactor='patchbay', category='',
+    return dict(id='neutrik.nysspp.l1', name='Neutrik NYS-SPP-L1', manufacturer='Neutrik (Rean)', formFactor='patchbay', category='', kind='patchbay',
                 w=W, h=H, image='nysspp.jpg', profileVersion=1, layoutVerified=False, anchor='',
                 imageNote='Vlastní kresba (černý panel, popisové proužky), ne fotografie výrobce.',
                 sources=['NEUTRIK NYS-SPP-L1 – popis produktu (markertek.com): 48 bodů, 2 řady, 24 desek, half-normal ve výrobě, otočením desky se mění'],
@@ -212,8 +212,129 @@ def neutrik():
                               note='Výrobní nastavení: half-normal na dolní řadě. Zastrčení do šedého jacku odpojí horní řadu od dolní.'),
                 controls=[])
 
+
+# ---------------------------------------------------------------------------------- 500 moduly (1 slot)
+W5, H5 = 450, 1576
+
+def module_base(col, ink, title, brand):
+    img = Image.new('RGB', (W5, H5), col); d = ImageDraw.Draw(img)
+    d.rectangle((0, 0, W5 - 1, H5 - 1), outline=tuple(max(0, c - 40) for c in col), width=3)
+    for y in (40, H5 - 40):
+        d.ellipse((W5 / 2 - 18, y - 18, W5 / 2 + 18, y + 18), fill=tuple(max(0, c - 60) for c in col))
+        d.ellipse((W5 / 2 - 8, y - 8, W5 / 2 + 8, y + 8), fill=(20, 20, 20))
+    text_c(d, (W5 / 2, 110), title, font(54), ink)
+    text_c(d, (W5 / 2, H5 - 110), brand, font(40), ink)
+    return img, d
+
+def button(d, x, y, label, ink, below=True):
+    d.rounded_rectangle((x - 34, y - 26, x + 34, y + 26), 8, fill=(30, 30, 32), outline=(110, 110, 110), width=2)
+    text_c(d, (x, y + (52 if below else -52)), label, font(30), ink)
+
+def api512c():
+    ink = (235, 235, 235)
+    img, d = module_base((70, 74, 80), ink, '512c', 'API')
+    c = []
+    # LED VU (7 segmentu) - jen zobrazeni
+    for i in range(7):
+        d.rectangle((150, 190 + i * 22, 300, 204 + i * 22), fill=(40, 40, 40))
+    text_c(d, (W5 / 2, 370), 'GAIN', font(40), ink)
+    ticks(d, W5 / 2, 520, 110, 11, -150, 150, ink)
+    text_c(d, (95, 680), 'MIN', font(26), ink); text_c(d, (355, 680), 'MAX', font(26), ink)
+    c.append(dict(id='gain', name='GAIN', group='', type='knob', minLabel='', maxLabel='', verified=True,
+                  note='Plynulý zisk: MIC 10–65 dB, HI-Z 14–50 dB (výrobce). Čísla stupnice na panelu neověřena – ukládá se poloha.',
+                  x=W5 / 2, y=520, r=110, angleMin=-150, angleMax=150, draw=dict(kind='vknob', style='skirt', colour='#1c1c1c')))
+    for (cid, lab, x, y, note) in (('polarity', 'Ø', 130, 820, 'Otočení polarity výstupu o 180°.'),
+                                   ('phantom', '48V', 320, 820, 'Fantomové napájení 48 V.'),
+                                   ('pad', 'PAD', 130, 980, 'Útlum 20 dB (MIC i HI-Z).'),
+                                   ('hiz', 'MIC/HI-Z', 320, 980, 'Výběr vstupu: MIC (zad. XLR) / HI-Z (přední jack). ON = HI-Z.')):
+        button(d, x, y, lab, ink)
+        c.append(dict(id=cid, name=lab, group='Switches', type='button', note=note, verified=True, x=x, y=y, r=34,
+                      draw=dict(kind='vbuttons', points=[[x, y]], w=68, h=52, colour='#ff3b2a', map=[-1, 0])))
+    d.ellipse((W5 / 2 - 40, 1180, W5 / 2 + 40, 1260), fill=(160, 160, 165)); d.ellipse((W5 / 2 - 18, 1202, W5 / 2 + 18, 1238), fill=(10, 10, 10))
+    text_c(d, (W5 / 2, 1300), 'HI-Z IN', font(26), ink)
+    save(img, 'api512c.jpg')
+    return dict(id='api.512c', name='API 512c', manufacturer='API', formFactor='500 series, 1 slot', slots500=1, kind='preamp', category='mixing',
+                w=W5, h=H5, image='api512c.jpg', profileVersion=1, layoutVerified=False, anchor='',
+                imageNote='Vlastní kresba podle popisu výrobce (rozmístění orientační).',
+                sources=['API 512c – manuál / datasheet (barryrudolph.com/recall/manuals/api512c.pdf)', 'apiaudio.com/512c'],
+                openQuestions=['Rozmístění ovladačů není z fotky ověřené.', 'Číselná stupnice zisku na panelu neověřena.'], controls=c)
+
+def neve1073lb():
+    ink = (240, 240, 240)
+    img, d = module_base((96, 110, 128), ink, '1073LB', 'AMS NEVE')
+    c = []
+    gain_opts = ['LINE -20', 'LINE -15', 'LINE -10', 'LINE -5', 'LINE 0', 'LINE +5', 'LINE +10', 'MIC -20', 'MIC -25', 'MIC -30', 'MIC -35', 'MIC -40',
+                 'MIC -45', 'MIC -50', 'OFF', 'MIC -55', 'MIC -60', 'MIC -65', 'MIC -70', 'MIC -75', 'MIC -80']
+    text_c(d, (W5 / 2, 230), 'INPUT GAIN', font(34), ink)
+    ticks(d, W5 / 2, 420, 110, 21, -160, 160, ink, 3, 12)
+    c.append(dict(id='gain', name='INPUT GAIN', group='', type='stepped', steps=21, options=gain_opts, verified=False,
+                  note='Poloha přepínače: LINE −20…+10 (7 poloh), MIC −20…−80 (14 poloh), OFF mezi −50 a −55 (manuál AMS Neve). Pořadí po otočení neověřeno na kusu.',
+                  x=W5 / 2, y=420, r=95, angleMin=-160, angleMax=160, draw=dict(kind='vknob', style='skirt', colour='#b3261e')))
+    text_c(d, (W5 / 2, 640), 'TRIM', font(32), ink)
+    ticks(d, W5 / 2, 760, 62, 7, -150, 150, ink, 3, 10)
+    text_c(d, (W5 / 2 - 100, 850), '-10', font(24), ink); text_c(d, (W5 / 2 + 100, 850), '+5', font(24), ink)
+    c.append(dict(id='trim', name='TRIM', group='', type='knob', minLabel='-10', maxLabel='+5', verified=True,
+                  note='−10 až +5 dB, středová aretace v 0 dB (manuál). Poloha 0 na stupnici neověřena – ukládá se poloha.',
+                  x=W5 / 2, y=760, r=62, angleMin=-150, angleMax=150, draw=dict(kind='vknob', style='small', colour='#202020')))
+    for (cid, lab, x, y, col, note) in (('phantom', '48V', 130, 960, '#ff3b2a', 'Fantom (manuál: zapíná se stiskem knobu TRIM, LED červená).'),
+                                        ('phase', 'Ø', 320, 960, '#ff3b2a', 'Otočení fáze.'),
+                                        ('loz', 'LO Z', 130, 1120, '#ffd21a', 'Impedance mikrofonního vstupu: ON = 300 Ω, OFF = 1200 Ω.'),
+                                        ('frip', 'FR I/P', 320, 1120, '#3dff6e', 'Přední vstup (combo) místo zadního.')):
+        button(d, x, y, lab, ink)
+        c.append(dict(id=cid, name=lab, group='Switches', type='button', note=note, verified=True, x=x, y=y, r=34,
+                      draw=dict(kind='vbuttons', points=[[x, y]], w=68, h=52, colour=col, map=[-1, 0])))
+    d.ellipse((W5 / 2 - 52, 1240, W5 / 2 + 52, 1344), fill=(40, 40, 44)); text_c(d, (W5 / 2, 1370), 'COMBO', font(24), ink)
+    save(img, 'neve1073lb.jpg')
+    return dict(id='amsneve.1073lb', name='AMS Neve 1073LB', manufacturer='AMS Neve', formFactor='500 series, 1 slot', slots500=1, kind='preamp', category='mixing',
+                w=W5, h=H5, image='neve1073lb.jpg', profileVersion=1, layoutVerified=False, anchor='',
+                imageNote='Vlastní kresba podle manuálu AMS Neve (rozmístění orientační).',
+                sources=['AMS Neve 1073LB User Manual (barryrudolph.com/recall/manuals/neve_1073_lb_mic_pre-manual.pdf)'],
+                openQuestions=['Pořadí poloh přepínače zisku ve směru otáčení ověřit na kusu.', 'Rozmístění ovladačů orientační.'], controls=c)
+
+def camden500():
+    ink = (235, 235, 235)
+    img, d = module_base((26, 28, 30), ink, 'CAMDEN 500', 'CRANBORNE AUDIO')
+    c = []
+    text_c(d, (W5 / 2, 220), 'MOJO', font(34), ink)
+    ticks(d, W5 / 2, 330, 62, 7, -150, 150, ink, 3, 10)
+    c.append(dict(id='mojo', name='MOJO', group='', type='knob', minLabel='OFF', maxLabel='', verified=True,
+                  note='Saturace Mojo, zcela vlevo = bypass (manuál). Bez číselné stupnice.',
+                  x=W5 / 2, y=330, r=62, angleMin=-150, angleMax=150, draw=dict(kind='vknob', style='small', colour='#202020')))
+    text_c(d, (100, 450), 'THUMP', font(24), ink); text_c(d, (350, 450), 'CREAM', font(24), ink)
+    c.append(dict(id='mojo_style', name='MOJO STYLE', group='', type='selector', options=['THUMP', 'CREAM'], verified=True,
+                  note='Charakter Mojo: Thump / Cream.', x=W5 / 2, y=450, r=36, draw=dict(kind='vlever', points=[[W5 / 2 - 40, 450], [W5 / 2 + 40, 450]], colour='#e0e0e0')))
+    for (cid, lab, x, y, note) in (('hpf', 'HPF', 130, 580, 'Horní propust 80 Hz, 12 dB/okt.'), ('polarity', 'Ø', 320, 580, 'Otočení polarity.')):
+        button(d, x, y, lab, ink)
+        c.append(dict(id=cid, name=lab, group='Switches', type='button', note=note, verified=True, x=x, y=y, r=34,
+                      draw=dict(kind='vbuttons', points=[[x, y]], w=68, h=52, colour='#3d9bff', map=[-1, 0])))
+    text_c(d, (W5 / 2, 720), 'GAIN', font(34), ink)
+    labs = ['MIN', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', 'MAX']
+    for i, t in enumerate(labs):
+        a = math.radians(-150 + 300 * i / 11)
+        text_c(d, (W5 / 2 + math.sin(a) * 150, 880 - math.cos(a) * 150), t, font(22), ink)
+    c.append(dict(id='gain', name='GAIN', group='', type='stepped', steps=12, options=[], verified=True,
+                  note='12 poloh po 5,5 dB: MIC 8–68,5 dB, LINE 0–60,5 dB, HI-Z 3–63,5 dB (manuál).',
+                  scale=[[i / 11.0, t] for i, t in enumerate(labs)],
+                  x=W5 / 2, y=880, r=100, angleMin=-150, angleMax=150, draw=dict(kind='vknob', style='skirt', colour='#bfbfbf')))
+    button(d, 130, 1080, '48V', ink)
+    c.append(dict(id='phantom', name='48V', group='Switches', type='button', note='Fantom pro zadní XLR.', verified=True, x=130, y=1080, r=34,
+                  draw=dict(kind='vbuttons', points=[[130, 1080]], w=68, h=52, colour='#ff3b2a', map=[-1, 0])))
+    for i, t in enumerate(['MIC', 'LINE', 'HI-Z']):
+        text_c(d, (395, 1030 + i * 50), t, font(22), ink)
+    c.append(dict(id='input', name='INPUT', group='', type='selector', options=['MIC', 'LINE', 'HI-Z'], verified=True,
+                  note='Typ vstupu (v LINE se automaticky zapne pad 8 dB).', x=320, y=1080, r=36,
+                  draw=dict(kind='vlever', points=[[320, 1030], [320, 1080], [320, 1130]], colour='#e0e0e0')))
+    d.ellipse((W5 / 2 - 40, 1220, W5 / 2 + 40, 1300), fill=(160, 160, 165)); d.ellipse((W5 / 2 - 18, 1242, W5 / 2 + 18, 1278), fill=(10, 10, 10))
+    text_c(d, (W5 / 2, 1330), 'HI-Z / LINE', font(24), ink)
+    save(img, 'camden500.jpg')
+    return dict(id='cranborne.camden500', name='Cranborne Audio Camden 500', manufacturer='Cranborne Audio', formFactor='500 series, 1 slot', slots500=1,
+                kind='preamp', category='mixing', w=W5, h=H5, image='camden500.jpg', profileVersion=1, layoutVerified=False, anchor='',
+                imageNote='Vlastní kresba podle manuálu Cranborne (rozmístění orientační).',
+                sources=['Cranborne Audio Camden 500 User Manual (scan.co.uk/PDFs/Products/96391.pdf)'],
+                openQuestions=['Rozmístění ovladačů orientační – ověřit podle fotky.'], controls=c)
+
 def new_profiles():
-    return [wa76(), wa2a(), samson(), neutrik()]
+    return [wa76(), wa2a(), samson(), neutrik(), api512c(), neve1073lb(), camden500()]
 
 if __name__ == '__main__':
     for p in new_profiles(): print(p['id'], len(p['controls']))

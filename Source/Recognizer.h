@@ -27,6 +27,9 @@ struct Result
     Transform transform;                   // panel -> fotka v pracovnim rozliseni
     double photoScale = 1.0;               // pracovni rozliseni / puvodni fotka
     std::map<juce::String, rm::ControlValue> values;    // jen ovladace, ktere se cist daji (known = false -> nejiste)
+    // stav kazdeho ovladace: recognized | uncertain | notvisible (mimo fotku) | small (moc maly) | unsupported (z fotky se necte)
+    std::map<juce::String, juce::String> states;
+    int tooSmall = 0;
     juce::Image rectified;                 // fotka narovnana do souradnic panelu
     juce::String message;
 };

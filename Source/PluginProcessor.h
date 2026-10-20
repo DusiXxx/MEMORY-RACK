@@ -61,6 +61,9 @@ public:
     juce::String songName;
     bool showValues = false;
     bool highContrast = false;          // vyrazne ukazatele knobu (nastaveni zobrazeni)
+    bool fitToWindow = false;           // cely rack do okna (jinak pres celou sirku + posouvani)
+    bool photoOverlay = false;          // fotka pres kresbu panelu
+    float overlayOpacity = 0.6f;
     juce::String instanceId;
 
     void reloadLibrary();
@@ -90,6 +93,8 @@ public:
         juce::Image original;           // zmensena puvodni fotka (prohlizeni dole)
         juce::String status;            // kratky text do slotu
         std::vector<juce::Point<float>> quad;   // kde byl pristroj na fotce nalezen (px nahledu original)
+        bool manual = false;            // zarovnano rucne (4 rohy)
+        std::map<juce::String, juce::String> states;   // stav ovladacu z posledniho cteni
         bool busy = false, failed = false;
         int read = 0, readable = 0;
     };
@@ -123,9 +128,14 @@ public:
     // kabely patchbaye (v projektu, ukladaji se s verzemi)
     void setCables (const std::vector<rm::Cable>&);
 
+    // presun kusu do jine skupiny (hodnoty zustavaji) / nahrazeni jinym modelem (puvodni nastaveni se ulozi jako verze)
+    juce::Result moveDeviceToGroup (const juce::String& instanceId, const juce::String& groupId);
+    juce::Result replaceDevice (const juce::String& instanceId, const juce::String& newModel, bool carryPositions, juce::String& newInstanceId);
+
     // Obnova neulozenych zmen: kdyz se projekt zavrel bez ulozeni, plugin zmeny nabidne (nikdy sam neprepise).
     struct RecoveryOffer { bool available = false; juce::int64 time = 0; juce::String song, state; int changes = 0; };
     RecoveryOffer recovery;
+    juce::StringArray profileNotes;     // co se v knihovne hardwaru zmenilo od ulozeni projektu
     void acceptRecovery();
     void discardRecovery();
 

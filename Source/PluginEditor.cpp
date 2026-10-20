@@ -42,7 +42,7 @@ bool anyPhoto (const juce::StringArray& files)
 }
 
 bool is500 (const rm::DeviceProfile* p)       { return p != nullptr && p->formFactor.startsWith ("500"); }
-int slotsOf (const rm::DeviceProfile* p)      { return is500 (p) ? 2 : 0; }
+int slotsOf (const rm::DeviceProfile* p)      { return is500 (p) ? juce::jmax (1, p->slots500) : 0; }
 
 void drawGlow (juce::Graphics& g, juce::Point<float> p, float r, Colour c)
 {
@@ -118,7 +118,7 @@ void PanelView::setData (const rm::DeviceProfile* p, rm::Snapshot* s, const Stri
 }
 
 void PanelView::setShowValues (bool b)   { showValues = b; repaint(); }
-void PanelView::setPhoto (const juce::Image& rectified, bool show)   { photo = rectified; showPhoto = show; repaint(); }
+void PanelView::setPhoto (const juce::Image& rectified, bool show, float alpha)   { photo = rectified; showPhoto = show; photoAlpha = alpha; repaint(); }
 
 bool PanelView::isInterestedInFileDrag (const juce::StringArray& files)   { return profile != nullptr && anyPhoto (files); }
 void PanelView::filesDropped (const juce::StringArray& files, int, int)
@@ -473,9 +473,9 @@ void PanelView::mouseDoubleClick (const juce::MouseEvent& e)
 void PanelView::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
 {
     const int i = hitTest (e.position);
-    if (i < 0 || snap == nullptr) return;
+    if (i < 0 || snap == nullptr) { juce::Component::mouseWheelMove (e, w); return; }     // mimo knob = posouvani racku
     auto& c = profile->controls[(size_t) i];
-    if (c.type == ControlType::button || c.type == ControlType::selector) return;
+    if (c.type == ControlType::button || c.type == ControlType::selector) { juce::Component::mouseWheelMove (e, w); return; }
     const auto v = value (c);
     const double delta = (double) (w.isReversed ? -w.deltaY : w.deltaY);
 
@@ -788,7 +788,7 @@ void PanelView::paint (juce::Graphics& g)
     updateTransform();
     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
 
-    if (showPhoto && photo.isValid())
+    if (showPhoto && photo.isValid() && photoAlpha >= 0.999f)
     {
         g.drawImage (photo, panel);
     }
@@ -804,9 +804,39 @@ void PanelView::paint (juce::Graphics& g)
     }
     else
     {
-        g.setColour (Colour (0xff1c2026)); g.fillRect (panel);
-        g.setColour (kDim); g.setFont (font (14.0f));
-        g.drawText (profile->name, panel, juce::Justification::centred);
+        // pristroj bez obrazku (vlastni): schematicky panel s nazvy ovladacu
+        juce::ColourGradient body (Colour (0xff2b2f36), panel.getX(), panel.getY(), Colour (0xff1b1e23), panel.getX(), panel.getBottom(), false);
+        g.setGradientFill (body); g.fillRect (panel);
+        g.setColour (Colour (0xff4a505a)); g.drawRect (panel, 1.0f);
+        const bool rack = ! profile->formFactor.startsWith ("500");
+        if (rack)
+            for (float x : { panel.getX() + 18.0f * scale, panel.getRight() - 18.0f * scale })
+                for (float y : { panel.getY() + panel.getHeight() * 0.3f, panel.getBottom() - panel.getHeight() * 0.3f })
+                { g.setColour (Colour (0xff0d0e10)); g.fillRoundedRectangle (x - 10 * scale, y - 5 * scale, 20 * scale, 10 * scale, 4 * scale); }
+        g.setColour (kText); g.setFont (font (juce::jlimit (9.0f, 22.0f, (rack ? 34.0f : 40.0f) * scale), true));
+        auto titleArea = rack ? juce::Rectangle<float> (panel.getX() + 40 * scale, panel.getY() + 4, 380 * scale, juce::jmin (40.0f * scale + 6, panel.getHeight() * 0.4f))
+                              : juce::Rectangle<float> (panel.getX(), panel.getY() + 60 * scale, panel.getWidth(), 60 * scale);
+        g.drawFittedText (profile->name, titleArea.toNearestInt(), rack ? juce::Justification::topLeft : juce::Justification::centred, 2);
+        g.setFont (font (juce::jlimit (8.0f, 15.0f, 24.0f * scale), true)); g.setColour (kText.withAlpha (0.85f));
+        for (auto& c : profile->controls)
+        {
+            const auto cp = centre (c); const float r = radius (c);
+            g.drawFittedText (c.name, juce::Rectangle<float> (cp.x - r * 1.8f, cp.y + r * 1.05f, r * 3.6f, juce::jmax (12.0f, r * 0.6f)).toNearestInt(), juce::Justification::centredTop, 1);
+            if (c.type == ControlType::knob || c.type == ControlType::stepped)
+                for (int k = 0; k <= 10; ++k)
+                {
+                    const float a = juce::degreesToRadians (c.angleMin + (c.angleMax - c.angleMin) * k / 10.0f);
+                    g.drawLine (cp.x + std::sin (a) * r * 1.12f, cp.y - std::cos (a) * r * 1.12f, cp.x + std::sin (a) * r * 1.3f, cp.y - std::cos (a) * r * 1.3f, 1.2f);
+                }
+        }
+    }
+
+    if (showPhoto && photo.isValid() && photoAlpha < 0.999f)
+    {
+        // fotka pres kresbu panelu (pruhlednost nastavitelna) - porovnani skutecnosti s ulozenym nastavenim
+        g.setOpacity (photoAlpha);
+        g.drawImage (photo, panel);
+        g.setOpacity (1.0f);
     }
 
     for (int i = 0; i < (int) profile->controls.size(); ++i)
@@ -897,7 +927,7 @@ void PhotoSlot::paint (juce::Graphics& g)
     Colour lc = kDim;
     if (busy)               { line = U ("čtu fotku…"); lc = kFromPhoto; }
     else if (failed)        { line = state->status + U ("\npravé tl. = zarovnat ručně"); lc = kAccent; }
-    else if (has)           { line = U ("z fotky ") + String (state->read) + "/" + String (state->readable); lc = kFromPhoto; }
+    else if (has)           { line = U ("z fotky ") + String (state->read) + "/" + String (state->readable) + (state->manual ? U (" · ručně zarovnáno") : U (" · auto")); lc = kFromPhoto; }
     else if (hasSavedPhoto) { line = U ("fotka uložená (klik = otevřít)"); }
     else if (! supported)   { line = U ("fotka se jen uloží"); }
     else                    { line = U ("+ fotka"); }
@@ -1162,6 +1192,11 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
     };
     menuButton.onClick   = [this] { showMenu(); };
 
+    content.ed = this;
+    viewport.setViewedComponent (&content, false);
+    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarThickness (10);
+    addAndMakeVisible (viewport);
     addChildComponent (viewer);
     addAndMakeVisible (levels);
 
@@ -1184,7 +1219,7 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
 
     patchbay.onChanged = [this] { patchbay.refresh(); refreshTopBar(); };
     patchbay.onStatus  = [this] (const String& t) { setStatus (t, kAccent, 12); };
-    addChildComponent (patchbay);
+    content.addChildComponent (patchbay);
 
     detail.onEdit = [this] { edited(); for (auto& kv : panels) kv.second->repaint(); refreshPhotos(); };
     addChildComponent (detail);
@@ -1218,8 +1253,64 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
         if (dev.isNotEmpty()) alignPhoto (dev, c);
     };
     addTile.isAdd = true;
-    addTile.onClick = [this] { showAddMenu(); };
-    addAndMakeVisible (addTile);
+    addTile.onClick = [this] { openBrowser(); };
+    addTile.onMenu  = [this] { showAddMenu(); };      // prave tlacitko: kus z jine skupiny / chybejici z verze
+
+    styleButton (addHwButton, U ("+ PŘÍSTROJ"));
+    addHwButton.setTooltip (U ("Knihovna hardwaru: hledat, filtrovat, přidat do skupiny; vlastní přístroj"));
+    addHwButton.onClick = [this] { openBrowser(); };
+    addAndMakeVisible (addHwButton);
+    browser.onAdd = [this] (const String& id) { addHardware (id); };
+    browser.onCustom = [this] { customDialog.setBounds (getLocalBounds()); customDialog.open(); };
+    browser.onDuplicate = [this] (const String& id) { customDialog.setBounds (getLocalBounds()); customDialog.open (rm::findProfile (id)); };
+    browser.onDelete = [this] (const String& id)
+    {
+        int refs = 0;
+        for (auto& snap : proc.all) for (auto& kv : snap.values) if (rm::profileIdOf (kv.first.upToFirstOccurrenceOf (":", false, false)) == id) { ++refs; break; }
+        const bool inRack = proc.studio.allInstances().joinIntoString ("|").contains (id);
+        juce::Component::SafePointer<RackMemoryEditor> safe (this);
+        juce::AlertWindow::showAsync (juce::MessageBoxOptions().withIconType (juce::MessageBoxIconType::WarningIcon)
+                                          .withTitle (U ("Smazat vlastní přístroj"))
+                                          .withMessage (U ("Smazat definici ") + (rm::findProfile (id) ? rm::findProfile (id)->name : id) + "?\n"
+                                                        + (refs > 0 ? U ("Používá ho ") + String (refs) + U (" uložených verzí – jejich hodnoty zůstanou, jen se nebudou zobrazovat.\n") : String())
+                                                        + (inRack ? U ("Je v racku – odeber ho nejdřív z racku.\n") : String())
+                                                        + U ("Soubor jde do koše (Trash), dá se vrátit."))
+                                          .withButton (U ("Smazat")).withButton (U ("Zrušit")).withAssociatedComponent (this),
+                                      [safe, id, inRack] (int r)
+                                      {
+                                          if (safe == nullptr || r != 1 || inRack) return;
+                                          rm::hideUserProfile (id);
+                                          safe->browser.refresh();
+                                          safe->setStatus (U ("Vlastní přístroj smazán (soubor v koši)."), kDim);
+                                      });
+    };
+    customDialog.onCreate = [this] (const rm::DeviceProfile& p)
+    {
+        String err;
+        auto* saved = rm::saveUserProfile (p, err);
+        if (saved == nullptr) { showError (U ("Vlastní přístroj nejde uložit: ") + err); return; }
+        customDialog.setVisible (false);
+        addHardware (saved->id);
+    };
+    addChildComponent (browser);
+    addChildComponent (customDialog);
+
+    // fotka jako vrstva pres kresbu panelu (jen zobrazeni - nastaveni se nemeni)
+    styleButton (overlayButton, U ("FOTO VRSTVA"));
+    overlayButton.setClickingTogglesState (true);
+    overlayButton.setTooltip (U ("Zarovnaná fotka přes kresbu přístroje (porovnání). Nastavení ani polohy se tím nemění."));
+    overlayButton.onClick = [this] { proc.photoOverlay = overlayButton.getToggleState(); proc.commitState (false); refreshPhotos(); resized(); };
+    overlaySlider.setSliderStyle (juce::Slider::LinearBar);
+    overlaySlider.setRange (5.0, 100.0, 1.0);
+    overlaySlider.setTextValueSuffix (" %");
+    overlaySlider.setColour (juce::Slider::trackColourId, Colour (0xff1d4b66));
+    overlaySlider.setColour (juce::Slider::backgroundColourId, kField);
+    overlaySlider.setColour (juce::Slider::textBoxTextColourId, kText);
+    overlaySlider.setTooltip (U ("Průhlednost fotky"));
+    overlaySlider.onValueChange = [this] { proc.overlayOpacity = (float) overlaySlider.getValue() / 100.0f; refreshPhotos(); };
+    addAndMakeVisible (overlayButton);
+    addChildComponent (overlaySlider);
+    content.addAndMakeVisible (addTile);
 
     tip.setFont (font (14.0f, true));
     tip.setColour (juce::Label::textColourId, juce::Colours::white);
@@ -1249,6 +1340,7 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
     setSize (w, juce::jmin (availH, heightForWidth (w)));
 
     refreshAll();
+    if (! proc.profileNotes.isEmpty()) setStatus (proc.profileNotes[0] + (proc.profileNotes.size() > 1 ? U (" (+ další)") : String()), kAccent, 20);
     checkForUpdate();
     updater->maybeAutoCheck();          // GitHub: nejvys jednou za 6 hodin, na pozadi
     startTimer (500);
@@ -1284,12 +1376,12 @@ void RackMemoryEditor::syncComponents()
             const String devId (id);
             pv->onEdit  = [this] { edited(); };
             pv->onHover = [this, raw] (const String& t, juce::Point<int> where, int radius) { showTip (*raw, t, where, radius); };
-            pv->onPhotoDropped = [this, devId] (const juce::File& f) { importPhoto (f, devId); };
+            pv->onPhotoDropped = [this, devId] (const juce::File& f) { importPhoto (f, devId, true); };
             pv->onGrab = [this, devId] (const juce::MouseEvent& e, int phase) { handleGrab (devId, e, phase); };
             pv->onEntryLeave = [this] (PanelView* from, bool forward) { entryLeave (from, forward); };
             pv->onDetail = [this, devId] (int index) { openDetail (devId, index); };
             pv->onDeviceMenu = [this, devId] { showDeviceMenu (devId); };
-            addAndMakeVisible (*pv);
+            content.addAndMakeVisible (*pv);
             panels[id] = std::move (pv);
         }
         if (slots.find (id) == slots.end())
@@ -1297,7 +1389,7 @@ void RackMemoryEditor::syncComponents()
             auto slot = std::make_unique<PhotoSlot>();
             const String devId (id);
             slot->profile = rm::profileForInstance (id);
-            slot->onPhoto = [this, devId] (const juce::File& f) { importPhoto (f, devId); };
+            slot->onPhoto = [this, devId] (const juce::File& f) { importPhoto (f, devId, true); };
             slot->onClick = [this, devId] { choosePhoto (devId); };
             slot->onRemove = [this, devId] { removeDevice (devId); };
             slot->onMenu = [this, devId] { showDeviceMenu (devId); };
@@ -1312,7 +1404,7 @@ void RackMemoryEditor::syncComponents()
                 viewer.setVisible (true);
                 viewer.toFront (true);
             };
-            addAndMakeVisible (*slot);
+            content.addAndMakeVisible (*slot);
             slots[id] = std::move (slot);
         }
     }
@@ -1320,12 +1412,21 @@ void RackMemoryEditor::syncComponents()
     tip.toFront (false);
 }
 
+void RackContent::paint (juce::Graphics& g)            { g.fillAll (kBg); if (ed != nullptr) ed->paintRack (g); }
+void RackContent::paintOverChildren (juce::Graphics& g) { if (ed != nullptr) ed->paintRackOver (g); }
+void RackContent::mouseDown (const juce::MouseEvent& e) { if (ed != nullptr) ed->rackMouse (e, 0); }
+void RackContent::mouseDrag (const juce::MouseEvent& e) { if (ed != nullptr) ed->rackMouse (e, 1); }
+void RackContent::mouseUp (const juce::MouseEvent& e)   { if (ed != nullptr) ed->rackMouse (e, 2); }
+
 void RackMemoryEditor::paint (juce::Graphics& g)
 {
     g.fillAll (kBg);
     g.setColour (kBar);
     g.fillRect (0, 0, getWidth(), kBarHeight);
+}
 
+void RackMemoryEditor::paintRack (juce::Graphics& g)
+{
     // 500 lunchbox: sasi, kolejnice se srouby, prazdne sloty zaslepene
     for (auto& lb : lunchboxes)
     {
@@ -1365,11 +1466,14 @@ void RackMemoryEditor::paint (juce::Graphics& g)
         }
         g.setColour (Colour (0xff6c7179));
         g.setFont (font (juce::jlimit (8.0f, 11.0f, lb.rail * 0.42f), true));
-        g.drawText ("500", juce::Rectangle<float> (b.getX() + lb.wall, b.getBottom() - lb.rail, 40.0f, lb.rail), juce::Justification::centredLeft);
+        g.drawText (proc.rack.lunchboxModel.isNotEmpty() ? proc.rack.lunchboxModel : String ("500"),
+                    juce::Rectangle<float> (b.getX() + lb.wall, b.getBottom() - lb.rail, b.getWidth() * 0.6f, lb.rail), juce::Justification::centredLeft);
     }
 }
 
-void RackMemoryEditor::paintOverChildren (juce::Graphics& g)
+void RackMemoryEditor::paintOverChildren (juce::Graphics&) {}
+
+void RackMemoryEditor::paintRackOver (juce::Graphics& g)
 {
     if (! grabActive) return;
     if (! dropMarker.isEmpty())
@@ -1465,12 +1569,12 @@ int RackMemoryEditor::rackHeight (int width, int availableHeight) const
     return computeLayout (width, availableHeight).height;
 }
 
-void RackMemoryEditor::layoutRack (juce::Rectangle<int> area)
+void RackMemoryEditor::layoutRack (juce::Rectangle<int> area, bool fitHeight)
 {
-    // nejvetsi sirka, pri ktere se cely rack vejde a lunchbox neni vedle 19" pristroju prilis maly
+    // vychozi: rack pres celou sirku (pri malem okne se posouva); "cely rack do okna": nejvetsi sirka, pri ktere se vejde
     int w = area.getWidth();
-    Layout L;
-    for (int i = 0; i < 40; ++i)
+    Layout L = computeLayout (w, area.getHeight());
+    for (int i = 0; fitHeight && i < 40; ++i)
     {
         L = computeLayout (w, area.getHeight());
         if (L.height <= area.getHeight()) break;
@@ -1510,38 +1614,15 @@ void RackMemoryEditor::layoutRack (juce::Rectangle<int> area)
 int RackMemoryEditor::heightForWidth (int width) const
 {
     const int chrome = kBarHeight + kTabHeight + kLevelHeight + (banner.isVisible() ? kBannerHeight + kGap : 0) + 2 * kGap;
-    if (showPatchbay) return chrome + juce::jmax (260, patchbay.naturalHeight (width - 2 * kGap));
-    return chrome + rackHeight (width - 2 * kGap, 0) + kGap + kStripHeight;
+    const int cw = width - 2 * kGap - 10;
+    if (showPatchbay) return chrome + juce::jmax (260, patchbay.naturalHeight (cw));
+    return chrome + rackHeight (cw, 0) + kGap + kStripHeight;
 }
 
 void RackMemoryEditor::Constrainer::checkBounds (juce::Rectangle<int>& b, const juce::Rectangle<int>& prev, const juce::Rectangle<int>& limits,
                                                  bool top, bool left, bool bottom, bool right)
 {
-    // Okno drzi pomer racku: tahne-li se do sirky, roste i vyska (a naopak). Jinak by zbyvalo prazdne misto.
-    if (ed != nullptr)
-    {
-        const bool horizontal = left || right, vertical = top || bottom;
-        int w = juce::jlimit (getMinimumWidth(), getMaximumWidth(), b.getWidth());
-        if (vertical && ! horizontal)
-        {
-            // podle vysky najit sirku
-            int lo = getMinimumWidth(), hi = getMaximumWidth();
-            while (lo < hi) { const int mid = (lo + hi + 1) / 2; if (ed->heightForWidth (mid) <= b.getHeight()) lo = mid; else hi = mid - 1; }
-            w = lo;
-        }
-        int h = ed->heightForWidth (w);
-        const int maxH = limits.isEmpty() ? getMaximumHeight() : juce::jmin (getMaximumHeight(), limits.getHeight());
-        if (h > maxH)
-        {
-            int lo = getMinimumWidth(), hi = w;
-            while (lo < hi) { const int mid = (lo + hi + 1) / 2; if (ed->heightForWidth (mid) <= maxH) lo = mid; else hi = mid - 1; }
-            w = lo; h = juce::jmin (maxH, ed->heightForWidth (w));
-        }
-        b.setSize (w, juce::jmax (getMinimumHeight(), h));
-        if (left) b.setX (prev.getRight() - w);
-        if (top)  b.setY (prev.getBottom() - b.getHeight());
-        return;
-    }
+    // okno jde volne zvetsovat / zmensovat; rack vyplni sirku, co se nevejde na vysku, posouva se
     juce::ComponentBoundsConstrainer::checkBounds (b, prev, limits, top, left, bottom, right);
 }
 
@@ -1551,6 +1632,7 @@ void RackMemoryEditor::resized()
     menuButton.setBounds (bar.removeFromRight (36));   bar.removeFromRight (6);
     valuesButton.setBounds (bar.removeFromRight (46)); bar.removeFromRight (6);
     photoButton.setBounds (bar.removeFromRight (64)); bar.removeFromRight (6);
+    addHwButton.setBounds (bar.removeFromRight (104)); bar.removeFromRight (6);
     if (updateButton.isVisible()) { updateButton.setBounds (bar.removeFromRight (150)); bar.removeFromRight (6); }
     saveButton.setBounds (bar.removeFromRight (120));  bar.removeFromRight (6);
     if (undoButton.isVisible()) { undoButton.setBounds (bar.removeFromRight (60)); bar.removeFromRight (6); }
@@ -1561,9 +1643,19 @@ void RackMemoryEditor::resized()
     snapshotBox.setBounds (bar);
 
     tabs.setBounds (0, kBarHeight, getWidth(), kTabHeight);
+    {
+        auto r = juce::Rectangle<int> (0, kBarHeight, getWidth(), kTabHeight).reduced (6, 4);
+        overlayButton.setBounds (r.removeFromRight (110));
+        overlaySlider.setVisible (proc.photoOverlay && ! showPatchbay);
+        if (overlaySlider.isVisible()) { r.removeFromRight (4); overlaySlider.setBounds (r.removeFromRight (110)); }
+        tabs.reservedRight = getWidth() - r.getRight() + 8;
+        overlayButton.setVisible (! showPatchbay);
+    }
     levels.setBounds (0, kBarHeight + kTabHeight, getWidth(), kLevelHeight);
-    auto content = getLocalBounds().withTrimmedTop (kBarHeight + kTabHeight + kLevelHeight).reduced (kGap);
-    if (banner.isVisible()) { banner.setBounds (content.removeFromTop (kBannerHeight)); content.removeFromTop (kGap); }
+    auto view = getLocalBounds().withTrimmedTop (kBarHeight + kTabHeight + kLevelHeight).reduced (kGap);
+    if (banner.isVisible()) { banner.setBounds (view.removeFromTop (kBannerHeight)); view.removeFromTop (kGap); }
+    viewport.setBounds (view);
+    const int cw = juce::jmax (300, view.getWidth() - viewport.getScrollBarThickness() - 2);
 
     patchbay.setVisible (showPatchbay);
     for (auto& kv : panels) kv.second->setVisible (! showPatchbay);
@@ -1571,19 +1663,19 @@ void RackMemoryEditor::resized()
     addTile.setVisible (! showPatchbay);
     if (showPatchbay)
     {
-        patchbay.setBounds (content);
+        const int ph = juce::jmax (view.getHeight(), patchbay.naturalHeight (cw));
+        content.setSize (cw, ph);
+        patchbay.setBounds (0, 0, cw, ph);
         lunchboxes.clear(); rows.clear();
         rackArea = {};
     }
     else
     {
-        auto strip = content.removeFromBottom (kStripHeight);
-        content.removeFromBottom (kGap);
-        layoutRack (content);
-
-        // sloty na fotky pod rackem, stejne siroke jako rack, ve stejnem poradi; na konci "+" (pridat pristroj)
-        strip = strip.withX (rackArea.getX()).withWidth (rackArea.getWidth());
-        if (rackArea.getBottom() + kGap + kStripHeight <= getHeight() - kGap) strip.setY (rackArea.getBottom() + kGap);
+        // rack pres celou sirku; co se nevejde na vysku, posouva se (kolecko mysi / posuvnik vpravo)
+        const bool fit = proc.fitToWindow;
+        layoutRack (juce::Rectangle<int> (0, 0, cw, juce::jmax (100, view.getHeight() - kStripHeight - kGap)), fit);
+        auto strip = juce::Rectangle<int> (rackArea.getX(), rackArea.getBottom() + kGap, rackArea.getWidth(), kStripHeight);
+        content.setSize (cw, juce::jmax (view.getHeight(), strip.getBottom() + 2));
         addTile.setBounds (strip.removeFromRight (juce::jmin (110, strip.getWidth() / 4)));
         strip.removeFromRight (kGap);
         const int n = order.size();
@@ -1597,12 +1689,14 @@ void RackMemoryEditor::resized()
         }
         if (review.isVisible())
         {
-            const int h = juce::jmin (review.preferredHeight(), getHeight() / 2);
-            review.setBounds (juce::Rectangle<int> (rackArea.getX(), strip.getBottom() - h, rackArea.getWidth(), h));
+            const int h = juce::jmin (review.preferredHeight(), view.getHeight() / 2);
+            review.setBounds (view.getX(), view.getBottom() - h, cw, h);
             review.toFront (false);
         }
     }
     detail.setBounds (getLocalBounds());
+    browser.setBounds (getLocalBounds());
+    customDialog.setBounds (getLocalBounds());
     if (viewer.isVisible()) viewer.setBounds (getLocalBounds().withTrimmedTop (kBarHeight));
     tip.setVisible (false);
     repaint();
@@ -1630,7 +1724,7 @@ static void moveBox (rm::RackLayout& r, int index)
 
 void RackMemoryEditor::handleGrab (const String& deviceId, const juce::MouseEvent& e, int phase)
 {
-    const auto pos = e.getEventRelativeTo (this).getPosition();
+    const auto pos = e.getEventRelativeTo (&content).getPosition();
     juce::Rectangle<int> source;
     if (deviceId == kBoxId) { if (lunchboxes.empty()) return; source = lunchboxes[0].box.toNearestInt(); }
     else if (auto* pv = panelFor (deviceId)) source = pv->getBounds();
@@ -1651,7 +1745,7 @@ void RackMemoryEditor::handleGrab (const String& deviceId, const juce::MouseEven
         {
             grabActive = true;
             tip.setVisible (false);
-            auto snapImg = createComponentSnapshot (source, true, 1.0f);
+            auto snapImg = content.createComponentSnapshot (source, true, 1.0f);
             const float k = juce::jmin (1.0f, 420.0f / (float) juce::jmax (1, snapImg.getWidth()), 300.0f / (float) juce::jmax (1, snapImg.getHeight()));
             grabImage = snapImg.rescaled (juce::jmax (1, juce::roundToInt (snapImg.getWidth() * k)), juce::jmax (1, juce::roundToInt (snapImg.getHeight() * k)));
             grabOffset = { juce::roundToInt ((grabStart.x - source.getX()) * k), juce::roundToInt ((grabStart.y - source.getY()) * k) };
@@ -1734,14 +1828,16 @@ void RackMemoryEditor::computeDrop (juce::Point<int> p)
     if (trial == rack) dropMarker = {};
 }
 
-void RackMemoryEditor::mouseDown (const juce::MouseEvent& e)
+void RackMemoryEditor::rackMouse (const juce::MouseEvent& e, int phase)
 {
-    if (lunchboxes.empty() || ! lunchboxes[0].box.contains (e.position)) return;
-    if (e.mods.isPopupMenu()) { showLunchboxMenu(); return; }
-    handleGrab (kBoxId, e, 0);
+    if (phase == 0)
+    {
+        if (lunchboxes.empty() || ! lunchboxes[0].box.contains (e.position)) return;
+        if (e.mods.isPopupMenu()) { showLunchboxMenu(); return; }
+        handleGrab (kBoxId, e, 0);
+    }
+    else if (grabbed == kBoxId) handleGrab (kBoxId, e, phase);
 }
-void RackMemoryEditor::mouseDrag (const juce::MouseEvent& e)   { if (grabbed == kBoxId) handleGrab (kBoxId, e, 1); }
-void RackMemoryEditor::mouseUp (const juce::MouseEvent& e)     { if (grabbed == kBoxId) handleGrab (kBoxId, e, 2); }
 
 void RackMemoryEditor::showAddMenu()
 {
@@ -1798,6 +1894,70 @@ void RackMemoryEditor::showAddMenu()
     });
 }
 
+namespace
+{
+juce::var loadSettings (const rm::Library& lib)
+{
+    juce::var v;
+    auto f = lib.getRoot().getChildFile ("settings.json");
+    if (f.existsAsFile() && juce::JSON::parse (f.loadFileAsString(), v).wasOk() && v.getDynamicObject() != nullptr) return v;
+    return juce::var (new juce::DynamicObject());
+}
+juce::StringArray recentHardware (const rm::Library& lib)
+{
+    juce::StringArray r;
+    const auto settings = loadSettings (lib);
+    const auto arr = settings.getProperty ("recentHardware", juce::var());
+    if (auto* a = arr.getArray()) for (auto& e : *a) r.add (e.toString());
+    return r;
+}
+void rememberHardware (const rm::Library& lib, const String& id)
+{
+    auto v = loadSettings (lib);
+    auto r = recentHardware (lib);
+    r.removeString (id); r.insert (0, id);
+    while (r.size() > 8) r.remove (r.size() - 1);
+    juce::Array<juce::var> a; for (auto& x : r) a.add (x);
+    v.getDynamicObject()->setProperty ("recentHardware", a);
+    lib.getRoot().createDirectory();
+    lib.getRoot().getChildFile ("settings.json").replaceWithText (juce::JSON::toString (v), false, false, "\n");
+}
+}
+
+void RackMemoryEditor::openBrowser()
+{
+    auto* g = proc.studio.findGroup (proc.currentGroup);
+    browser.setBounds (getLocalBounds());
+    browser.open (recentHardware (proc.library), showPatchbay ? String ("PATCHBAY") : (g != nullptr ? g->name : String()));
+}
+
+void RackMemoryEditor::addHardware (const String& profileId)
+{
+    auto* prof = rm::findProfile (profileId);
+    if (prof == nullptr) return;
+    rememberHardware (proc.library, profileId);
+    if (prof->isPatchbay())
+    {
+        auto st = proc.studio; st.addPatchbay (profileId);
+        auto r = proc.setStudio (st);
+        if (r.failed()) { showError (r.getErrorMessage()); return; }
+        browser.setVisible (false);
+        selectTab ("@patchbay");
+        setStatus (U ("Přidáno na PATCHBAY: ") + prof->name, kOk);
+        return;
+    }
+    if (showPatchbay) selectTab (proc.currentGroup);
+    auto rack = proc.rack;
+    const auto id = rack.add (profileId, proc.studio.newInstanceId (profileId));
+    auto r = proc.setRack (rack);
+    if (id.isEmpty() || r.failed()) { showError (r.failed() ? r.getErrorMessage() : U ("Přístroj nejde přidat.")); return; }
+    librarySignature = proc.library.signature();
+    browser.setVisible (false);
+    refreshAll();
+    auto* g = proc.studio.findGroup (proc.currentGroup);
+    setStatus (U ("Přidáno: ") + proc.rack.displayName (id) + U (" do skupiny ") + (g != nullptr ? g->name : String()) + U (" (přesun = chytit a táhnout)"), kOk, 10);
+}
+
 void RackMemoryEditor::removeDevice (const String& id)
 {
     const auto name = proc.rack.displayName (id);
@@ -1823,6 +1983,14 @@ void RackMemoryEditor::showLunchboxMenu()
 {
     juce::PopupMenu m;
     m.addSectionHeader (U ("Lunchbox"));
+    struct Chassis { const char* name; int slots; };
+    static const Chassis chassis[] = { { "API 500-6B", 6 }, { "API 500-8B", 8 }, { "Heritage Audio OST-10 v2.0", 10 }, { "Radial Workhorse Powerstation", 8 },
+                                       { "Rupert Neve Designs R6", 6 }, { "Cranborne Audio 500R8", 8 } };
+    juce::PopupMenu cm;
+    cm.addItem (50, U ("obecný (bez názvu)"), true, proc.rack.lunchboxModel.isEmpty());
+    for (int i = 0; i < (int) (sizeof (chassis) / sizeof (chassis[0])); ++i)
+        cm.addItem (60 + i, String (chassis[i].name) + "  (" + String (chassis[i].slots) + U (" slotů)"), true, proc.rack.lunchboxModel == chassis[i].name);
+    m.addSubMenu (U ("Šasi"), cm);
     int used = 0;
     for (auto& it : proc.rack.items) if (proc.rack.width500 (it) > 0) used = juce::jmax (used, it.slot + proc.rack.width500 (it));
     for (int n : { 6, 8, 10, 11, 16 })
@@ -1832,7 +2000,15 @@ void RackMemoryEditor::showLunchboxMenu()
     {
         if (safe == nullptr || r <= 0) return;
         auto rack = safe->proc.rack;
-        rack.lunchboxSlots = r;
+        if (r == 50) rack.lunchboxModel.clear();
+        else if (r >= 60 && r < 60 + (int) (sizeof (chassis) / sizeof (chassis[0])))
+        {
+            rack.lunchboxModel = chassis[r - 60].name;
+            int need = 0;
+            for (auto& it : rack.items) if (rack.width500 (it) > 0) need = juce::jmax (need, it.slot + rack.width500 (it));
+            rack.lunchboxSlots = juce::jmax (need, chassis[r - 60].slots);
+        }
+        else rack.lunchboxSlots = r;
         safe->proc.setRack (rack);
         safe->librarySignature = safe->proc.library.signature();
         safe->refreshAll();
@@ -1936,6 +2112,8 @@ void RackMemoryEditor::refreshAll()
         if (songEdit.getText().trim() != proc.songName) songEdit.setText (proc.songName, false);
         if (noteEdit.getText() != proc.working.notes)   noteEdit.setText (proc.working.notes, false);
         valuesButton.setToggleState (proc.showValues, juce::dontSendNotification);
+        overlayButton.setToggleState (proc.photoOverlay, juce::dontSendNotification);
+        overlaySlider.setValue (proc.overlayOpacity * 100.0, juce::dontSendNotification);
     }
     // zalozky
     tabs.tabs.clear();
@@ -1992,12 +2170,7 @@ void RackMemoryEditor::selectTab (const String& id)
     detail.setVisible (false);
     review.setVisible (false);
     refreshAll();
-    // okno drzi pomer obsahu (vyska podle sirky), ale nevejde-li se na obrazovku, zmensi se
-    int maxH = 1600;
-    if (auto* d = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()) maxH = d->userArea.getHeight() - 60;
-    auto b = getLocalBounds();
-    constrainer.checkBounds (b, getLocalBounds(), juce::Rectangle<int> (0, 0, 3400, maxH), false, false, false, true);
-    if (b.getHeight() != getHeight() || b.getWidth() != getWidth()) setSize (b.getWidth(), b.getHeight());
+    viewport.setViewPosition (0, 0);
 }
 
 void RackMemoryEditor::askText (const String& title, const String& initial, std::function<void (const String&)> done)
@@ -2084,17 +2257,35 @@ void RackMemoryEditor::showDeviceMenu (const String& deviceId)
     m.addItem (3, U ("Zarovnat fotku ručně (4 rohy)…"), hasPhoto);
     m.addItem (4, U ("Odebrat fotku (nastavení zůstane)"), hasPhoto || proc.working.devicePhotos.count (deviceId) > 0);
     m.addItem (5, U ("Potvrdit hodnoty z fotky (") + String (unconfirmed) + ")", unconfirmed > 0);
+    m.addItem (9, U ("Znovu analyzovat uloženou fotku (automaticky)"), proc.working.devicePhotos.count (deviceId) > 0);
     m.addSeparator();
     m.addItem (6, U ("Uložit nastavení jako preset…"));
     for (int i = 0; i < (int) presets.size(); ++i) { apply.addItem (100 + i, presets[(size_t) i].name); del.addItem (200 + i, presets[(size_t) i].name); }
     m.addSubMenu (U ("Načíst preset"), apply, ! presets.empty());
     m.addSubMenu (U ("Smazat preset"), del, ! presets.empty());
     m.addSeparator();
+    m.addSeparator();
+    juce::PopupMenu moveTo, replaceWith;
+    juce::StringArray groupIds, models;
+    for (auto& g : proc.studio.groups)
+        if (g.id != proc.currentGroup) { groupIds.add (g.id); moveTo.addItem (300 + groupIds.size() - 1, g.name); }
+    for (auto& pr : rm::profiles())
+        if (! pr.hidden && ! pr.isPatchbay() && pr.id != prof->id && pr.id != "elysia.xfilter.500"
+            && pr.formFactor.startsWith ("500") == prof->formFactor.startsWith ("500")
+            && (! pr.formFactor.startsWith ("500") || juce::jmax (1, pr.slots500) == juce::jmax (1, prof->slots500)))
+        {
+            int same = 0;
+            for (auto& c : pr.controls) if (auto* oc = prof->find (c.id)) if (oc->type == c.type && oc->numPositions() == c.numPositions()) ++same;
+            models.add (pr.id);
+            replaceWith.addItem (400 + models.size() - 1, pr.name + (same > 0 ? U ("   (převezme ") + String (same) + U (" poloh)") : String()));
+        }
+    m.addSubMenu (U ("Přesunout do skupiny"), moveTo, ! groupIds.isEmpty());
+    m.addSubMenu (U ("Nahradit jiným modelem (původní nastavení se uloží jako verze)"), replaceWith, ! models.isEmpty());
     m.addItem (7, U ("Vymazat přístroj (vše nezadáno)"));
     m.addItem (8, U ("Odebrat z racku…"));
 
     juce::Component::SafePointer<RackMemoryEditor> safe (this);
-    m.showMenuAsync (juce::PopupMenu::Options().withMousePosition(), [safe, deviceId, presets] (int r)
+    m.showMenuAsync (juce::PopupMenu::Options().withMousePosition(), [safe, deviceId, presets, groupIds, models] (int r)
     {
         if (safe == nullptr || r == 0) return;
         auto& p = safe->proc;
@@ -2124,6 +2315,29 @@ void RackMemoryEditor::showDeviceMenu (const String& deviceId)
                 else safe->setStatus (U ("Preset uložen."), kOk);
             });
         }
+        else if (r >= 400 && r < 400 + models.size())
+        {
+            String newId;
+            auto res = p.replaceDevice (deviceId, models[r - 400], true, newId);
+            if (res.failed()) safe->showError (res.getErrorMessage());
+            else safe->setStatus (U ("Nahrazeno: ") + p.rack.displayName (newId) + U (". Původní nastavení je ve verzi „před nahrazením“."), kOk, 12);
+            safe->librarySignature = p.library.signature();
+            safe->refreshAll();
+        }
+        else if (r >= 300 && r < 300 + groupIds.size())
+        {
+            auto res = p.moveDeviceToGroup (deviceId, groupIds[r - 300]);
+            if (res.failed()) safe->showError (res.getErrorMessage());
+            else safe->setStatus (U ("Přesunuto do skupiny ") + p.studio.findGroup (groupIds[r - 300])->name, kOk);
+            safe->librarySignature = p.library.signature();
+            safe->refreshAll();
+        }
+        else if (r == 9)
+        {
+            auto f = p.library.photoFile (p.working.devicePhotos[deviceId]);
+            if (f.existsAsFile()) safe->importPhoto (f, deviceId, false);
+            else safe->setStatus (U ("Fotka už v knihovně není."), kAccent);
+        }
         else if (r >= 200) { p.library.removePreset (presets[(size_t) r - 200].model, presets[(size_t) r - 200].id); safe->setStatus (U ("Preset smazán (je v koši)."), kDim); }
         else if (r >= 100) { p.applyPreset (deviceId, presets[(size_t) r - 100]); safe->setStatus (U ("Preset načten (Zpět vrátí)."), kOk); safe->refreshAll(); }
         else if (r == 7) { p.clearDevice (deviceId); safe->refreshAll(); }
@@ -2137,6 +2351,8 @@ void RackMemoryEditor::openDetail (const String& instanceId, int controlIndex)
     juce::Image rect;
     if (auto it = proc.devicePhotos.find (instanceId); it != proc.devicePhotos.end()) rect = it->second.rectified;
     detail.setBounds (getLocalBounds());
+    browser.setBounds (getLocalBounds());
+    customDialog.setBounds (getLocalBounds());
     detail.show (proc, instanceId, controlIndex, rect);
     detail.grabKeyboardFocus();
 }
@@ -2198,6 +2414,7 @@ void RackMemoryEditor::showMenu()
     const int nPhotos = proc.working.photos.size();
     m.addItem (2, U ("Otevřít fotky ve Finderu (") + String (nPhotos) + ")", nPhotos > 0);
     m.addItem (14, U ("Výrazné ukazatele knobů (vysoký kontrast)"), true, PanelView::highContrast);
+    m.addItem (17, U ("Celý rack do okna (bez posouvání)"), true, proc.fitToWindow);
     m.addSeparator();
     showVersionMenu (m);
     m.addSeparator();
@@ -2257,6 +2474,7 @@ void RackMemoryEditor::showMenu()
             safe->refreshAll();
         }
         else if (r == 15) safe->choosePhoto ({});
+        else if (r == 17) { p.fitToWindow = ! p.fitToWindow; p.commitState (false); safe->resized(); }
         else if (r == 11)
         {
             auto res = p.overwriteLoaded();
@@ -2490,7 +2708,9 @@ void RackMemoryEditor::refreshPhotos()
             s->second->hasSavedPhoto = proc.working.devicePhotos.count (id) > 0;
             s->second->repaint();
         }
-        if (auto* pv = panelFor (id)) pv->setPhoto ({}, false);     // vzhled hardwaru se podle fotky nemeni
+        // vrstva fotky jen na prani (FOTO VRSTVA); jinak se vzhled hardwaru podle fotky nemeni
+        if (auto* pv = panelFor (id))
+            pv->setPhoto (st != nullptr ? st->rectified : juce::Image(), proc.photoOverlay && st != nullptr && st->rectified.isValid(), proc.overlayOpacity);
     }
     const auto missing = proc.missingInstances();
     addTile.addHint = missing.isEmpty() ? String() : String (missing.size()) + U (" z verze chybí");
@@ -2552,7 +2772,7 @@ void RackMemoryEditor::choosePhoto (const String& deviceId)
                           {
                               if (safe == nullptr) return;
                               for (auto& f : fc.getResults())
-                                  if (f.existsAsFile()) { if (deviceId.isEmpty()) safe->importPhotoAuto (f); else safe->importPhoto (f, deviceId); }
+                                  if (f.existsAsFile()) { if (deviceId.isEmpty()) safe->importPhotoAuto (f); else safe->importPhoto (f, deviceId, true); }
                           });
 }
 
@@ -2593,6 +2813,13 @@ void RackMemoryEditor::showReview (const juce::StringArray& instances)
         item.read = it->second.read; item.readable = it->second.readable;
         item.failed = it->second.failed; item.message = it->second.status;
         item.unconfirmed = proc.numUnconfirmed (id);
+        item.manual = it->second.manual;
+        for (auto& kv : it->second.states)
+        {
+            if (kv.second == "notvisible") ++item.notVisible;
+            else if (kv.second == "small") ++item.tooSmall;
+            else if (kv.second == "unsupported") ++item.unsupported;
+        }
         if (proc.needsReview.count (id)) item.uncertain = proc.needsReview.at (id);
         items.push_back (item);
     }
@@ -2602,7 +2829,7 @@ void RackMemoryEditor::showReview (const juce::StringArray& instances)
     resized();
 }
 
-void RackMemoryEditor::importPhoto (const juce::File& source, const String& deviceId)
+void RackMemoryEditor::importPhoto (const juce::File& source, const String& deviceId, bool copyToLibrary)
 {
     auto* prof = rm::profileForInstance (deviceId);
     if (prof == nullptr) return;
@@ -2618,10 +2845,11 @@ void RackMemoryEditor::importPhoto (const juce::File& source, const String& devi
     juce::Component::SafePointer<RackMemoryEditor> safe (this);
 
     // Vse na pozadi (mimo audio i UI vlakno) a jen na tomto pocitaci - fotka se nikam neodesila.
-    juce::Thread::launch ([safe, lib, snapId, source, prof, deviceId, reference]
+    juce::Thread::launch ([safe, lib, snapId, source, prof, deviceId, reference, copyToLibrary]
     {
         String copyError, loadError;
-        const auto name = lib.importPhoto (source, snapId, copyError);          // original se uchova v knihovne
+        const auto name = copyToLibrary ? lib.importPhoto (source, snapId, copyError)          // original se uchova v knihovne
+                                        : source.getFileName();
         rmcv::Result result;
         auto img = rmcv::loadPhoto (source, loadError);
         if (img.isValid()) result = rmcv::recognize (img, *prof, reference);
@@ -2640,6 +2868,8 @@ void RackMemoryEditor::importPhoto (const juce::File& source, const String& devi
             ds.read = result.read; ds.readable = result.readable;
             ds.original = preview;
             ds.quad = quad;
+            ds.manual = false;
+            ds.states = result.states;
             if (result.aligned)
             {
                 ds.failed = false;
@@ -2688,7 +2918,7 @@ void RackMemoryEditor::alignPhoto (const String& deviceId, const std::array<juce
             auto& ds = p.devicePhotos[deviceId];
             ds.busy = false; ds.failed = ! result.aligned;
             ds.read = result.read; ds.readable = result.readable; ds.status = result.message;
-            ds.rectified = result.rectified; ds.quad = quad;
+            ds.rectified = result.rectified; ds.quad = quad; ds.manual = true; ds.states = result.states;
             if (result.aligned) p.applyRecognition (deviceId, result.values);
             safe->setStatus (U ("Ručně zarovnáno: ") + p.rack.displayName (deviceId) + U (" – přečteno ") + String (result.read) + "/" + String (result.readable), kOk, 12);
             safe->refreshAll();
@@ -2756,6 +2986,7 @@ void RackMemoryEditor::importPhotoAuto (const juce::File& source)
                 const bool take = r.aligned && (r.keypoints >= bestKp / 2 || bestKp < 12);
                 if (! take) continue;
                 ds.failed = false; ds.rectified = r.rectified; ds.original = preview; ds.status = r.message; ds.quad = (*quads)[i];
+                ds.manual = false; ds.states = r.states;
                 ds.read = r.read; ds.readable = r.readable;
                 apply[(*jobs)[i].id] = r.values;
                 found.add ((*jobs)[i].id);

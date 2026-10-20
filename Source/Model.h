@@ -89,6 +89,10 @@ struct DeviceProfile
     std::vector<ControlDef> controls;
     String origin = "built-in";    // "built-in" | "library" (stazena knihovna hardwaru)
     String category;               // "mixing" | "mastering" | "" - doporucena skupina pro novy kus
+    String kind;                   // compressor | eq | preamp | exciter | transient | patchbay | other
+    int slots500 = 0;              // 500 modul: sirka ve slotech lunchboxu (0 = 19" / jine)
+    bool hidden = false;           // smazany vlastni profil (ulozena nastaveni zustanou)
+    bool isUser() const            { return origin == "user"; }
 
     // patchbay (formFactor == "patchbay"): body na prednim panelu, 2 rady
     struct Patchbay
@@ -118,6 +122,13 @@ int hardwareLibraryVersion();                     // verze nactene stazene kniho
 // jen kdyz zachova vsechna ID ovladacu (ulozena nastaveni se nesmi ztratit); jinak zustane vestaveny.
 std::vector<DeviceProfile> mergeProfiles (const std::vector<DeviceProfile>& builtIn, const juce::var& libraryJson, juce::StringArray* notes = nullptr);
 std::vector<DeviceProfile> parseProfiles (const juce::var& json, const String& origin);
+
+// Vlastni pristroje uzivatele: <knihovna>/UserHardware/<id>.json (aktualizace knihovny je neprepisuje)
+juce::File userProfilesDir();
+juce::var profileToVar (const DeviceProfile&);
+const DeviceProfile* saveUserProfile (const DeviceProfile&, String& error);      // novy nebo upraveny vlastni profil
+bool hideUserProfile (const String& id);                                        // smazat (soubor do Trash, nastaveni zustanou)
+DeviceProfile makeCustomProfile (const String& name, const String& manufacturer, const String& format, const juce::StringArray& controlLines);
 const DeviceProfile* findProfile (const String& id);
 
 inline String valueKey (const String& deviceId, const String& controlId)   { return deviceId + ":" + controlId; }
@@ -156,6 +167,7 @@ struct Snapshot
     juce::StringArray photos;  // nazvy souboru ve slozce Photos (relativni!)
     std::map<String, String> devicePhotos;   // kus -> posledni fotka (nazev v Photos); fotka je jen odkaz
     std::vector<Cable> cables;               // kabely v patchbayi
+    juce::var defs;                          // definice ovladacu v dobe ulozeni (profil se pozdeji muze zmenit)
     juce::StringArray order;   // poradi pristroju v racku (= co v racku je); prazdne = vychozi
     juce::int64 created = 0, modified = 0;
     std::map<String, ControlValue> values;    // klic "deviceId:controlId"
@@ -181,6 +193,11 @@ struct Snapshot
 };
 
 int totalControls();
+
+// Otisk definic pristroju pouzitych v nastaveni (verze profilu, ovladace, pocty poloh, stupnice) - uklada se
+// s projektem a s verzemi, aby pozdejsi zmena knihovny hardwaru nic tise neprevykladala.
+juce::var definitionsFor (const Snapshot&);
+juce::StringArray checkDefinitions (const juce::var& defs);    // co se od ulozeni zmenilo / chybi (prazdne = nic)
 
 // Rozdil dvou nastaveni (porovnani verzi): jen ovladace, ktere se lisi
 struct Difference { String instance, control; ControlValue a, b; };
@@ -224,6 +241,7 @@ struct RackLayout
 {
     static constexpr int kSchema = 1;
     int lunchboxSlots = 8;
+    String lunchboxModel;            // sasi (napr. "Heritage Audio OST-10 v2.0"), "" = obecny lunchbox
     std::vector<RackItem> items;     // poradi = poradi radku (lunchbox stoji na miste prvniho 500 modulu)
 
     static RackLayout makeDefault();

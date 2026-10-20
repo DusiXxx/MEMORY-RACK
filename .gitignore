@@ -1,6 +1,8 @@
-build/
-build-*/
 *.log
-__pycache__/
-.DS_Store
 *.zip
+.DS_Store
+Tests/photos/
+Tests/photos_real/*.jpg
+__pycache__/
+build-*/
+build/
