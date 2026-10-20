@@ -193,6 +193,7 @@ juce::Result RackMemoryProcessor::save()
     copy.photos = working.photos;
     copy.defs = rm::definitionsFor (copy);
     for (auto& kv : working.devicePhotos) if (copy.order.contains (kv.first)) copy.devicePhotos[kv.first] = kv.second;
+    for (auto& kv : working.photoAnalysis) if (copy.order.contains (kv.first)) copy.photoAnalysis[kv.first] = kv.second;
     putLevels (copy, *this);
 
     auto r = library.save (copy);
@@ -287,6 +288,7 @@ bool RackMemoryProcessor::load (const String& id)
         for (auto& kv : s->values)
             if (! kv.first.startsWith ("levels:")) working.values[kv.first] = kv.second;
         for (auto& kv : s->devicePhotos) working.devicePhotos[kv.first] = kv.second;
+        for (auto& kv : s->photoAnalysis) working.photoAnalysis[kv.first] = kv.second;
         for (auto& ph : s->photos) working.photos.addIfNotAlreadyThere (ph);
         working.notes = s->notes;
         working.id = s->id; working.version = s->version; working.project = s->project; working.group = s->group;
@@ -377,21 +379,121 @@ void RackMemoryProcessor::applyRecognition (const std::map<String, std::map<Stri
     {
         auto& review = needsReview[dev.first];
         review.clear();
+        auto& proposals = photoProposals[dev.first];
+        proposals.clear();
+        const auto* prof = rm::profileForInstance (dev.first);
         for (auto& kv : dev.second)
         {
             const auto key = rm::valueKey (dev.first, kv.first);
-            if (kv.second.known)
+            auto pred = predictions.find (dev.first);
+            auto* pr = pred != predictions.end() && pred->second.count (kv.first) ? &pred->second[kv.first] : nullptr;
+            if (! kv.second.known)
             {
-                auto v = kv.second;
-                v.source = "recognized";
-                v.confirmed = false;                     // z fotky: ceka na kontrolu okem
-                working.values[key] = v;
-            }
-            else
                 review.add (kv.first);                   // nejiste: nic se nemeni, rucni hodnota zustava
+                if (pr != nullptr) pr->eligible = ! working.get (key).known;
+                continue;
+            }
+            auto v = kv.second;
+            v.source = "recognized";
+            v.confirmed = false;                         // z fotky: ceka na kontrolu okem
+            auto it = working.values.find (key);
+            if (it != working.values.end() && it->second.known && it->second.confirmed)
+            {
+                // rucne nastaveno / potvrzeno: prepsat smi jen uzivatel
+                const bool same = rm::sameReading (prof != nullptr ? prof->find (kv.first) : nullptr, it->second.pos, v.pos);
+                if (! same) proposals[kv.first] = v;
+                if (pr != nullptr) pr->eligible = false;     // rucni hodnota z drivejska neni overeni teto fotky
+                continue;
+            }
+            working.values[key] = v;
+            if (pr != nullptr) pr->eligible = true;
         }
+        if (proposals.empty()) photoProposals.erase (dev.first);
     }
     markDirty();
+}
+
+int RackMemoryProcessor::acceptPhotoProposals (const String& deviceId)
+{
+    auto it = photoProposals.find (deviceId);
+    if (it == photoProposals.end() || it->second.empty()) return 0;
+    rememberForUndo();
+    int n = 0;
+    for (auto& kv : it->second)
+    {
+        working.values[rm::valueKey (deviceId, kv.first)] = kv.second; ++n;
+        if (predictions.count (deviceId) && predictions[deviceId].count (kv.first)) predictions[deviceId][kv.first].eligible = true;
+    }
+    photoProposals.erase (it);
+    markDirty();
+    return n;
+}
+
+void RackMemoryProcessor::rememberPredictions (const String& deviceId, const String& fingerprint, const String& algorithm, const String& photo,
+                                               const std::map<String, rm::ControlValue>& values, const std::map<String, String>& states)
+{
+    auto& p = predictions[deviceId];
+    p.clear();
+    const auto* prof = rm::profileForInstance (deviceId);
+    for (auto& kv : states)
+    {
+        Prediction pr;
+        pr.fingerprint = fingerprint; pr.algorithm = algorithm; pr.photo = photo; pr.state = kv.second;
+        pr.model = prof != nullptr ? prof->id : String();
+        auto v = values.find (kv.first);
+        if (v != values.end()) pr.value = v->second;
+        p[kv.first] = pr;
+    }
+}
+
+juce::File RackMemoryProcessor::correctionsFile() const
+{
+    return library.getRoot().getChildFile ("Corrections").getChildFile ("corrections.jsonl");
+}
+
+int RackMemoryProcessor::capturePhotoFeedback()
+{
+    String lines;
+    int n = 0;
+    for (auto& dev : predictions)
+    {
+        const auto* prof = rm::profileForInstance (dev.first);
+        for (auto& kv : dev.second)
+        {
+            const auto& pr = kv.second;
+            if (pr.fingerprint.isEmpty() || ! pr.eligible) continue;
+            const auto cur = working.get (dev.first, kv.first);
+            if (! cur.known || ! cur.confirmed) continue;         // jen to, co uzivatel potvrdil nebo nastavil sam
+            const bool same = pr.value.known && rm::sameReading (prof != nullptr ? prof->find (kv.first) : nullptr, pr.value.pos, cur.pos);
+            const String status = same ? "confirmed" : "corrected";
+            const String id = pr.fingerprint + "|" + dev.first + "|" + kv.first + "|" + String (cur.pos, 3) + "|" + status;
+            if (captured.contains (id)) continue;
+            captured.add (id);
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("time", juce::Time::getCurrentTime().toISO8601 (true));
+            o->setProperty ("photoFingerprint", pr.fingerprint);
+            o->setProperty ("photo", pr.photo);
+            o->setProperty ("model", pr.model);
+            o->setProperty ("instance", dev.first);
+            o->setProperty ("control", kv.first);
+            o->setProperty ("algorithm", pr.algorithm);
+            o->setProperty ("predictedState", pr.state);
+            o->setProperty ("predicted", pr.value.known ? juce::var (pr.value.pos) : juce::var());
+            if (pr.value.confidence >= 0) o->setProperty ("predictedConfidence", pr.value.confidence);
+            o->setProperty ("value", cur.pos);
+            o->setProperty ("status", status);              // confirmed = fotka mela pravdu, corrected = uzivatel opravil
+            o->setProperty ("verification", "user");        // overeno uzivatelem okem na hardwaru, ne referencni zdroj
+            lines << juce::JSON::toString (juce::var (o), true) << "\n";
+            ++n;
+        }
+    }
+    if (n > 0)
+    {
+        auto f = correctionsFile();
+        f.getParentDirectory().createDirectory();
+        f.appendText (lines, false, false, "\n");
+    }
+    return n;
 }
 
 int RackMemoryProcessor::confirmRecognized (const String& deviceId)
@@ -400,7 +502,7 @@ int RackMemoryProcessor::confirmRecognized (const String& deviceId)
     for (auto& kv : working.values)
         if (kv.first.upToFirstOccurrenceOf (":", false, false) == deviceId && kv.second.known && ! kv.second.confirmed)
         { kv.second.confirmed = true; ++n; }
-    if (n > 0) markDirty();
+    if (n > 0) { markDirty(); capturePhotoFeedback(); }
     return n;
 }
 
@@ -416,6 +518,7 @@ void RackMemoryProcessor::unlinkPhoto (const String& deviceId)
 {
     // fotka je jen odkaz: nastaveni pristroje i soubor v knihovne (muze ho pouzivat starsi verze) zustavaji
     working.devicePhotos.erase (deviceId);
+    working.photoAnalysis.erase (deviceId);
     devicePhotos.erase (deviceId);
     needsReview.erase (deviceId);
     markDirty();

@@ -5,6 +5,7 @@
 #pragma once
 #include <juce_graphics/juce_graphics.h>
 #include "Model.h"
+#include <atomic>
 
 namespace rmcv
 {
@@ -32,7 +33,37 @@ struct Result
     int tooSmall = 0;
     juce::Image rectified;                 // fotka narovnana do souradnic panelu
     juce::String message;
+    bool cancelled = false;                // analyza zrusena (novejsi fotka / zavreni okna) - vysledek se nepouzije
+    bool fromCache = false;                // stejna fotka + profil + verze algoritmu uz byla analyzovana
+    juce::String algorithm;                // verze algoritmu, ktera vysledek spocitala
 };
+
+// Verze cteni z fotky. Meni se pri kazde zmene algoritmu, ktera muze zmenit vysledek (cache, opravy, regresni test).
+extern const char* const kAlgorithmVersion;
+
+// Zruseni rozbehle analyzy: PhotoWorker nastavi priznak pro sve vlakno, recognize ho kontroluje mezi kroky.
+struct CancelScope
+{
+    explicit CancelScope (const std::atomic<bool>* flag);
+    ~CancelScope();
+    const std::atomic<bool>* previous;
+};
+bool cancelled();
+
+juce::String fingerprint (const juce::File&);       // MD5 obsahu souboru (stejna fotka = stejny otisk, i pod jinym jmenem)
+
+// Analyza s pameti vysledku: klic = otisk fotky + profil (vcetne definic ovladacu) + verze algoritmu.
+// Prazdny otisk = bez cache. Pamet je omezena (nejvys 32 vysledku).
+Result recognizeCached (const juce::Image& photo, const juce::String& photoFingerprint, const rm::DeviceProfile&, const juce::Image& reference);
+struct CacheStats { int hits = 0, misses = 0, size = 0; };
+CacheStats cacheStats();
+void clearCache();
+// Uvolni pracovni pamet analyzy (kopie fotky, vyrazne body fotky). Vola se po kazde uloze; vysledky v cache zustanou.
+void releaseWorkingMemory();
+
+// Ktere z nalezenych pristroju na jedne fotce prevzit: kazdy zarovnany, jen kdyz se dva prekryvaji
+// (napr. xfilter ME i 1U v racku "najdou" stejny panel), zustane silnejsi shoda.
+std::vector<bool> chooseDevices (const std::vector<Result>&, const std::vector<const rm::DeviceProfile*>&);
 
 int exifOrientation (const juce::File&);                              // 1..8, 1 = bez otoceni
 juce::Image applyOrientation (const juce::Image&, int orientation);

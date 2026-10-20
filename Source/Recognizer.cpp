@@ -1,4 +1,8 @@
+#include <functional>
+#include <deque>
+#include <mutex>
 #include "Recognizer.h"
+#include <juce_cryptography/juce_cryptography.h>
 #include <array>
 #include <complex>
 #include <mutex>
@@ -310,7 +314,8 @@ rm::ControlValue fromAngle (const rm::ControlDef& c, double angleDeg, double con
     const double slack = 10.0 / span;
     const double a = wrapDeg (angleDeg);
     double pos01;
-    if (a >= c.angleMin - 16.0 && a <= c.angleMax + 16.0) pos01 = juce::jlimit (0.0, 1.0, (a - c.angleMin) / span);
+    const double slackDeg = 16.0;
+    if (a >= c.angleMin - slackDeg && a <= c.angleMax + slackDeg) pos01 = juce::jlimit (0.0, 1.0, (a - c.angleMin) / span);
     else { juce::ignoreUnused (rel, slack); v.known = false; return v; }
 
     v.known = v.confidence >= 0.30;
@@ -842,25 +847,51 @@ rm::ControlValue readLedRing (const std::vector<double>& lv, const rm::ControlDe
     const int n = (int) lv.size();
     if (n < 2 || n != c.numPositions()) return v;
     const double mx = *std::max_element (lv.begin(), lv.end());
+    if (std::getenv ("RM_DEBUG_LED")) { std::cout << "  ledring-in " << c.id << " devthr " << t.thr << ":"; for (auto x : lv) std::cout << " " << juce::String (x, 3); std::cout << std::endl; }
     if (mx < t.thr || mx < 0.06) return v;                            // nic nesviti (vypnuto / zakryto knobem)
-    const double thr = juce::jmax (t.thr, mx * 0.55);
-    std::vector<int> lit;
-    for (int i = 0; i < n; ++i) if (lv[(size_t) i] > thr) lit.push_back (i);
-    for (size_t k = 1; k < lit.size(); ++k) if (lit[k] != lit[k - 1] + 1) return v;
-    const int a = lit.front(), b = lit.back();
-    int pos = -1;
-    if (a == b) pos = a;
-    else if (a == 0) pos = b;
-    else if (b == n - 1) pos = a;
-    else if (c.minLabel.startsWith ("-") && (a == n / 2 || a == n / 2 - 1)) pos = b;
-    else if (c.minLabel.startsWith ("-") && (b == n / 2 || b == n / 2 - 1)) pos = a;
+    // Svitici = nad skokem jasu (serazeno od nejjasnejsi). Pevny prah 55 % maxima nestaci: u teckoveho rezimu
+    // soused svitici LED chyti cast jeji zare (~50 %) a cteni vypadalo nejiste (regresni sada _RHEA).
+    // Zkousi se kazdy skok; plati nejvetsi, ktery dava smysluplny vzor (tecka nebo pas od kraje / od stredu).
+    std::vector<double> sorted (lv.begin(), lv.end());
+    std::sort (sorted.begin(), sorted.end(), std::greater<double>());
+    sorted.push_back (0.0);
+    auto patternFor = [&] (double thr, std::vector<int>& lit) -> int
+    {
+        lit.clear();
+        for (int i = 0; i < n; ++i) if (lv[(size_t) i] > thr) lit.push_back (i);
+        if (lit.empty()) return -1;
+        for (size_t q = 1; q < lit.size(); ++q) if (lit[q] != lit[q - 1] + 1) return -1;
+        const int a = lit.front(), b = lit.back();
+        if (a == b) return a;
+        if (a == 0) return b;
+        if (b == n - 1) return a;
+        if (c.minLabel.startsWith ("-") && (a == n / 2 || a == n / 2 - 1)) return b;
+        if (c.minLabel.startsWith ("-") && (b == n / 2 || b == n / 2 - 1)) return a;
+        return -1;
+    };
+    int pos = -1, bestK = 0; double gap = -1;
+    for (int k = 1; k <= n; ++k)
+    {
+        const double g = (sorted[(size_t) k - 1] - sorted[(size_t) k]) / mx;
+        if (g <= gap + 1e-9) continue;
+        const double thr = juce::jmax (t.thr * 0.9, 0.5 * (sorted[(size_t) k - 1] + sorted[(size_t) k]));
+        std::vector<int> lit;
+        const int p = patternFor (thr, lit);
+        if (p < 0) continue;
+        gap = g; pos = p; bestK = k;
+    }
     if (pos < 0) return v;
-    double lo = 1.0, hi = 1.0;
-    for (int i = 0; i < n; ++i) if (std::find (lit.begin(), lit.end(), i) == lit.end()) lo = juce::jmin (lo, (thr - lv[(size_t) i]) / thr);
-    for (int i : lit) hi = juce::jmin (hi, (lv[(size_t) i] - thr) / thr);
-    v.confidence = juce::jlimit (0.0, 1.0, juce::jmin (lo, hi) * 2.0);
+    // jistota = jak vyrazny je skok mezi svitici a nesvitici (v podilu maxima)
+    const double hi = (sorted[(size_t) bestK - 1] - t.thr) / juce::jmax (0.03, t.thr) + 0.5;
+    v.confidence = juce::jlimit (0.0, 1.0, juce::jmin ((gap - 0.15) / 0.25, hi));
     v.known = v.confidence >= 0.35;
     v.pos = pos;
+    if (std::getenv ("RM_DEBUG_LED"))
+    {
+        std::cout << "  ledring " << c.id << " devthr " << t.thr << " gap " << gap << " k " << bestK << ":";
+        for (auto x : lv) std::cout << " " << juce::String (x, 3);
+        std::cout << std::endl;
+    }
     return v;
 }
 
@@ -880,7 +911,13 @@ rm::ControlValue readLedSelect (const std::vector<double>& lv, const rm::Control
     for (int p = 0; p < (int) c.draw.map.size(); ++p)
         if (c.draw.map[(size_t) p] == litIdx) { v.pos = p; v.known = true; }
     v.confidence = juce::jlimit (0.0, 1.0, margin);
-    v.known = v.known && v.confidence >= 0.35;
+    v.known = v.known && v.confidence >= 0.30;              // jako 0.9 (0.35 = regrese na _RHEA)
+    if (std::getenv ("RM_DEBUG_LED"))
+    {
+        std::cout << "  ledsel " << c.id << " devthr " << t.thr << " margin " << margin << ":";
+        for (auto x : lv) std::cout << " " << juce::String (x, 3);
+        std::cout << std::endl;
+    }
     return v;
 }
 
@@ -1218,6 +1255,7 @@ std::vector<KeyPt> detectKeypoints (const Plane& image, const Plane* mask, int m
 
     for (int o = 0; o < nOct; ++o)
     {
+        if (cancelled()) return {};
         std::vector<Plane> G ((size_t) (S + 3)), D ((size_t) (S + 2));
         G[0] = base;
         for (int i = 1; i < S + 3; ++i) gaussBlur (G[(size_t) i - 1], G[(size_t) i], sig[i]);
@@ -1593,6 +1631,20 @@ juce::Image loadPhoto (const juce::File& file, String& error)
 }
 
 //==============================================================================
+const char* const kAlgorithmVersion = "rmcv-0.11.0";
+
+namespace { thread_local const std::atomic<bool>* tCancel = nullptr; }
+CancelScope::CancelScope (const std::atomic<bool>* flag) : previous (tCancel)   { tCancel = flag; }
+CancelScope::~CancelScope()                                                      { tCancel = previous; }
+bool cancelled()                                                                 { return tCancel != nullptr && tCancel->load(); }
+
+String fingerprint (const juce::File& f)
+{
+    if (! f.existsAsFile()) return {};
+    return juce::MD5 (f).toHexString();
+}
+
+//==============================================================================
 namespace
 {
 // Shoda jemneho potisku (pismena, stupnice): korelace "horni propusti" (jas minus rozmazany jas).
@@ -1630,10 +1682,14 @@ namespace
 {
 // body referencniho panelu se pocitaji jen jednou za beh pluginu
 // Vyrazne body fotky (sdilene mezi pristroji: cely rack se hleda na jedne fotce pro kazdy pristroj zvlast)
+std::function<void()>& releaseKeypointsHook()   { static std::function<void()> f; return f; }
+
 std::shared_ptr<const std::vector<KeyPt>> photoKeypoints (const Photo& ph, double fs, int maxPts)
 {
     static std::mutex m;
     static std::map<std::string, std::shared_ptr<const std::vector<KeyPt>>> cache;
+    static const bool registered = [] { releaseKeypointsHook() = [] { const std::lock_guard<std::mutex> l (m); cache.clear(); }; return true; }();
+    juce::ignoreUnused (registered);
     // otisk fotky: rozmer + par pixelu
     double sig = 0;
     for (int i = 0; i < 64; ++i) sig += ph.gray.v[(size_t) ((i * 7919L) % (long) ph.gray.v.size())] * (i + 1);
@@ -1647,6 +1703,7 @@ std::shared_ptr<const std::vector<KeyPt>> photoKeypoints (const Photo& ph, doubl
     auto kps = detectKeypoints (small, nullptr, maxPts, std::getenv ("RM_CPH") ? (float) atof (std::getenv ("RM_CPH")) : 0.03f);
     for (auto& k : kps) { k.x = (float) ((k.x + 0.5) / fs - 0.5); k.y = (float) ((k.y + 0.5) / fs - 0.5); k.sigma = (float) (k.sigma / fs); }
     auto ptr = std::make_shared<const std::vector<KeyPt>> (std::move (kps));
+    if (cancelled()) return ptr;                        // neuplny vysledek se nepamatuje
     const std::lock_guard<std::mutex> l (m);
     if (cache.size() > 6) cache.clear();
     cache[key] = ptr;
@@ -1683,8 +1740,40 @@ const std::vector<KeyPt>& referenceKeypoints (const rm::DeviceProfile& prof, con
     const std::lock_guard<std::mutex> g (lock);
     auto it = cache.find (key);
     if (it != cache.end()) return it->second;       // mezitim spocital jiny thread
+    if (cancelled()) { static std::vector<KeyPt> none; return none; }   // neuplny vysledek se nepamatuje
     return cache[key] = std::move (k);
 }
+}
+
+namespace
+{
+// Pracovni kopie fotky (barevne roviny v pracovnim rozliseni) se pro vic pristroju z jedne fotky pocita jen jednou.
+std::mutex photoLock;
+// Drzi odkaz na zdrojovy obrazek: dokud zije, jeho data nemohou byt uvolnena a adresa pouzita jinym obrazkem
+// (porovnani jen podle adresy by po uvolneni vratilo starou fotku - chyba nalezena testem).
+struct PhotoEntry { juce::Image source; int maxSide = 0; std::shared_ptr<const Photo> photo; } lastPhoto;
+std::shared_ptr<const Photo> sharedPhoto (const juce::Image& image, int maxSide)
+{
+    {
+        const std::lock_guard<std::mutex> l (photoLock);
+        if (lastPhoto.photo != nullptr && lastPhoto.source.isValid() && image.isValid()
+            && lastPhoto.source.getPixelData() == image.getPixelData() && lastPhoto.maxSide == maxSide)
+            return lastPhoto.photo;
+    }
+    auto p = std::make_shared<const Photo> (toPhoto (image, maxSide));
+    const std::lock_guard<std::mutex> l (photoLock);
+    lastPhoto = { image, maxSide, p };
+    return p;
+}
+}
+
+void releaseWorkingMemory()
+{
+    {
+        const std::lock_guard<std::mutex> l (photoLock);
+        lastPhoto = {};
+    }
+    if (releaseKeypointsHook()) releaseKeypointsHook()();
 }
 
 Transform fromCorners (const rm::DeviceProfile& prof, const juce::Point<float> corners[4])
@@ -1696,7 +1785,9 @@ Transform fromCorners (const rm::DeviceProfile& prof, const juce::Point<float> c
     return t;
 }
 
-Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const juce::Image& reference, const Transform* manual)
+namespace
+{
+Result recognizeImpl (const juce::Image& image, const rm::DeviceProfile& prof, const juce::Image& reference, const Transform* manual)
 {
     Result res;
     for (auto& c : prof.controls)
@@ -1708,7 +1799,8 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     if (! image.isValid())                        { res.message = String::fromUTF8 ("fotku nejde načíst"); return res; }
     if (res.readable == 0 || ! reference.isValid()) { res.message = String::fromUTF8 ("čtení z fotky tu zatím není"); return res; }
 
-    const Photo ph = toPhoto (image, std::getenv ("RM_MAXSIDE") ? atoi (std::getenv ("RM_MAXSIDE")) : 3400);
+    const auto photoPtr = sharedPhoto (image, std::getenv ("RM_MAXSIDE") ? atoi (std::getenv ("RM_MAXSIDE")) : 3400);
+    const Photo& ph = *photoPtr;
     const RefPanel rp = makeRefPanel (prof, reference);
 
     // ---- 1) kandidati polohy: (a) podle vyraznych bodu potisku, (b) podle knobu
@@ -1740,7 +1832,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
             Transform t;
             const int in = ransacPanel (refKps, *kps, matches, prof, ph.gray.w, ph.gray.h, t, debug);
             if (in > siftInliers) { siftInliers = in; best = t; }
-            if (siftInliers >= 25) break;
+            if (siftInliers >= 25 || cancelled()) break;
         }
         if (siftInliers >= 8) hyps.push_back (best);
     }
@@ -1771,7 +1863,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         int bestIn = 0;
         const int need = juce::jmax (4, (int) std::ceil (0.6 * N));
 
-        for (double sc = juce::jmin (fill, fit * 1.6) * 1.06; sc > fit * 0.26; sc *= 0.86)
+        for (double sc = juce::jmin (fill, fit * 1.6) * 1.06; sc > fit * 0.26 && ! cancelled(); sc *= 0.86)
         {
             const double rho = anchorR * sc;
             if (rho < 3.0) break;
@@ -1887,6 +1979,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         }
     }
 
+    if (cancelled()) return res;
     // ---- 2) doladeni kazdeho kandidata podle potisku, vyhrava nejlepsi shoda
     Transform xp, siftT; double best = -2, siftNcc = -2; bool bestIsSift = false;
     for (size_t hi = 0; hi < hyps.size(); ++hi)
@@ -1957,20 +2050,32 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
         an.found = br > 0.25f;
         an.rho = rho; an.off = cd ((bx - gx) / rho, (by - gy) / rho);
     };
-    for (auto& an : anchors) searchAnchor (an, 0, 0, 1.15);
+    // Nejdriv hrube ve velkem okoli (vysoke knoby na fotce shora) -> spolecny posun knobu (median). Pak dve presna
+    // hledani: kolem polohy z potisku (jako 0.9) a kolem spolecneho posunu; u kazdeho knobu vyhraje silnejsi odezva.
+    // (Jen posunute hledani bylo u fotek zepredu horsi: regresni sada xmax / xfilter 500 o 3 / 2 ovladace.)
+    double medX = 0, medY = 0; bool haveMedian = false;
     {
+        for (auto& an : anchors) searchAnchor (an, 0, 0, 1.15);
         std::vector<double> ox, oy;
         for (auto& an : anchors) if (an.found && an.resp > 0.35f) { ox.push_back (an.off.real()); oy.push_back (an.off.imag()); }
         if (ox.size() >= 3)
         {
             std::nth_element (ox.begin(), ox.begin() + (long) ox.size() / 2, ox.end());
             std::nth_element (oy.begin(), oy.begin() + (long) oy.size() / 2, oy.end());
-            const double mx = ox[ox.size() / 2], my = oy[oy.size() / 2];
-            for (auto& an : anchors) searchAnchor (an, mx, my, 0.5);
-            if (debug) std::cout << "  posun knobu (paralaxa): " << mx << ", " << my << " R" << std::endl;
+            medX = ox[ox.size() / 2]; medY = oy[oy.size() / 2];
+            haveMedian = true;
         }
-        else for (auto& an : anchors) searchAnchor (an, 0, 0, 0.45);
     }
+    // Fotka zepredu (spolecny posun < 0.2 R): presne hledani kolem polohy z potisku presne jako ve 0.9 (regresni sada:
+    // posunute hledani bylo u fotek zepredu horsi - xmax -3, xfilter 500 -2 ovladace). Fotka shora / zboku (vysoke
+    // knoby, posun >= 0.2 R): hledani kolem spolecneho posunu (skutecna fotka racku 0.10).
+    const bool shifted = haveMedian && std::hypot (medX, medY) >= 0.2;
+    for (auto& an : anchors)
+    {
+        if (shifted) searchAnchor (an, medX, medY, 0.5);
+        else         searchAnchor (an, 0, 0, 0.45);
+    }
+    if (debug) std::cout << "  posun knobu (paralaxa): " << medX << ", " << medY << " R" << std::endl;
     for (auto& an : anchors) if (an.found) { knobCentre[an.c] = an.q; ++res.anchorsFound; }
     {
         double ox = 0, oy = 0; int n = 0;
@@ -1991,6 +2096,7 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
     }
     const bool tooOblique = res.skew > kMaxSkew;
 
+    if (cancelled()) return res;
     // ---- 3) cteni ovladacu
     // LED: nejdriv svitivost vsech LED pristroje, prah je spolecny (expozice fotky)
     std::map<const rm::ControlDef*, std::vector<double>> leds;
@@ -2094,6 +2200,99 @@ Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const
                 : String (res.read) + "/" + String (res.readable) + (res.tooSmall > 0 ? String::fromUTF8 (" (část moc malá – vyfoť zblízka)") : String());
     return res;
 }
+}   // namespace
+
+Result recognize (const juce::Image& image, const rm::DeviceProfile& prof, const juce::Image& reference, const Transform* manual)
+{
+    auto res = recognizeImpl (image, prof, reference, manual);
+    res.algorithm = kAlgorithmVersion;
+    if (cancelled())
+    {
+        Result c;
+        c.cancelled = true;
+        c.algorithm = kAlgorithmVersion;
+        c.message = String::fromUTF8 ("analýza zrušena");
+        return c;
+    }
+    return res;
+}
+
+namespace
+{
+struct CacheEntry { String key; Result result; };
+std::mutex cacheLock;
+std::deque<CacheEntry> resultCache;          // nejnovejsi na konci
+CacheStats stats;
+}
+
+Result recognizeCached (const juce::Image& image, const String& photoFingerprint, const rm::DeviceProfile& prof, const juce::Image& reference)
+{
+    if (photoFingerprint.isEmpty()) return recognize (image, prof, reference);
+    // definice ovladacu jsou soucasti klice: zmena profilu (oprava rozmisteni) = nova analyza
+    const auto profileHash = String::toHexString (juce::JSON::toString (rm::profileToVar (prof), true).hashCode64());
+    const auto key = photoFingerprint + "|" + prof.id + "|" + profileHash + "|" + String (reference.getWidth()) + "x" + String (reference.getHeight()) + "|" + kAlgorithmVersion;
+    {
+        const std::lock_guard<std::mutex> l (cacheLock);
+        for (auto& e : resultCache)
+            if (e.key == key) { ++stats.hits; auto r = e.result; r.fromCache = true; return r; }
+        ++stats.misses;
+    }
+    auto r = recognize (image, prof, reference);
+    if (r.cancelled) return r;
+    const std::lock_guard<std::mutex> l (cacheLock);
+    resultCache.push_back ({ key, r });
+    while (resultCache.size() > 32) resultCache.pop_front();
+    return r;
+}
+
+CacheStats cacheStats()
+{
+    const std::lock_guard<std::mutex> l (cacheLock);
+    auto s = stats; s.size = (int) resultCache.size();
+    return s;
+}
+
+void clearCache()
+{
+    const std::lock_guard<std::mutex> l (cacheLock);
+    resultCache.clear(); stats = {};
+}
+
+std::vector<bool> chooseDevices (const std::vector<Result>& results, const std::vector<const rm::DeviceProfile*>& profiles)
+{
+    // obdelnik panelu na fotce (pracovni rozliseni se u vsech pristroju jedne fotky muze lisit -> prepocet na puvodni px)
+    auto box = [&] (size_t i)
+    {
+        const auto& r = results[i];
+        const double w = i < profiles.size() && profiles[i] != nullptr ? profiles[i]->w : 1;
+        const double h = i < profiles.size() && profiles[i] != nullptr ? profiles[i]->h : 1;
+        double x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;      // (Rectangle::getUnion bodu nulove velikosti nefunguje)
+        for (auto c : { std::pair<double, double> (0, 0), { w, 0 }, { w, h }, { 0, h } })
+        {
+            double x, y; r.transform.map (c.first, c.second, x, y);
+            x /= r.photoScale; y /= r.photoScale;
+            x0 = juce::jmin (x0, x); y0 = juce::jmin (y0, y); x1 = juce::jmax (x1, x); y1 = juce::jmax (y1, y);
+        }
+        return juce::Rectangle<double> (x0, y0, x1 - x0, y1 - y0);
+    };
+    std::vector<bool> take (results.size(), false);
+    for (size_t i = 0; i < results.size(); ++i) take[i] = results[i].aligned && ! results[i].cancelled;
+    for (size_t i = 0; i < results.size(); ++i)
+        for (size_t j = i + 1; j < results.size(); ++j)
+        {
+            if (! take[i] || ! take[j]) continue;
+            const auto a = box (i), b = box (j);
+            const auto inter = a.getIntersection (b);
+            const double ia = inter.getWidth() * inter.getHeight();
+            const double smaller = juce::jmin (a.getWidth() * a.getHeight(), b.getWidth() * b.getHeight());
+            if (smaller <= 0 || ia / smaller < 0.5) continue;       // sousedni pristroje se neprekryvaji
+            const auto& ri = results[i]; const auto& rj = results[j];
+            const bool iWins = ri.keypoints != rj.keypoints ? ri.keypoints > rj.keypoints : ri.read >= rj.read;
+            (iWins ? take[j] : take[i]) = false;
+        }
+    return take;
+}
+
 
 // Ladici pomucka: najde svetle knoby dane velikosti a precte u nich zarez (bez profilu).
 juce::String debugNotch (const juce::Image& image, double rho)

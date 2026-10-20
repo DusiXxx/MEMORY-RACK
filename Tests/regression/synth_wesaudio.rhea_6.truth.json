@@ -1,0 +1,43 @@
+{
+  "file": "synth_wesaudio.rhea_6.jpg",
+  "profile": "wesaudio.rhea",
+  "scene": 6,
+  "values": {
+    "input": {
+      "pos": 8.0,
+      "type": "stepped"
+    },
+    "threshold": {
+      "pos": 15.0,
+      "type": "stepped"
+    },
+    "output": {
+      "pos": 6.0,
+      "type": "stepped"
+    },
+    "attack": {
+      "pos": 5.0,
+      "type": "stepped"
+    },
+    "mix": {
+      "pos": 4.0,
+      "type": "stepped"
+    },
+    "release": {
+      "pos": 1.0,
+      "type": "stepped"
+    },
+    "thd": {
+      "pos": 2.0,
+      "type": "switch"
+    },
+    "bypass": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "scfilter": {
+      "pos": 0.0,
+      "type": "switch"
+    }
+  }
+}

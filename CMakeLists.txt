@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS")
-project(RackMemory VERSION 0.10.0 LANGUAGES C CXX)
+project(RackMemory VERSION 0.11.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -47,6 +47,7 @@ target_sources(RackMemory PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/Updater.cpp
+    Source/PhotoWorker.cpp
     Source/EditorParts.cpp)
 
 # odkud se stahuji aktualizace (GitHub ucet/repozitar, verejny)

@@ -41,7 +41,7 @@ if [ $HAVE_GH = 1 ] && gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; th
 fi
 
 # ---- 1. build (adresa vydani se zapece do pluginu)
-RM_UPDATE_REPO="$REPO" bash build.sh
+RM_ARCHS="arm64;x86_64" RM_UPDATE_REPO="$REPO" bash build.sh
 COMP="$HOME/Library/Audio/Plug-Ins/Components/Rack Memory.component"
 [ -d "$COMP" ] || { echo "CHYBA: plugin neni postaveny"; exit 1; }
 INSTALLED=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$COMP/Contents/Info.plist" 2>/dev/null || echo "?")

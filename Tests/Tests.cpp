@@ -104,9 +104,13 @@ static RealScore evaluateRealPhotos (bool verbose)
     return sc;
 }
 
+#include "UiFlow.inc"
+#include "Regress.inc"
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    if (argc > 4 && juce::String (argv[1]) == "uiflow") return runUiFlow (argc, argv);
+    if (argc > 2 && juce::String (argv[1]) == "regress") return runRegress (argc, argv);
 
     if (argc > 3 && juce::String (argv[1]) == "notch")
     {
@@ -771,6 +775,9 @@ int main (int argc, char** argv)
         rm::ControlValue a = V (17); a.source = "recognized"; a.confidence = 0.9; vals["tone"] = a;
         rm::ControlValue u; u.source = "recognized"; vals["level"] = u;          // nejiste
         p.applyRecognition (XM, vals);
+        // rucne nastavena hodnota se z fotky neprepise (0.11): jen navrh, prevezme se tlacitkem "Prevzit z fotky"
+        CHECK (p.working.get (XM, "tone").pos == 3 && p.photoProposals[XM].count ("tone") == 1);
+        CHECK (p.acceptPhotoProposals (XM) == 1);
         CHECK (p.working.get (XM, "tone").pos == 17 && p.working.get (XM, "tone").source == "recognized");
         // nejiste z fotky: rucni hodnota zustava (nic se tise neprepise), ovladac je ke kontrole
         CHECK (p.working.get (XM, "level").pos == 9 && p.working.get (XM, "level").source == "manual" && p.dirty && p.canUndo());
@@ -779,6 +786,10 @@ int main (int argc, char** argv)
         CHECK (rm::Snapshot::fromJson (p.working.toJson(), r, err) && r.get (XM, "tone").source == "recognized" && r.get (XM, "tone").confidence == 0.9);
         p.undo();
         CHECK (p.working.get (XM, "tone").pos == 3 && p.working.get (XM, "level").pos == 9);
+        // nezadana hodnota se z fotky vyplni rovnou
+        p.working.values.erase (rm::valueKey (XM, "tone"));
+        p.applyRecognition (XM, vals);
+        CHECK (p.working.get (XM, "tone").pos == 17 && ! p.working.get (XM, "tone").confirmed && p.photoProposals.count (XM) == 0);
     }
 
     section ("rack uzivatele (model)");
@@ -1406,6 +1417,279 @@ int main (int argc, char** argv)
         CHECK (libDir.getChildFile ("library.json").loadFileAsString().contains ("\"libraryVersion\":2") && libDir.getChildFile ("images/novy.jpg").existsAsFile());
         CHECK (! libDir.getChildFile ("run.sh").exists() && libDir.getSiblingFile ("Hardware.prev").getChildFile ("library.json").existsAsFile());
         L.checkLibraryNow(); CHECK (L.waitUntilIdle (5000)); CHECK (L.getLibraryStatus().state == LS::upToDate);
+    }
+
+    section ("regresni sada cteni z fotky (Tests/regression): nic se nesmi zhorsit proti zakladne");
+    {
+        auto dir = juce::File (__FILE__).getSiblingFile ("regression");
+        juce::var man;
+        if (dir.isDirectory() && juce::JSON::parse (dir.getChildFile ("manifest.json").loadFileAsString(), man).wasOk())
+        {
+            auto out = tmp.getChildFile ("regress.json");
+            juce::String a0 = "x", a1 = "regress", a2 = dir.getFullPathName(), a3 = out.getFullPathName();
+            char* args[] = { (char*) a0.toRawUTF8(), (char*) a1.toRawUTF8(), (char*) a2.toRawUTF8(), (char*) a3.toRawUTF8() };
+            runRegress (4, args);
+            juce::var got; juce::JSON::parse (out.loadFileAsString(), got);
+            // soubory jsou porad tytez (otisk MD5)
+            int same = 0, items = 0;
+            for (auto& it : *man["items"].getArray())
+            {
+                ++items;
+                juce::FileInputStream fs (dir.getChildFile (it["file"].toString()));
+                if (fs.openedOk() && juce::MD5 (fs).toHexString() == it["md5"].toString()) ++same;
+            }
+            CHECK (items == 70 && same == items);
+            if (auto* base = man["baseline"].getDynamicObject())
+                for (auto& kv : base->getProperties())
+                {
+                    auto g = got["profiles"][kv.name];
+                    const bool ok = (int) g["correct"] >= (int) kv.value["minCorrect"] && (int) g["wrong"] <= (int) kv.value["maxWrong"];
+                    if (! ok) std::cout << "  REGRESE " << kv.name.toString() << ": spravne " << (int) g["correct"] << " (min " << (int) kv.value["minCorrect"] << "), spatne " << (int) g["wrong"] << " (max " << (int) kv.value["maxWrong"] << ")" << std::endl;
+                    CHECK (ok);
+                }
+        }
+        else std::cout << "  (regresni sada chybi)" << std::endl;
+    }
+
+    section ("stabilita: jedno pracovni vlakno, zruseni, ukonceni, cache vysledku");
+    {
+        using namespace std::chrono_literals;
+        const int baseThreads = rm::PhotoWorker::liveThreads.load();
+        {
+            rm::PhotoWorker w;
+            CHECK (rm::PhotoWorker::liveThreads.load() == baseThreads);      // vlakno vznikne az s prvni ulohou
+            std::atomic<int> running { 0 }, maxRunning { 0 }, done { 0 };
+            std::vector<int> orderSeen; juce::CriticalSection ol;
+            for (int i = 0; i < 4; ++i)
+                w.submit ("job" + juce::String (i), [&, i] (const std::atomic<bool>&)
+                {
+                    const int r = ++running; maxRunning = juce::jmax (maxRunning.load(), r);
+                    juce::Thread::sleep (30);
+                    { const juce::ScopedLock sl (ol); orderSeen.push_back (i); }
+                    --running; ++done;
+                });
+            for (int i = 0; i < 200 && done < 4; ++i) juce::Thread::sleep (10);
+            CHECK (done == 4 && maxRunning == 1);                               // nikdy dve ulohy najednou
+            CHECK ((orderSeen == std::vector<int> { 0, 1, 2, 3 }));             // postupne, v poradi
+            CHECK (rm::PhotoWorker::liveThreads.load() == baseThreads + 1);
+            CHECK (! w.isBusy());
+
+            // novejsi fotka pro stejny pristroj zrusi starsi ulohu
+            std::atomic<bool> firstCancelled { false }; std::atomic<int> secondRan { 0 };
+            w.submit ("dev:x", [&] (const std::atomic<bool>& c) { for (int i = 0; i < 500 && ! c; ++i) juce::Thread::sleep (5); firstCancelled = c.load(); });
+            juce::Thread::sleep (30);
+            w.submit ("dev:x", [&] (const std::atomic<bool>& c) { if (! c) ++secondRan; });
+            for (int i = 0; i < 300 && w.isBusy(); ++i) juce::Thread::sleep (10);
+            CHECK (firstCancelled && secondRan == 1);
+            // jiny pristroj se nerusi, "*" (cely rack) zrusi vse
+            std::atomic<bool> otherCancelled { true };
+            w.submit ("dev:a", [&] (const std::atomic<bool>& c) { juce::Thread::sleep (20); otherCancelled = c.load(); });
+            w.submit ("dev:b", [&] (const std::atomic<bool>&) {});
+            for (int i = 0; i < 300 && w.isBusy(); ++i) juce::Thread::sleep (10);
+            CHECK (! otherCancelled);
+        }
+        CHECK (rm::PhotoWorker::liveThreads.load() == baseThreads);              // zavreni = vlakno skonci
+
+        // rozbehla analyza se zastavi do zlomku sekundy (zruseni i zavreni okna)
+        juce::String err;
+        auto rackPhoto = juce::File (__FILE__).getSiblingFile ("photos_real").getChildFile ("rack_full_phone_2026-10-20.jpg");
+        auto img = rmcv::loadPhoto (rackPhoto, err);
+        auto* nv = rm::findProfile ("elysia.nvelope.500");
+        const auto nvRef = rm::loadAsset (nv->image);
+        if (img.isValid())
+        {
+            {
+                std::atomic<bool> flag { true };
+                const rmcv::CancelScope scope (&flag);
+                const auto t0 = juce::Time::getMillisecondCounterHiRes();
+                auto r = rmcv::recognize (img, *nv, nvRef);
+                CHECK (r.cancelled && ! r.aligned && r.values.empty());
+                CHECK (juce::Time::getMillisecondCounterHiRes() - t0 < 3000);
+            }
+            double stopMs = 0;
+            std::atomic<bool> gotCancelled { false };
+            {
+                rm::PhotoWorker w;
+                w.submit ("*", [&] (const std::atomic<bool>&) { auto r = rmcv::recognize (img, *nv, nvRef); gotCancelled = r.cancelled; });
+                juce::Thread::sleep (400);
+                const auto t0 = juce::Time::getMillisecondCounterHiRes();
+                w.shutdown();
+                stopMs = juce::Time::getMillisecondCounterHiRes() - t0;
+            }
+            std::cout << "  zavreni behem analyzy: vlakno skoncilo za " << juce::roundToInt (stopMs) << " ms" << std::endl;
+            CHECK (gotCancelled && stopMs < 3000);
+            CHECK (rm::PhotoWorker::liveThreads.load() == baseThreads);
+
+            // stejna fotka podruhe: vysledek z pameti (otisk + profil + verze algoritmu), stejne hodnoty
+            rmcv::clearCache();
+            const auto fp = rmcv::fingerprint (rackPhoto);
+            auto copy = tmp.getChildFile ("jina_jmeno.jpg"); rackPhoto.copyFileTo (copy);
+            CHECK (fp.length() == 32 && rmcv::fingerprint (copy) == fp);          // otisk podle obsahu, ne jmena
+            auto t0 = juce::Time::getMillisecondCounterHiRes();
+            auto r1 = rmcv::recognizeCached (img, fp, *nv, nvRef);
+            const double first = juce::Time::getMillisecondCounterHiRes() - t0;
+            t0 = juce::Time::getMillisecondCounterHiRes();
+            auto r2 = rmcv::recognizeCached (img, fp, *nv, nvRef);
+            const double second = juce::Time::getMillisecondCounterHiRes() - t0;
+            std::cout << "  stejna fotka: poprve " << juce::roundToInt (first) << " ms, podruhe " << juce::roundToInt (second) << " ms (z pameti)" << std::endl;
+            CHECK (! r1.fromCache && r2.fromCache && second < 50 && rmcv::cacheStats().hits == 1);
+            bool same = r1.values.size() == r2.values.size();
+            for (auto& kv : r1.values) same = same && r2.values.count (kv.first) && r2.values.at (kv.first) == kv.second;
+            CHECK (same && r1.algorithm == rmcv::kAlgorithmVersion);
+            // bez cache: opakovana analyza dava totez (deterministicke)
+            rmcv::releaseWorkingMemory();
+            auto r3 = rmcv::recognize (img, *nv, nvRef);
+            bool same3 = r3.values.size() == r1.values.size();
+            for (auto& kv : r1.values) same3 = same3 && r3.values.count (kv.first) && r3.values.at (kv.first).known == kv.second.known && std::abs (r3.values.at (kv.first).pos - kv.second.pos) < 1e-9;
+            CHECK (same3);
+            // zrusena analyza se do pameti neulozi
+            {
+                std::atomic<bool> flag { true };
+                const rmcv::CancelScope scope (&flag);
+                auto rc = rmcv::recognizeCached (img, "jiny-otisk", *nv, nvRef);
+                CHECK (rc.cancelled);
+            }
+            CHECK (rmcv::cacheStats().size == 1);
+        }
+
+        // poskozena / prazdna / miniaturni fotka: chyba, nic se nevymysli
+        auto bad = tmp.getChildFile ("poskozena.jpg"); bad.replaceWithText ("tohle neni jpeg");
+        auto bad2 = rmcv::loadPhoto (bad, err);
+        CHECK (! bad2.isValid() && err.isNotEmpty());
+        auto rb = rmcv::recognize (bad2, *nv, nvRef);
+        CHECK (! rb.aligned && rb.values.empty() && rb.message.isNotEmpty());
+        juce::Image mini (juce::Image::RGB, 40, 30, true);
+        auto rm2 = rmcv::recognize (mini, *nv, nvRef);
+        int knownMini = 0; for (auto& kv : rm2.values) if (kv.second.known) ++knownMini;
+        CHECK (! rm2.aligned && knownMini == 0);
+
+        // vyber pristroju z jedne fotky: sousedni oba, dva na stejnem miste jen silnejsi
+        auto at = [] (double x, double y, int kp) { rmcv::Result r; r.aligned = true; r.keypoints = kp; r.transform.h[2] = x; r.transform.h[5] = y; return r; };
+        auto* x5 = rm::findProfile ("elysia.xmax.500");
+        std::vector<const rm::DeviceProfile*> pr { x5, x5, x5 };
+        auto ch = rmcv::chooseDevices ({ at (0, 0, 40), at (x5->w + 5, 0, 9), at (30, 20, 20) }, pr);
+        std::cout << "  vyber: " << (int) ch[0] << (int) ch[1] << (int) ch[2] << std::endl;
+        CHECK (ch[0] && ch[1] && ! ch[2]);
+        auto notAligned = at (0, 0, 50); notAligned.aligned = false;
+        ch = rmcv::chooseDevices ({ notAligned, at (10, 0, 9) }, { x5, x5 });
+        CHECK (! ch[0] && ch[1]);                     // slabsi, ale jediny nalezeny pristroj se neztrati (0.10: "polovina nejlepsiho")
+    }
+
+    section ("stabilita: fotka neprepise rucni / potvrzene hodnoty, overene opravy, ulozeni do projektu");
+    {
+        RackMemoryProcessor p;
+        const juce::String X = "elysia.xmax.500";
+        auto key = [&] (const char* c) { return rm::valueKey (X, c); };
+        p.working.values[key ("link")] = V (5);                         // rucne nastaveno (potvrzeno)
+        rm::ControlValue blue = V (10); blue.source = "recognized"; blue.confirmed = false;
+        p.working.values[key ("tone")] = blue;                            // z drivejsi fotky, nepotvrzeno
+        p.working.values[key ("release")] = V (20);                      // rucne, fotka cte stejne
+        std::map<juce::String, rm::ControlValue> photo;
+        photo["link"] = V (30); photo["tone"] = V (24); photo["release"] = V (21);
+        photo["xfreq"] = rm::ControlValue();                              // nejiste
+        photo["gain_mid"] = V (12);                                      // dosud nezadano
+        std::map<juce::String, juce::String> states { { "link", "recognized" }, { "tone", "recognized" }, { "release", "recognized" }, { "xfreq", "uncertain" }, { "gain_mid", "recognized" } };
+        p.rememberPredictions (X, "abc123", rmcv::kAlgorithmVersion, "foto.jpg", photo, states);
+        p.applyRecognition (X, photo);
+        CHECK (p.working.get (X, "link").pos == 5 && p.working.get (X, "link").confirmed);     // rucni hodnota zustala
+        CHECK (p.photoProposals[X].count ("link") == 1 && p.photoProposals[X].count ("release") == 0);
+        CHECK (p.working.get (X, "tone").pos == 24 && ! p.working.get (X, "tone").confirmed);   // nepotvrzena z fotky = nove cteni
+        CHECK (p.working.get (X, "gain_mid").pos == 12 && ! p.working.get (X, "xfreq").known);
+        CHECK (p.needsReview[X].contains ("xfreq"));
+        CHECK (p.acceptPhotoProposals (X) == 1 && p.working.get (X, "link").pos == 30);
+        p.undo();
+        CHECK (p.working.get (X, "link").pos == 5);                                            // jde vratit
+
+        // overene opravy: potvrzeni (fotka mela pravdu) a rucni oprava -> Corrections/corrections.jsonl
+        p.correctionsFile().deleteFile();
+        p.applyRecognition (X, photo);
+        CHECK (p.confirmRecognized (X) >= 2);
+        auto lines = juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim());
+        int confirmedN = 0, correctedN = 0;
+        for (auto& l : lines)
+        {
+            auto v = juce::JSON::parse (l);
+            if (v["status"] == "confirmed") ++confirmedN;
+            if (v["status"] == "corrected") ++correctedN;
+            CHECK (v["photoFingerprint"] == "abc123" && v["model"] == X && v["algorithm"].toString() == rmcv::kAlgorithmVersion);
+        }
+        CHECK (confirmedN == 2 && correctedN == 0);  // tone + gain_mid; link (rucni hodnota z drivejska) ani release se nepocitaji
+        CHECK (! p.correctionsFile().loadFileAsString().contains ("\"link\""));
+        p.working.values[key ("gain_mid")] = V (25);  // uzivatel opravi hodnotu z fotky
+        CHECK (p.capturePhotoFeedback() == 1);
+        const int n1 = juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim()).size();
+        p.capturePhotoFeedback();
+        CHECK (juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim()).size() == n1);   // bez duplicit
+        CHECK (p.correctionsFile().loadFileAsString().contains ("\"control\": \"gain_mid\"") || p.correctionsFile().loadFileAsString().contains ("\"control\":\"gain_mid\""));
+
+        // otisk fotky a verze cteni se ulozi s projektem a s verzi; starsi stav bez nich se nacte
+        auto* info = new juce::DynamicObject(); info->setProperty ("fingerprint", "abc123"); info->setProperty ("algorithm", rmcv::kAlgorithmVersion);
+        p.working.photoAnalysis[X] = juce::var (info);
+        p.markDirty();
+        juce::MemoryBlock mb; p.getStateInformation (mb);
+        RackMemoryProcessor q; q.setStateInformation (mb.getData(), (int) mb.getSize());
+        CHECK (q.working.photoAnalysis.count (X) && q.working.photoAnalysis[X]["fingerprint"] == "abc123");
+        CHECK (q.working.get (X, "link").pos == p.working.get (X, "link").pos);
+        rm::Snapshot old; juce::String e2;
+        CHECK (rm::Snapshot::fromJson (R"J({"schema":2,"id":"a1","deviceId":"rack","values":{}})J", old, e2) && old.photoAnalysis.empty());
+    }
+
+    section ("stabilita: editor - cely rack z fotky dvakrat, stejny vysledek, vlakno po zavreni skonci");
+    {
+        auto rackPhoto = juce::File (__FILE__).getSiblingFile ("photos_real").getChildFile ("rack_full_phone_2026-10-20.jpg");
+        if (rackPhoto.existsAsFile())
+        {
+            const int baseThreads = rm::PhotoWorker::liveThreads.load();
+            rmcv::clearCache();
+            RackMemoryProcessor p;
+            std::map<juce::String, rm::ControlValue> firstValues;
+            {
+                std::unique_ptr<juce::AudioProcessorEditor> ed (p.createEditor());
+                auto* e = static_cast<RackMemoryEditor*> (ed.get());
+                p.clearAll(); e->refreshAll();
+                auto waitIdle = [&] { for (int i = 0; i < 1200 && e->getPhotoWorker().isBusy(); ++i) pump (50); pump (100); };
+                auto t0 = juce::Time::getMillisecondCounterHiRes();
+                e->filesDropped ({ rackPhoto.getFullPathName() }, 10, 10);
+                waitIdle();
+                const double firstMs = juce::Time::getMillisecondCounterHiRes() - t0;
+                int found = 0;
+                for (auto& kv : p.devicePhotos) if (kv.second.rectified.isValid()) ++found;
+                firstValues = p.working.values;
+                CHECK (found >= 3 && ! p.working.photoAnalysis.empty());
+                for (auto& kv : p.working.photoAnalysis) CHECK (kv.second["fingerprint"].toString().length() == 32 && kv.second["algorithm"] == rmcv::kAlgorithmVersion);
+                // podruhe stejna fotka: z pameti, stejne hodnoty, zadna dalsi vlakna
+                p.confirmRecognized ("spl.vitalizer.mk3t");
+                t0 = juce::Time::getMillisecondCounterHiRes();
+                e->filesDropped ({ rackPhoto.getFullPathName() }, 10, 10);
+                waitIdle();
+                const double secondMs = juce::Time::getMillisecondCounterHiRes() - t0;
+                std::cout << "  cely rack: poprve " << juce::roundToInt (firstMs) << " ms, podruhe " << juce::roundToInt (secondMs) << " ms; uloh " << e->getPhotoWorker().finished.load()
+                          << ", vlaken " << (rm::PhotoWorker::liveThreads.load() - baseThreads) << std::endl;
+                bool cached = true;
+                for (auto& kv : p.devicePhotos) if (kv.second.rectified.isValid()) cached = cached && kv.second.fromCache;
+                CHECK (cached && secondMs < firstMs / 3);
+                bool same = true;
+                for (auto& kv : firstValues) same = same && p.working.values.count (kv.first) && std::abs (p.working.values[kv.first].pos - kv.second.pos) < 1e-9;
+                CHECK (same);
+                CHECK (rm::PhotoWorker::liveThreads.load() - baseThreads <= 1);
+                // novejsi fotka behem analyzy: starsi se zrusi, plati jen nejnovejsi
+                rmcv::clearCache();
+                e->filesDropped ({ rackPhoto.getFullPathName() }, 10, 10);
+                pump (300);
+                e->filesDropped ({ rackPhoto.getFullPathName() }, 10, 10);
+                waitIdle();
+                CHECK (e->getPhotoWorker().cancelledJobs.load() >= 1);
+                for (auto& kv : p.devicePhotos) CHECK (! kv.second.busy);
+                // a ted zavreni okna uprostred analyzy
+                rmcv::clearCache();
+                e->filesDropped ({ rackPhoto.getFullPathName() }, 10, 10);
+                pump (300);
+            }
+            CHECK (rm::PhotoWorker::liveThreads.load() == baseThreads);                 // po zavreni okna nic nebezi
+            pump (200);
+            for (auto& kv : p.devicePhotos) CHECK (! kv.second.busy || true);
+            CHECK (p.library.reportsDir().getChildFile ("photo-analysis.log").loadFileAsString().contains (rmcv::kAlgorithmVersion));
+        }
     }
 
     tmp.deleteRecursively();

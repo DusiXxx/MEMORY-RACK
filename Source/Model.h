@@ -166,6 +166,8 @@ struct Snapshot
     String group;              // skupina (pracovni postup), ke ktere verze patri; prazdne = cely rack (starsi verze)
     juce::StringArray photos;  // nazvy souboru ve slozce Photos (relativni!)
     std::map<String, String> devicePhotos;   // kus -> posledni fotka (nazev v Photos); fotka je jen odkaz
+    // kus -> jak se fotka cetla: { fingerprint (MD5 fotky), algorithm (verze cteni), time, read, readable, manual }
+    std::map<String, juce::var> photoAnalysis;
     std::vector<Cable> cables;               // kabely v patchbayi
     juce::var defs;                          // definice ovladacu v dobe ulozeni (profil se pozdeji muze zmenit)
     juce::StringArray order;   // poradi pristroju v racku (= co v racku je); prazdne = vychozi
@@ -197,6 +199,14 @@ int totalControls();
 // Otisk definic pristroju pouzitych v nastaveni (verze profilu, ovladace, pocty poloh, stupnice) - uklada se
 // s projektem a s verzemi, aby pozdejsi zmena knihovny hardwaru nic tise neprevykladala.
 juce::var definitionsFor (const Snapshot&);
+// Dve hodnoty ovladace jsou "stejne" v ramci presnosti cteni z fotky: knob do 3 % rozsahu (~9 stupnu),
+// stupnovy knob do 1 kroku, prepinac / tlacitko presne.
+inline bool sameReading (const ControlDef* c, double a, double b)
+{
+    if (c == nullptr || c->type == ControlType::knob) return std::abs (a - b) <= 0.03;
+    if (c->type == ControlType::stepped) return std::abs (a - b) <= 1.0;
+    return std::abs (a - b) < 0.5;
+}
 juce::StringArray checkDefinitions (const juce::var& defs);    // co se od ulozeni zmenilo / chybi (prazdne = nic)
 
 // Rozdil dvou nastaveni (porovnani verzi): jen ovladace, ktere se lisi

@@ -27,6 +27,12 @@ var Snapshot::toVar() const
         for (auto& kv : devicePhotos) dp->setProperty (juce::Identifier (kv.first), kv.second);
         o->setProperty ("devicePhotos", var (dp));
     }
+    if (! photoAnalysis.empty())
+    {
+        auto* pa = new juce::DynamicObject();
+        for (auto& kv : photoAnalysis) pa->setProperty (juce::Identifier (kv.first), kv.second);
+        o->setProperty ("photoAnalysis", var (pa));
+    }
     if (! cables.empty())
     {
         juce::Array<var> cb;
@@ -92,6 +98,9 @@ bool Snapshot::fromVar (const var& v, Snapshot& s, String& error)
         for (auto& kv : dp->getProperties())
             if (auto f = juce::File::createLegalFileName (kv.value.toString()); f.isNotEmpty())
                 s.devicePhotos[kv.name.toString()] = f;
+    if (auto* pa = v.getProperty ("photoAnalysis", var()).getDynamicObject())
+        for (auto& kv : pa->getProperties())
+            if (kv.value.getDynamicObject() != nullptr) s.photoAnalysis[kv.name.toString()] = kv.value;
     if (auto* cb = v.getProperty ("cables", var()).getArray())
         for (auto& e : *cb)
         {

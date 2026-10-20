@@ -97,6 +97,9 @@ public:
         std::map<juce::String, juce::String> states;   // stav ovladacu z posledniho cteni
         bool busy = false, failed = false;
         int read = 0, readable = 0;
+        juce::String fingerprint, algorithm;    // otisk fotky (MD5) a verze cteni
+        bool fromCache = false;                 // stejna fotka uz byla analyzovana -> vysledek z pameti
+        bool previewFailed = false;             // ulozenou fotku nejde nacist -> znovu se nezkousi (zadne opakovani dokola)
     };
     std::map<juce::String, DevicePhoto> devicePhotos;
     bool showPhotos = false;
@@ -108,6 +111,23 @@ public:
     std::map<juce::String, juce::StringArray> needsReview;      // kus -> ovladace, ktere z fotky precist nesly (jen tato relace)
     int confirmRecognized (const juce::String& deviceId);       // modre (z fotky) -> potvrzene; vraci pocet
     int numUnconfirmed (const juce::String& deviceId) const;
+
+    // Rucne nastavena nebo potvrzena hodnota se z fotky NIKDY tise neprepise: kdyz fotka cte jinak,
+    // ulozi se jen navrh (kontrola po fotce -> "Prevzit z fotky").
+    std::map<juce::String, std::map<juce::String, rm::ControlValue>> photoProposals;
+    int acceptPhotoProposals (const juce::String& deviceId);    // vraci pocet prevzatych (jde vratit pres undo)
+
+    // Co fotka predpovedela (pro zachyceni potvrzenych / opravenych hodnot jako overenych prikladu)
+    struct Prediction { juce::String fingerprint, algorithm, model, photo, state; rm::ControlValue value; bool eligible = false; };   // eligible = hodnota prisla z teto fotky (nebo byla nejista a prazdna)
+    std::map<juce::String, std::map<juce::String, Prediction>> predictions;    // kus -> ovladac
+    void rememberPredictions (const juce::String& deviceId, const juce::String& fingerprint, const juce::String& algorithm,
+                              const juce::String& photo, const std::map<juce::String, rm::ControlValue>& values,
+                              const std::map<juce::String, juce::String>& states);
+    // Zapise do ~/Music/Rack Memory/Corrections/corrections.jsonl hodnoty, ktere uzivatel po fotce potvrdil
+    // nebo opravil. Jen lokalne, nikam se neposila, nic se z toho samo neuci. Vraci pocet novych zaznamu.
+    int capturePhotoFeedback();
+    juce::File correctionsFile() const;
+    juce::StringArray captured;      // co uz se v teto relaci zapsalo (bez duplicit)
     void unlinkPhoto (const juce::String& deviceId);            // odebrat fotku pristroje - nastaveni zustava
 
     // presety pristroju (nezavisle na skladbach)

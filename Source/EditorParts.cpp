@@ -865,25 +865,37 @@ ReviewPanel::ReviewPanel()
     style (closeButton, U ("Zavřít"));
     confirmAll.onClick = [this] { if (onConfirmAll) onConfirmAll(); };
     closeButton.onClick = [this] { if (onClose) onClose(); };
-    addAndMakeVisible (confirmAll); addAndMakeVisible (closeButton);
+    style (acceptProposals, U ("Převzít z fotky"), kPhoto);
+    acceptProposals.setTooltip (U ("Fotka čte některé ovladače jinak, než máš nastaveno nebo potvrzeno. Tvoje hodnoty se samy nikdy nepřepíšou – tímhle je nahradíš tím, co je na fotce (jde vrátit Zpět)."));
+    acceptProposals.onClick = [this] { if (onAcceptProposals) onAcceptProposals(); };
+    addAndMakeVisible (confirmAll); addAndMakeVisible (closeButton); addChildComponent (acceptProposals);
 }
 
 void ReviewPanel::setItems (const std::vector<Item>& it)
 {
     items = it;
     bool any = false;
-    for (auto& i : items) any = any || i.unconfirmed > 0;
+    bool proposals = false;
+    for (auto& i : items) { any = any || i.unconfirmed > 0; proposals = proposals || ! i.proposals.isEmpty(); }
     confirmAll.setVisible (any);
+    acceptProposals.setVisible (proposals);
+    resized();
     repaint();
 }
 
-int ReviewPanel::preferredHeight() const   { return 40 + 44 * (int) juce::jmax ((size_t) 1, items.size()); }
+int ReviewPanel::preferredHeight() const
+{
+    int h = 40;
+    for (auto& i : items) h += 44 + (i.proposals.isEmpty() ? 0 : 22);
+    return juce::jmax (84, h);
+}
 
 void ReviewPanel::resized()
 {
     auto b = getLocalBounds().reduced (10).removeFromTop (28);
     closeButton.setBounds (b.removeFromRight (80)); b.removeFromRight (6);
-    confirmAll.setBounds (b.removeFromRight (120));
+    confirmAll.setBounds (b.removeFromRight (120)); b.removeFromRight (6);
+    acceptProposals.setBounds (b.removeFromRight (130));
 }
 
 void ReviewPanel::paint (juce::Graphics& g)
@@ -906,6 +918,15 @@ void ReviewPanel::paint (juce::Graphics& g)
         if (it.unsupported > 0) head << U ("  ·  ") << it.unsupported << U (" se z fotky nečte");
         if (! it.failed && it.unconfirmed > 0) head << U ("  ·  modré = zkontroluj a potvrď");
         g.drawText (head, top, juce::Justification::centredLeft);
+        if (! it.proposals.isEmpty())
+        {
+            auto pr = b.removeFromTop (22.0f);
+            g.setColour (kAccent); g.setFont (font (12.5f));
+            auto* pp = rm::profileForInstance (it.instance);
+            juce::StringArray names;
+            for (auto& cid : it.proposals) { auto* c = pp != nullptr ? pp->find (cid) : nullptr; names.add (c != nullptr ? c->name : cid); }
+            g.drawText (U ("fotka čte jinak než tvoje nastavení (ponecháno): ") + names.joinIntoString (", "), pr, juce::Justification::centredLeft);
+        }
         if (it.uncertain.isEmpty()) continue;
         g.setColour (kDim); g.setFont (font (12.5f));
         const String lead = U ("nejisté, ponecháno beze změny: ");

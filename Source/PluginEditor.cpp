@@ -1063,6 +1063,11 @@ void LevelStrip::timerCallback()
     if (shouldMatch != matchButton.isVisible()) resized();
     otherGain.setEnabled (o != nullptr);
     if (o != nullptr && ! otherGain.isMouseButtonDown()) otherGain.setValue (o->gainDb(), juce::dontSendNotification);
+    // prekreslit jen kdyz se mereni zmenilo (ticho / zastaveny Logic = zadne prekreslovani)
+    auto sig = [] (const RackMemoryProcessor* p) { return p == nullptr ? 0.0 : (double) p->meter.momentaryLufs() * 3.1 + p->meter.peakDb() * 7.3 + p->meter.maxPeakDb() + p->gainDb() * 1.7; };
+    const double now = sig (&proc) + 11.0 * sig (o) + (o != nullptr ? 0.5 : 0.0);
+    if (std::abs (now - lastMeterSig) < 0.01) return;
+    lastMeterSig = now;
     repaint (meterA.getUnion (meterB).getUnion (deltaArea));
 }
 
@@ -1237,6 +1242,15 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
         refreshAll();
     };
     review.onClose = [this] { review.setVisible (false); };
+    review.onAcceptProposals = [this]
+    {
+        int n = 0;
+        juce::StringArray ids;
+        for (auto& it : review.getItems()) { n += proc.acceptPhotoProposals (it.instance); ids.add (it.instance); }
+        setStatus (String (n) + U (" hodnot převzato z fotky (Zpět vrátí původní)."), kOk);
+        refreshAll();
+        showReview (ids);
+    };
     addChildComponent (review);
 
     viewer.onAlignRequest = [this]
@@ -1348,6 +1362,7 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
 
 RackMemoryEditor::~RackMemoryEditor()
 {
+    photoWorker.shutdown();             // rozbehla analyza se zrusi, vlakno skonci (nic nezustane bezet po zavreni okna)
     stopTimer();
     proc.removeChangeListener (this);
 }
@@ -2035,11 +2050,11 @@ void RackMemoryEditor::timerCallback()
     if (statusTicks > 0 && --statusTicks == 0) { tabs.status.clear(); tabs.repaint(); }
 
     ++tick;
-    if (tick % 20 == 0) checkForUpdate();        // novy balicek ve Stazenych? (kazdych 10 s)
+    if (tick % 240 == 1) checkForUpdate();       // novy balicek ve Stazenych? (pri otevreni, pak kazde 2 min)
     if (updater->getRevision() != updaterRevision) { updaterRevision = updater->getRevision(); refreshUpdateButton(); }
 
-    // zmeny z jine instance pluginu (jina stopa / jiny projekt) - kontrola jednou za 2 s
-    if ((tick % 4) != 0) return;
+    // zmeny z jine instance pluginu (jina stopa / jiny projekt) - kontrola jednou za 5 s, jen kdyz je okno videt
+    if ((tick % 10) != 0 || ! isShowing()) return;
     auto sig = proc.library.signature();
     if (sig != librarySignature)
     {
@@ -2145,6 +2160,7 @@ void RackMemoryEditor::refreshAll()
 void RackMemoryEditor::edited()
 {
     proc.markDirty();
+    proc.capturePhotoFeedback();          // potvrzene / opravene hodnoty po fotce = overene priklady (jen lokalne)
     refreshTopBar();
     if (review.isVisible())
     {
@@ -2717,35 +2733,78 @@ void RackMemoryEditor::refreshPhotos()
     addTile.repaint();
 }
 
+namespace
+{
+juce::Image makePreview (const juce::Image& img)
+{
+    if (! img.isValid()) return {};
+    const int m = juce::jmax (img.getWidth(), img.getHeight());
+    if (m <= 1600) return img;
+    return img.rescaled (juce::jmax (1, img.getWidth() * 1600 / m), juce::jmax (1, img.getHeight() * 1600 / m));
+}
+
+// kde je panel na nahledu (pro kontrolu okem v prohlizeci)
+std::vector<juce::Point<float>> quadOf (const rmcv::Result& r, const rm::DeviceProfile& prof, const juce::Image& img, const juce::Image& preview)
+{
+    std::vector<juce::Point<float>> q;
+    if (! r.aligned || ! img.isValid() || ! preview.isValid()) return q;
+    const double k = (double) preview.getWidth() / img.getWidth() / r.photoScale;
+    for (auto c : { juce::Point<float> (0, 0), juce::Point<float> (prof.w, 0), juce::Point<float> (prof.w, prof.h), juce::Point<float> (0, prof.h) })
+    {
+        double x, y; r.transform.map (c.x, c.y, x, y);
+        q.push_back ({ (float) (x * k), (float) (y * k) });
+    }
+    return q;
+}
+}
+
 // Fotka ulozena v projektu (odkaz do knihovny): nahled se nacte na pozadi, aby sla znovu otevrit / zarovnat.
+// Kazdy soubor se dekoduje jen jednou, i kdyz na nem je vic pristroju (cely rack = jedna fotka).
 void RackMemoryEditor::loadSavedPhotos()
 {
+    std::map<String, juce::StringArray> byFile;
     for (auto& kv : proc.working.devicePhotos)
     {
-        const auto id = kv.first;
-        auto& ds = proc.devicePhotos[id];
-        if (ds.original.isValid() || ds.busy) continue;
-        auto f = proc.library.photoFile (kv.second);
-        if (! f.existsAsFile()) { ds.status = U ("fotka už v knihovně není"); continue; }
-        ds.busy = true;
-        juce::Component::SafePointer<RackMemoryEditor> safe (this);
-        juce::Thread::launch ([safe, f, id]
+        auto& ds = proc.devicePhotos[kv.first];
+        if (ds.original.isValid() || ds.busy || ds.previewFailed) continue;
+        byFile[kv.second].add (kv.first);
+    }
+    for (auto& kv : byFile)
+    {
+        auto f = proc.library.photoFile (kv.first);
+        const auto ids = kv.second;
+        if (! f.existsAsFile())
         {
-            String err;
-            auto img = rmcv::loadPhoto (f, err);
+            for (auto& id : ids) { auto& ds = proc.devicePhotos[id]; ds.status = U ("fotka už v knihovně není"); ds.previewFailed = true; }
+            continue;
+        }
+        for (auto& id : ids) proc.devicePhotos[id].busy = true;
+        juce::Component::SafePointer<RackMemoryEditor> safe (this);
+        photoWorker.submit ("preview:" + kv.first, [safe, f, ids] (const std::atomic<bool>& cancelled)
+        {
             juce::Image preview;
-            if (img.isValid())
+            String fp;
+            if (! cancelled)
             {
-                const int m = juce::jmax (img.getWidth(), img.getHeight());
-                preview = img.rescaled (juce::jmax (1, img.getWidth() * 1600 / m), juce::jmax (1, img.getHeight() * 1600 / m));
+                String err;
+                auto img = rmcv::loadPhoto (f, err);
+                preview = makePreview (img);
+                fp = rmcv::fingerprint (f);
             }
-            juce::MessageManager::callAsync ([safe, id, preview]
+            const bool failed = ! cancelled && ! preview.isValid();
+            juce::MessageManager::callAsync ([safe, ids, preview, fp, failed]
             {
                 if (safe == nullptr) return;
-                auto& d = safe->proc.devicePhotos[id];
-                d.busy = false;
-                d.original = preview;
-                if (d.status.isEmpty()) d.status = U ("uložená fotka");
+                for (auto& id : ids)
+                {
+                    auto& d = safe->proc.devicePhotos[id];
+                    d.busy = false;
+                    if (failed) { d.previewFailed = true; d.status = U ("fotku nejde načíst"); continue; }
+                    if (! preview.isValid()) continue;               // zruseno - nacte se pri dalsi prilezitosti
+                    d.original = preview;
+                    if (d.fingerprint.isEmpty()) d.fingerprint = fp;
+                    if (d.status.isEmpty()) d.status = U ("uložená fotka");
+                }
                 safe->refreshPhotos();
             });
         });
@@ -2776,31 +2835,6 @@ void RackMemoryEditor::choosePhoto (const String& deviceId)
                           });
 }
 
-namespace
-{
-juce::Image makePreview (const juce::Image& img)
-{
-    if (! img.isValid()) return {};
-    const int m = juce::jmax (img.getWidth(), img.getHeight());
-    if (m <= 1600) return img;
-    return img.rescaled (juce::jmax (1, img.getWidth() * 1600 / m), juce::jmax (1, img.getHeight() * 1600 / m));
-}
-
-// kde je panel na nahledu (pro kontrolu okem v prohlizeci)
-std::vector<juce::Point<float>> quadOf (const rmcv::Result& r, const rm::DeviceProfile& prof, const juce::Image& img, const juce::Image& preview)
-{
-    std::vector<juce::Point<float>> q;
-    if (! r.aligned || ! img.isValid() || ! preview.isValid()) return q;
-    const double k = (double) preview.getWidth() / img.getWidth() / r.photoScale;
-    for (auto c : { juce::Point<float> (0, 0), juce::Point<float> (prof.w, 0), juce::Point<float> (prof.w, prof.h), juce::Point<float> (0, prof.h) })
-    {
-        double x, y; r.transform.map (c.x, c.y, x, y);
-        q.push_back ({ (float) (x * k), (float) (y * k) });
-    }
-    return q;
-}
-}
-
 void RackMemoryEditor::showReview (const juce::StringArray& instances)
 {
     std::vector<ReviewPanel::Item> items;
@@ -2821,6 +2855,7 @@ void RackMemoryEditor::showReview (const juce::StringArray& instances)
             else if (kv.second == "unsupported") ++item.unsupported;
         }
         if (proc.needsReview.count (id)) item.uncertain = proc.needsReview.at (id);
+        if (proc.photoProposals.count (id)) for (auto& kv : proc.photoProposals.at (id)) item.proposals.add (kv.first);
         items.push_back (item);
     }
     if (items.empty()) return;
@@ -2829,6 +2864,24 @@ void RackMemoryEditor::showReview (const juce::StringArray& instances)
     resized();
 }
 
+namespace
+{
+// metadata analyzy ulozena v projektu (otisk fotky + verze cteni)
+juce::var analysisInfo (const RackMemoryProcessor::DevicePhoto& ds)
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("fingerprint", ds.fingerprint);
+    o->setProperty ("algorithm", ds.algorithm);
+    o->setProperty ("time", juce::Time::getCurrentTime().toMilliseconds());
+    o->setProperty ("read", ds.read);
+    o->setProperty ("readable", ds.readable);
+    if (ds.manual) o->setProperty ("manual", true);
+    return juce::var (o);
+}
+}
+
+// Vsechna prace s fotkami bezi v jednom pracovnim vlakne (photoWorker): nikdy vic analyz najednou,
+// novejsi fotka zastaralou ulohu zrusi, zavreni okna vse zastavi. Nic z toho nebezi na audio vlakne.
 void RackMemoryEditor::importPhoto (const juce::File& source, const String& deviceId, bool copyToLibrary)
 {
     auto* prof = rm::profileForInstance (deviceId);
@@ -2844,37 +2897,50 @@ void RackMemoryEditor::importPhoto (const juce::File& source, const String& devi
     const auto reference = loadAsset (prof->image).createCopy();
     juce::Component::SafePointer<RackMemoryEditor> safe (this);
 
-    // Vse na pozadi (mimo audio i UI vlakno) a jen na tomto pocitaci - fotka se nikam neodesila.
-    juce::Thread::launch ([safe, lib, snapId, source, prof, deviceId, reference, copyToLibrary]
+    photoWorker.submit ("dev:" + deviceId, [safe, lib, snapId, source, prof, deviceId, reference, copyToLibrary] (const std::atomic<bool>& cancelled)
     {
-        String copyError, loadError;
-        const auto name = copyToLibrary ? lib.importPhoto (source, snapId, copyError)          // original se uchova v knihovne
-                                        : source.getFileName();
+        String copyError, loadError, name, fp;
         rmcv::Result result;
-        auto img = rmcv::loadPhoto (source, loadError);
-        if (img.isValid()) result = rmcv::recognize (img, *prof, reference);
-        else               result.message = loadError;
-        const auto preview = makePreview (img);
-        const auto quad = quadOf (result, *prof, img, preview);
+        juce::Image preview;
+        std::vector<juce::Point<float>> quad;
+        if (! cancelled)
+        {
+            const auto t0 = juce::Time::getMillisecondCounterHiRes();
+            name = copyToLibrary ? lib.importPhoto (source, snapId, copyError)          // original se uchova v knihovne
+                                 : source.getFileName();
+            fp = rmcv::fingerprint (source);
+            auto img = rmcv::loadPhoto (source, loadError);
+            const auto t1 = juce::Time::getMillisecondCounterHiRes();
+            if (img.isValid()) result = rmcv::recognizeCached (img, fp, *prof, reference);
+            else               result.message = loadError;
+            preview = makePreview (img);
+            quad = quadOf (result, *prof, img, preview);
+            rm::logPhotoJob (lib, source, img, { { prof->id, &result } }, t1 - t0, juce::Time::getMillisecondCounterHiRes() - t1);
+        }
+        const bool wasCancelled = cancelled || result.cancelled;
 
-        juce::MessageManager::callAsync ([safe, name, result, deviceId, preview, quad]
+        juce::MessageManager::callAsync ([safe, name, result, deviceId, preview, quad, fp, wasCancelled]
         {
             if (safe == nullptr) return;
             auto& p = safe->proc;
-            if (name.isNotEmpty()) { p.working.photos.addIfNotAlreadyThere (name); p.working.devicePhotos[deviceId] = name; }
-
             auto& ds = p.devicePhotos[deviceId];
             ds.busy = false;
+            if (wasCancelled) { safe->refreshPhotos(); return; }        // novejsi fotka / zavreni: nic se nemeni
+            if (name.isNotEmpty()) { p.working.photos.addIfNotAlreadyThere (name); p.working.devicePhotos[deviceId] = name; }
+
             ds.read = result.read; ds.readable = result.readable;
             ds.original = preview;
             ds.quad = quad;
             ds.manual = false;
             ds.states = result.states;
+            ds.fingerprint = fp; ds.algorithm = result.algorithm; ds.fromCache = result.fromCache;
             if (result.aligned)
             {
                 ds.failed = false;
                 ds.rectified = result.rectified;
                 ds.status = result.message;
+                p.working.photoAnalysis[deviceId] = analysisInfo (ds);
+                p.rememberPredictions (deviceId, fp, result.algorithm, name, result.values, result.states);
                 p.applyRecognition (deviceId, result.values);
                 const int unsure = p.needsReview[deviceId].size();
                 safe->setStatus (U ("Přístroj rozpoznán: ") + p.rack.displayName (deviceId) + U (" – přečteno ") + String (result.read) + "/" + String (result.readable)
@@ -2901,25 +2967,41 @@ void RackMemoryEditor::alignPhoto (const String& deviceId, const std::array<juce
     if (prof == nullptr || it == proc.devicePhotos.end() || ! it->second.original.isValid()) return;
     const auto photo = it->second.original.createCopy();
     const auto reference = loadAsset (prof->image).createCopy();
+    const auto fp = it->second.fingerprint;
+    const auto photoName = proc.working.devicePhotos.count (deviceId) ? proc.working.devicePhotos.at (deviceId) : String();
     it->second.busy = true;
     refreshPhotos();
     setStatus (U ("Ručně zarovnáno – čtu ovladače…"), kFromPhoto, 60);
     juce::Component::SafePointer<RackMemoryEditor> safe (this);
-    juce::Thread::launch ([safe, photo, reference, prof, deviceId, corners]
+    photoWorker.submit ("dev:" + deviceId, [safe, photo, reference, prof, deviceId, corners, fp, photoName] (const std::atomic<bool>& cancelled)
     {
-        juce::Point<float> c[4] = { corners[0], corners[1], corners[2], corners[3] };
-        const auto t = rmcv::fromCorners (*prof, c);
-        auto result = rmcv::recognize (photo, *prof, reference, &t);
-        const auto quad = quadOf (result, *prof, photo, photo);
-        juce::MessageManager::callAsync ([safe, result, deviceId, quad]
+        rmcv::Result result;
+        std::vector<juce::Point<float>> quad;
+        if (! cancelled)
+        {
+            juce::Point<float> c[4] = { corners[0], corners[1], corners[2], corners[3] };
+            const auto t = rmcv::fromCorners (*prof, c);
+            result = rmcv::recognize (photo, *prof, reference, &t);      // rucni zarovnani se nepamatuje v cache
+            quad = quadOf (result, *prof, photo, photo);
+        }
+        const bool wasCancelled = cancelled || result.cancelled;
+        juce::MessageManager::callAsync ([safe, result, deviceId, quad, wasCancelled, fp, photoName]
         {
             if (safe == nullptr) return;
             auto& p = safe->proc;
             auto& ds = p.devicePhotos[deviceId];
-            ds.busy = false; ds.failed = ! result.aligned;
+            ds.busy = false;
+            if (wasCancelled) { safe->refreshPhotos(); return; }
+            ds.failed = ! result.aligned;
             ds.read = result.read; ds.readable = result.readable; ds.status = result.message;
             ds.rectified = result.rectified; ds.quad = quad; ds.manual = true; ds.states = result.states;
-            if (result.aligned) p.applyRecognition (deviceId, result.values);
+            ds.algorithm = result.algorithm; ds.fromCache = false;
+            if (result.aligned)
+            {
+                p.working.photoAnalysis[deviceId] = analysisInfo (ds);
+                p.rememberPredictions (deviceId, fp, result.algorithm, photoName, result.values, result.states);
+                p.applyRecognition (deviceId, result.values);
+            }
             safe->setStatus (U ("Ručně zarovnáno: ") + p.rack.displayName (deviceId) + U (" – přečteno ") + String (result.read) + "/" + String (result.readable), kOk, 12);
             safe->refreshAll();
             safe->showReview ({ deviceId });
@@ -2949,49 +3031,60 @@ void RackMemoryEditor::importPhotoAuto (const juce::File& source)
     const auto snapId = proc.working.id;
     juce::Component::SafePointer<RackMemoryEditor> safe (this);
 
-    juce::Thread::launch ([safe, lib, snapId, source, jobs]
+    photoWorker.submit ("*", [safe, lib, snapId, source, jobs] (const std::atomic<bool>& cancelled)
     {
-        String copyError, loadError;
-        const auto name = lib.importPhoto (source, snapId, copyError);
-        auto img = rmcv::loadPhoto (source, loadError);
-        const auto preview = makePreview (img);
+        String copyError, loadError, name, fp;
+        juce::Image preview;
         auto results = std::make_shared<std::vector<rmcv::Result>> (jobs->size());
-        if (img.isValid())
-        {
-            // pristroje paralelne (kazdy ma vlastni vypocet), fotka je sdilena jen pro cteni
-            std::vector<std::thread> threads;
-            for (size_t i = 0; i < jobs->size(); ++i)
-                threads.emplace_back ([&, i] { (*results)[i] = rmcv::recognize (img, *(*jobs)[i].prof, (*jobs)[i].ref); });
-            for (auto& t : threads) t.join();
-        }
         auto quads = std::make_shared<std::vector<std::vector<juce::Point<float>>>>();
-        for (size_t i = 0; i < jobs->size(); ++i) quads->push_back (quadOf ((*results)[i], *(*jobs)[i].prof, img, preview));
+        auto take = std::make_shared<std::vector<bool>> (jobs->size(), false);
+        if (! cancelled)
+        {
+            const auto t0 = juce::Time::getMillisecondCounterHiRes();
+            name = lib.importPhoto (source, snapId, copyError);
+            fp = rmcv::fingerprint (source);
+            auto img = rmcv::loadPhoto (source, loadError);
+            const auto t1 = juce::Time::getMillisecondCounterHiRes();
+            preview = makePreview (img);
+            // pristroje jeden po druhem (ne paralelne): vyrazne body fotky se spocitaji jen jednou a sdileji
+            if (img.isValid())
+                for (size_t i = 0; i < jobs->size() && ! cancelled; ++i)
+                    (*results)[i] = rmcv::recognizeCached (img, fp, *(*jobs)[i].prof, (*jobs)[i].ref);
+            std::vector<const rm::DeviceProfile*> profs;
+            for (auto& j : *jobs) profs.push_back (j.prof);
+            *take = rmcv::chooseDevices (*results, profs);
+            for (size_t i = 0; i < jobs->size(); ++i) quads->push_back (quadOf ((*results)[i], *(*jobs)[i].prof, img, preview));
+            std::vector<std::pair<String, const rmcv::Result*>> logged;
+            for (size_t i = 0; i < jobs->size(); ++i) logged.push_back ({ (*jobs)[i].prof->id + ((*take)[i] ? "" : ((*results)[i].aligned ? " (prekryv - nepouzito)" : "")), &(*results)[i] });
+            rm::logPhotoJob (lib, source, img, logged, t1 - t0, juce::Time::getMillisecondCounterHiRes() - t1);
+        }
+        const bool wasCancelled = cancelled.load();
 
-        juce::MessageManager::callAsync ([safe, name, results, jobs, loadError, preview, quads]
+        juce::MessageManager::callAsync ([safe, name, results, jobs, loadError, preview, quads, take, fp, wasCancelled]
         {
             if (safe == nullptr) return;
             auto& p = safe->proc;
+            for (auto& j : *jobs) p.devicePhotos[j.id].busy = false;
+            if (wasCancelled) { safe->refreshPhotos(); return; }
             if (name.isNotEmpty()) p.working.photos.addIfNotAlreadyThere (name);
 
-            // co na fotce opravdu je: nalezene pristroje; kdyz jich je vic, jen ty s podobne silnou shodou
-            int bestKp = 0;
-            for (auto& r : *results) if (r.aligned) bestKp = juce::jmax (bestKp, r.keypoints);
             std::map<String, std::map<String, rm::ControlValue>> apply;
             juce::StringArray found, names;
             for (size_t i = 0; i < jobs->size(); ++i)
             {
                 auto& r = (*results)[i];
+                if (! (*take)[i]) continue;
                 auto& ds = p.devicePhotos[(*jobs)[i].id];
-                ds.busy = false;
-                const bool take = r.aligned && (r.keypoints >= bestKp / 2 || bestKp < 12);
-                if (! take) continue;
                 ds.failed = false; ds.rectified = r.rectified; ds.original = preview; ds.status = r.message; ds.quad = (*quads)[i];
                 ds.manual = false; ds.states = r.states;
                 ds.read = r.read; ds.readable = r.readable;
+                ds.fingerprint = fp; ds.algorithm = r.algorithm; ds.fromCache = r.fromCache;
                 apply[(*jobs)[i].id] = r.values;
                 found.add ((*jobs)[i].id);
                 names.add (p.rack.displayName ((*jobs)[i].id));
                 if (name.isNotEmpty()) p.working.devicePhotos[(*jobs)[i].id] = name;
+                p.working.photoAnalysis[(*jobs)[i].id] = analysisInfo (ds);
+                p.rememberPredictions ((*jobs)[i].id, fp, r.algorithm, name, r.values, r.states);
             }
             if (! apply.empty()) p.applyRecognition (apply);
             else p.markDirty();

@@ -1,4 +1,5 @@
 #pragma once
+#include "PhotoWorker.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "PluginProcessor.h"
 #include "Updater.h"
@@ -275,16 +276,16 @@ class ReviewPanel : public juce::Component
 {
 public:
     ReviewPanel();
-    struct Item { juce::String instance, title, message; int read = 0, readable = 0, unconfirmed = 0, notVisible = 0, tooSmall = 0, unsupported = 0; juce::StringArray uncertain; bool failed = false; bool manual = false; };
+    struct Item { juce::String instance, title, message; int read = 0, readable = 0, unconfirmed = 0, notVisible = 0, tooSmall = 0, unsupported = 0; juce::StringArray uncertain, proposals; bool failed = false; bool manual = false; };
     void setItems (const std::vector<Item>&);
     const std::vector<Item>& getItems() const     { return items; }
     std::function<void (const juce::String& instance, const juce::String& controlId)> onOpen;
-    std::function<void()> onConfirmAll, onClose;
+    std::function<void()> onConfirmAll, onClose, onAcceptProposals;
     int preferredHeight() const;
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseUp (const juce::MouseEvent&) override;
-    juce::TextButton confirmAll, closeButton;
+    juce::TextButton confirmAll, closeButton, acceptProposals;
 private:
     std::vector<Item> items;
     struct Link { juce::Rectangle<float> r; juce::String instance, control; };
@@ -311,6 +312,7 @@ private:
     std::unique_ptr<juce::SliderParameterAttachment> ownAttach;
     juce::TextButton matchButton, resetButton;
     juce::Rectangle<int> meterA, meterB, deltaArea;
+    double lastMeterSig = -1.0e9;
     void timerCallback() override;
     void drawMeter (juce::Graphics&, juce::Rectangle<int>, const juce::String& label, const RackMemoryProcessor*, bool present);
 };
@@ -521,6 +523,11 @@ private:
     juce::uint32 updaterRevision = 0;
     bool updateRequested = false, manualCheck = false, libraryCheckRequested = false;
     juce::String lastUpdateError;
+
+    // musi byt posledni: zanikne prvni (zrusi a pocka na rozbehlou analyzu, nez zaniknou ostatni casti okna)
+    rm::PhotoWorker photoWorker;
+public:
+    rm::PhotoWorker& getPhotoWorker()      { return photoWorker; }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RackMemoryEditor)
 };

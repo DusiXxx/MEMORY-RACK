@@ -1,0 +1,63 @@
+{
+  "file": "synth_elysia.xfilter.me_4.jpg",
+  "profile": "elysia.xfilter.me",
+  "scene": 4,
+  "values": {
+    "ls_gain": {
+      "pos": 6.0,
+      "type": "stepped"
+    },
+    "ls_freq": {
+      "pos": 13.0,
+      "type": "stepped"
+    },
+    "lm_gain": {
+      "pos": 20.0,
+      "type": "stepped"
+    },
+    "lm_freq": {
+      "pos": 27.0,
+      "type": "stepped"
+    },
+    "hm_gain": {
+      "pos": 34.0,
+      "type": "stepped"
+    },
+    "hm_freq": {
+      "pos": 0.0,
+      "type": "stepped"
+    },
+    "hs_gain": {
+      "pos": 7.0,
+      "type": "stepped"
+    },
+    "hs_freq": {
+      "pos": 14.0,
+      "type": "stepped"
+    },
+    "hitit": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "low_cut": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "lm_q": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "hm_q": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "high_cut": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "passive": {
+      "pos": 0.0,
+      "type": "switch"
+    }
+  }
+}

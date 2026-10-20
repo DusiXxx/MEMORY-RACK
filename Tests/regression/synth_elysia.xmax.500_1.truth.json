@@ -1,0 +1,67 @@
+{
+  "file": "synth_elysia.xmax.500_1.jpg",
+  "profile": "elysia.xmax.500",
+  "scene": 1,
+  "values": {
+    "link": {
+      "pos": 23.0,
+      "type": "stepped"
+    },
+    "thr_mid": {
+      "pos": 30.0,
+      "type": "stepped"
+    },
+    "thr_side": {
+      "pos": 37.0,
+      "type": "stepped"
+    },
+    "thr_low": {
+      "pos": 3.0,
+      "type": "stepped"
+    },
+    "xfreq": {
+      "pos": 10.0,
+      "type": "stepped"
+    },
+    "release": {
+      "pos": 17.0,
+      "type": "stepped"
+    },
+    "tone": {
+      "pos": 24.0,
+      "type": "stepped"
+    },
+    "gain_mid": {
+      "pos": 31.0,
+      "type": "stepped"
+    },
+    "gain_side": {
+      "pos": 38.0,
+      "type": "stepped"
+    },
+    "gain_low": {
+      "pos": 4.0,
+      "type": "stepped"
+    },
+    "sclip": {
+      "pos": 11.0,
+      "type": "stepped"
+    },
+    "level": {
+      "pos": 18.0,
+      "type": "stepped"
+    },
+    "lowmo": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "punch": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "hitit": {
+      "pos": 1.0,
+      "type": "switch"
+    }
+  }
+}

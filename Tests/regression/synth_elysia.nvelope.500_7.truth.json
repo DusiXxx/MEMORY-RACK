@@ -1,0 +1,79 @@
+{
+  "file": "synth_elysia.nvelope.500_7.jpg",
+  "profile": "elysia.nvelope.500",
+  "scene": 7,
+  "values": {
+    "ch1_attack": {
+      "pos": 0.148,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch2_attack": {
+      "pos": 0.444,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch1_freq_a": {
+      "pos": 0.74,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch2_freq_a": {
+      "pos": 0.236,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch1_sustain": {
+      "pos": 0.532,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch2_sustain": {
+      "pos": 0.828,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch1_freq_s": {
+      "pos": 0.324,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "ch2_freq_s": {
+      "pos": 0.62,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "autogain": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "ch2_fullrange": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "ch2_eqmode": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "ch2_on": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "link": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "ch1_fullrange": {
+      "pos": 1.0,
+      "type": "switch"
+    },
+    "ch1_eqmode": {
+      "pos": 0.0,
+      "type": "switch"
+    },
+    "ch1_on": {
+      "pos": 1.0,
+      "type": "switch"
+    }
+  }
+}

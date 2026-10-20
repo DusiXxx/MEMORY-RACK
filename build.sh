@@ -24,18 +24,50 @@ for d in $(find "$HOME/Downloads" "$HOME/Documents" "$HOME/Desktop" -maxdepth 6 
 done
 [ -z "$JUCE_ARG" ] && echo "Stahuji JUCE 8.0.9 (jen poprve, par minut)..."
 
-JOBS="$(sysctl -n hw.ncpu 2>/dev/null || echo 2)"
-# Univerzalni plugin (Intel i Apple Silicon), aby fungoval i na novejsich Macich.
-ARCHS="${RM_ARCHS:-arm64;x86_64}"
+# --- Setrne k pocitaci (MacBook 2017 se pri plnem buildu prehrival) ---------------------------------
+# 1) Paralelnich kompilaci: o jednu min nez fyzickych jader (2017 MacBook Pro: 4 jadra -> 3, drive 8).
+#    Zmena: RM_JOBS=2 bash build.sh
+PHYS="$(sysctl -n hw.physicalcpu 2>/dev/null || echo 2)"
+JOBS="${RM_JOBS:-$(( PHYS > 1 ? PHYS - 1 : 1 ))}"
+# 2) Jen pro tento Mac (drive vzdy Intel + Apple Silicon = vse prelozit dvakrat).
+#    Univerzalni plugin pro kamarady s Apple Silicon:  bash build.sh --universal   (release.sh to dela sam)
+ARCHS="${RM_ARCHS:-$(uname -m)}"
+[ "$1" = "--universal" ] && ARCHS="arm64;x86_64"
+# 3) Slozka buildu MIMO rozbalenou slozku: "rm -rf RackMemory" pri nove verzi ji nesmaze, takze se JUCE
+#    a nezmenene soubory podruhe neprekladaji (drive se pokazde prekladalo vsechno od nuly).
+BUILD_DIR="${RM_BUILD_DIR:-$HOME/Library/Caches/RackMemoryBuild/$(echo "$ARCHS" | tr ';' '-')}"
+mkdir -p "$BUILD_DIR"
+# slozka buildu patri jine kopii zdrojaku -> zacit znovu (jinak CMake hlasi chybu)
+if [ -f "$BUILD_DIR/CMakeCache.txt" ] && ! grep -q "CMAKE_HOME_DIRECTORY:INTERNAL=$(pwd)$" "$BUILD_DIR/CMakeCache.txt"; then
+  rm -rf "$BUILD_DIR"; mkdir -p "$BUILD_DIR"
+fi
+# rozbalene soubory maji cas ze zipu: zmenene (podle obsahu) se oznaci jako nove, aby se urcite prelozily
+STAMP="$BUILD_DIR/.rm-sources.sha"
+NEW="$(mktemp)"
+find Source Assets CMakeLists.txt -type f -print0 2>/dev/null | sort -z | xargs -0 shasum 2>/dev/null > "$NEW" || true
+if [ -f "$STAMP" ]; then
+  diff "$STAMP" "$NEW" | sed -n 's/^> [0-9a-f]*  //p' | while IFS= read -r f; do [ -f "$f" ] && touch "$f"; done
+else
+  find Source Assets CMakeLists.txt -type f -exec touch {} + 2>/dev/null || true
+fi
+
+echo "Build: architektura $ARCHS, $JOBS kompilaci najednou, slozka $BUILD_DIR"
+START=$(date +%s)
 build () {
-  "$CMAKE" -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=$1" \
+  "$CMAKE" -S . -B "$BUILD_DIR" -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=$1" \
            "-DRM_UPDATE_REPO=${RM_UPDATE_REPO:-DusiXxx/MEMORY-RACK}" $JUCE_ARG &&
-  "$CMAKE" --build build --target RackMemory_AU -j "$JOBS"
+  nice -n 10 "$CMAKE" --build "$BUILD_DIR" --target RackMemory_AU -j "$JOBS"
 }
 if ! build "$ARCHS"; then
-  echo; echo "Univerzalni build nesel, zkousim jen pro tento Mac ($(uname -m))..."
-  build "$(uname -m)"
+  if [ "$ARCHS" != "$(uname -m)" ]; then
+    echo; echo "Univerzalni build nesel, zkousim jen pro tento Mac ($(uname -m))..."
+    ARCHS="$(uname -m)"; build "$ARCHS"
+  else
+    exit 1
+  fi
 fi
+mv "$NEW" "$STAMP"
+echo "Build trval $(( $(date +%s) - START )) s"
 
 COMP="$HOME/Library/Audio/Plug-Ins/Components/Rack Memory.component"
 if [ ! -d "$COMP" ]; then
@@ -51,7 +83,11 @@ if auval -v aufx Rkmm Dusx 2>&1 | tail -n 4; then :; fi
 
 # balicek pro kamarady (posli jim tenhle jeden zip)
 VER="$(sed -n 's/^project(RackMemory VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
-PKG="$HOME/Downloads/Rack Memory $VER.zip"
+if [ "$(lipo -archs "$COMP/Contents/MacOS/Rack Memory" 2>/dev/null | wc -w | tr -d ' ')" -ge 2 ]; then
+  PKG="$HOME/Downloads/Rack Memory $VER.zip"
+else
+  PKG="$HOME/Downloads/Rack Memory $VER ($(uname -m)).zip"     # jen pro Mac se stejnym procesorem; univerzalni: --universal
+fi
 TMPD="$(mktemp -d)"
 ditto "$COMP" "$TMPD/Rack Memory.component"
 cp "JAK NAINSTALOVAT.txt" "$TMPD/" 2>/dev/null || true

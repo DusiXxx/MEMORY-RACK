@@ -1,0 +1,51 @@
+{
+  "file": "synth_spl.vitalizer.mk3t_0.jpg",
+  "profile": "spl.vitalizer.mk3t",
+  "scene": 0,
+  "values": {
+    "drive": {
+      "pos": 0.492,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "bass": {
+      "pos": 0.788,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "basscomp": {
+      "pos": 0.284,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "midhi": {
+      "pos": 0.58,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "process": {
+      "pos": 0.876,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "lceq": {
+      "pos": 0.372,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "intensity": {
+      "pos": 0.668,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "expander": {
+      "pos": 0.164,
+      "type": "knob",
+      "degrees": 300.0
+    },
+    "on": {
+      "pos": 1.0,
+      "type": "switch"
+    }
+  }
+}

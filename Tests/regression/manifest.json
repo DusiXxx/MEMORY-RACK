@@ -1,0 +1,2478 @@
+{
+ "note": "Pevna regresni sada cteni z fotky. Stejne soubory a stejna pravda pro kazdou verzi. Spusteni: RackMemoryTests regress Tests/regression [vystup.json]. Hodnoceni: knob do 9 st., stupnovy do 1 kroku, prepinac presne. 'baseline' = co nova verze nesmi zhorsit (kontroluje i bezny beh testu).",
+ "algorithm": "rmcv-0.11.0",
+ "baseline": {
+  "elysia.nvelope.500": {
+   "minCorrect": 156,
+   "maxWrong": 0,
+   "readable": 160
+  },
+  "elysia.xfilter.1u": {
+   "minCorrect": 79,
+   "maxWrong": 1,
+   "readable": 140
+  },
+  "elysia.xfilter.500": {
+   "minCorrect": 134,
+   "maxWrong": 0,
+   "readable": 140
+  },
+  "elysia.xfilter.me": {
+   "minCorrect": 86,
+   "maxWrong": 0,
+   "readable": 140
+  },
+  "elysia.xmax.500": {
+   "minCorrect": 133,
+   "maxWrong": 0,
+   "readable": 150
+  },
+  "spl.vitalizer.mk3t": {
+   "minCorrect": 84,
+   "maxWrong": 0,
+   "readable": 90
+  },
+  "wesaudio.rhea": {
+   "minCorrect": 89,
+   "maxWrong": 0,
+   "readable": 90
+  }
+ },
+ "summary": {
+  "0.9.0": {
+   "correct": 680,
+   "wrong": 6,
+   "readable": 770,
+   "aligned": 60,
+   "scenes": 60,
+   "profiles": {
+    "elysia.nvelope.500": {
+     "correct": 156,
+     "wrong": 0,
+     "readable": 160,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.500": {
+     "correct": 134,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.me": {
+     "correct": 86,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xmax.500": {
+     "correct": 133,
+     "wrong": 0,
+     "readable": 150,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "spl.vitalizer.mk3t": {
+     "correct": 83,
+     "wrong": 6,
+     "readable": 90,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "wesaudio.rhea": {
+     "correct": 88,
+     "wrong": 0,
+     "readable": 90,
+     "aligned": 10,
+     "scenes": 10
+    }
+   }
+  },
+  "0.10.0": {
+   "correct": 748,
+   "wrong": 0,
+   "readable": 910,
+   "aligned": 70,
+   "scenes": 70,
+   "profiles": {
+    "elysia.nvelope.500": {
+     "correct": 153,
+     "wrong": 0,
+     "readable": 160,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.1u": {
+     "correct": 79,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.500": {
+     "correct": 135,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.me": {
+     "correct": 85,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xmax.500": {
+     "correct": 130,
+     "wrong": 0,
+     "readable": 150,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "spl.vitalizer.mk3t": {
+     "correct": 84,
+     "wrong": 0,
+     "readable": 90,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "wesaudio.rhea": {
+     "correct": 82,
+     "wrong": 0,
+     "readable": 90,
+     "aligned": 10,
+     "scenes": 10
+    }
+   }
+  },
+  "0.11.0": {
+   "correct": 761,
+   "wrong": 1,
+   "readable": 910,
+   "aligned": 70,
+   "scenes": 70,
+   "profiles": {
+    "elysia.nvelope.500": {
+     "correct": 156,
+     "wrong": 0,
+     "readable": 160,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.1u": {
+     "correct": 79,
+     "wrong": 1,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.500": {
+     "correct": 134,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xfilter.me": {
+     "correct": 86,
+     "wrong": 0,
+     "readable": 140,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "elysia.xmax.500": {
+     "correct": 133,
+     "wrong": 0,
+     "readable": 150,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "spl.vitalizer.mk3t": {
+     "correct": 84,
+     "wrong": 0,
+     "readable": 90,
+     "aligned": 10,
+     "scenes": 10
+    },
+    "wesaudio.rhea": {
+     "correct": 89,
+     "wrong": 0,
+     "readable": 90,
+     "aligned": 10,
+     "scenes": 10
+    }
+   }
+  }
+ },
+ "realPhotos": [
+  {
+   "id": "rack_full_phone_2026-10-20",
+   "file": "photos_real/rack_full_phone_2026-10-20.jpg",
+   "md5": "35221feb77b184696ba8063404f120bd",
+   "kind": "cely rack, telefon",
+   "conditions": "iPhone, tlumene teple svetlo, foceno shora (paralaxa), 2480x3307",
+   "devices": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "truth": "photos_real/truth.json (odhad okem, tolerance 20 st.)",
+   "verification": "eye-estimate",
+   "permission": "fotka uzivatele - jen lokalne, NENI na GitHubu (.gitignore)",
+   "results": {
+    "0.9.0": {
+     "devicesFound": "2/5",
+     "correct": "6/53",
+     "wrong": 7
+    },
+    "0.10.0": {
+     "devicesFound": "5/5",
+     "correct": "37/53",
+     "wrong": 1
+    },
+    "0.11.0": {
+     "devicesFound": "5/5",
+     "correct": "37/53",
+     "wrong": 1
+    }
+   },
+   "resultsUserRack": {
+    "note": "rack ze screenshotu uzivatele: SPL, xfilter ME (v racku ME, na fotce 1U), RHEA, nvelope; cesta jako tlacitko FOTO",
+    "0.9.0": {
+     "taken": "1/4",
+     "correct": "8/39",
+     "wrong": 4
+    },
+    "0.10.0": {
+     "taken": "4/4 (Linux), v Logicu nvelope bez fotky",
+     "correct": "28/39",
+     "wrong": 1
+    },
+    "0.11.0": {
+     "taken": "4/4",
+     "correct": "28/39",
+     "wrong": 1
+    }
+   }
+  }
+ ],
+ "photos": [
+  {
+   "file": "photos/nvelope_1u_elysia.png",
+   "kind": "fotka vyrobce / obchodu (jen identifikace pristroje)",
+   "permission": "jen lokalni test, NENI na GitHubu"
+  },
+  {
+   "file": "photos/vitalizer_thomann.png",
+   "kind": "fotka vyrobce / obchodu (jen identifikace pristroje)",
+   "permission": "jen lokalni test, NENI na GitHubu"
+  },
+  {
+   "file": "photos/xfilter_me_elysia.png",
+   "kind": "fotka vyrobce / obchodu (jen identifikace pristroje)",
+   "permission": "jen lokalni test, NENI na GitHubu"
+  },
+  {
+   "file": "photos/xmax500_elysia.png",
+   "kind": "fotka vyrobce / obchodu (jen identifikace pristroje)",
+   "permission": "jen lokalni test, NENI na GitHubu"
+  }
+ ],
+ "items": [
+  {
+   "id": "elysia.nvelope.500_0",
+   "file": "synth_elysia.nvelope.500_0.jpg",
+   "md5": "ff38ce52c6e814d8bc26e64580dd0dcc",
+   "profile": "elysia.nvelope.500",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1465
+    },
+    "0.10.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1556
+    },
+    "0.11.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1380
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_1",
+   "file": "synth_elysia.nvelope.500_1.jpg",
+   "md5": "3ef611e85bde211431cb27247e46f4e1",
+   "profile": "elysia.nvelope.500",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1122
+    },
+    "0.10.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1348
+    },
+    "0.11.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1258
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_2",
+   "file": "synth_elysia.nvelope.500_2.jpg",
+   "md5": "d50110cc3052faca03fb6c264455f5cf",
+   "profile": "elysia.nvelope.500",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1072
+    },
+    "0.10.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1175
+    },
+    "0.11.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1112
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_3",
+   "file": "synth_elysia.nvelope.500_3.jpg",
+   "md5": "7992b8727d4e01b33ee05843f7f2866f",
+   "profile": "elysia.nvelope.500",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1204
+    },
+    "0.10.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1168
+    },
+    "0.11.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1184
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_4",
+   "file": "synth_elysia.nvelope.500_4.jpg",
+   "md5": "5a1478876f6e70b0e07ee1eee8b2f11f",
+   "profile": "elysia.nvelope.500",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1155
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1107
+    },
+    "0.11.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1121
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_5",
+   "file": "synth_elysia.nvelope.500_5.jpg",
+   "md5": "3cd6ffa3227c1511c2240ab1fd5f40e5",
+   "profile": "elysia.nvelope.500",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1266
+    },
+    "0.10.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1238
+    },
+    "0.11.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1241
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_6",
+   "file": "synth_elysia.nvelope.500_6.jpg",
+   "md5": "3e5adbcafa01ea42a05692031bf59616",
+   "profile": "elysia.nvelope.500",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1338
+    },
+    "0.10.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1231
+    },
+    "0.11.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1339
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_7",
+   "file": "synth_elysia.nvelope.500_7.jpg",
+   "md5": "e48b0e92f9d4e3291624cf3ac6c24aaa",
+   "profile": "elysia.nvelope.500",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1318
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1217
+    },
+    "0.11.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1290
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_8",
+   "file": "synth_elysia.nvelope.500_8.jpg",
+   "md5": "2a52a6ab851152297a9980d5c4c957aa",
+   "profile": "elysia.nvelope.500",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1142
+    },
+    "0.10.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1122
+    },
+    "0.11.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1177
+    }
+   }
+  },
+  {
+   "id": "elysia.nvelope.500_9",
+   "file": "synth_elysia.nvelope.500_9.jpg",
+   "md5": "22efeaf5222d5232e222a674b94941c0",
+   "profile": "elysia.nvelope.500",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1183
+    },
+    "0.10.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1050
+    },
+    "0.11.0": {
+     "correct": 16,
+     "wrong": 0,
+     "readable": 16,
+     "ms": 1093
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_0",
+   "file": "synth_elysia.xfilter.1u_0.jpg",
+   "md5": "26d9b06cfc54f7822e942b462b7546a7",
+   "profile": "elysia.xfilter.1u",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2939
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 3056
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_1",
+   "file": "synth_elysia.xfilter.1u_1.jpg",
+   "md5": "9b22f4dcab5dcb9c52b4853a87e8d931",
+   "profile": "elysia.xfilter.1u",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 6,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2664
+    },
+    "0.11.0": {
+     "correct": 6,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2680
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_2",
+   "file": "synth_elysia.xfilter.1u_2.jpg",
+   "md5": "bb5bdf8565e38a453ea1a62f032bcae2",
+   "profile": "elysia.xfilter.1u",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1184
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1151
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_3",
+   "file": "synth_elysia.xfilter.1u_3.jpg",
+   "md5": "27f961caf5de0c383e8c23fd40bab866",
+   "profile": "elysia.xfilter.1u",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1065
+    },
+    "0.11.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1105
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_4",
+   "file": "synth_elysia.xfilter.1u_4.jpg",
+   "md5": "87df176d775c2ec05ecfb83e312c71b2",
+   "profile": "elysia.xfilter.1u",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2850
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2957
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_5",
+   "file": "synth_elysia.xfilter.1u_5.jpg",
+   "md5": "d1e61c2ef23b92db5ba9a236617a8934",
+   "profile": "elysia.xfilter.1u",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1096
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1044
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_6",
+   "file": "synth_elysia.xfilter.1u_6.jpg",
+   "md5": "bb906c81f6b49c0fcdd2d5bb99e216ec",
+   "profile": "elysia.xfilter.1u",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1024
+    },
+    "0.11.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1040
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_7",
+   "file": "synth_elysia.xfilter.1u_7.jpg",
+   "md5": "acfa05cc566d4775875de1360b5c5a57",
+   "profile": "elysia.xfilter.1u",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 10,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2761
+    },
+    "0.11.0": {
+     "correct": 10,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2572
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_8",
+   "file": "synth_elysia.xfilter.1u_8.jpg",
+   "md5": "ea6f2e7e86ee00fe2aa5a95dca1f11b6",
+   "profile": "elysia.xfilter.1u",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2802
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 1,
+     "readable": 14,
+     "ms": 2739
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.1u_9",
+   "file": "synth_elysia.xfilter.1u_9.jpg",
+   "md5": "1674549d6cbafeec35127564c2dd8faf",
+   "profile": "elysia.xfilter.1u",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": null,
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1092
+    },
+    "0.11.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 975
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_0",
+   "file": "synth_elysia.xfilter.500_0.jpg",
+   "md5": "07097f81a640b47e5d4d95b0547c53e2",
+   "profile": "elysia.xfilter.500",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1902
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1666
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1632
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_1",
+   "file": "synth_elysia.xfilter.500_1.jpg",
+   "md5": "e91e91c9209657abeab0e9b88aa58685",
+   "profile": "elysia.xfilter.500",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1116
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1094
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1143
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_2",
+   "file": "synth_elysia.xfilter.500_2.jpg",
+   "md5": "a48d0998ad1686fc398c0d8ffa7fe15a",
+   "profile": "elysia.xfilter.500",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1177
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1100
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1111
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_3",
+   "file": "synth_elysia.xfilter.500_3.jpg",
+   "md5": "3d3ba60b97fea8e4e06435d623b4c225",
+   "profile": "elysia.xfilter.500",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1186
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1212
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1261
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_4",
+   "file": "synth_elysia.xfilter.500_4.jpg",
+   "md5": "9639397a39a8c8bcfbfecca94cd1e031",
+   "profile": "elysia.xfilter.500",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1103
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1321
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1186
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_5",
+   "file": "synth_elysia.xfilter.500_5.jpg",
+   "md5": "6f2b5e1f8a4096c38615949428daab71",
+   "profile": "elysia.xfilter.500",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1288
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1338
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1468
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_6",
+   "file": "synth_elysia.xfilter.500_6.jpg",
+   "md5": "65ec52c2c2de7276db3aba49eb1e51fc",
+   "profile": "elysia.xfilter.500",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1143
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1206
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1053
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_7",
+   "file": "synth_elysia.xfilter.500_7.jpg",
+   "md5": "0d40b442d448c50e47f8811ce3055f95",
+   "profile": "elysia.xfilter.500",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1148
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1173
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1199
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_8",
+   "file": "synth_elysia.xfilter.500_8.jpg",
+   "md5": "d886fefe55f41e05b9a0001e7dcad3b6",
+   "profile": "elysia.xfilter.500",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1343
+    },
+    "0.10.0": {
+     "correct": 12,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1270
+    },
+    "0.11.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1315
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.500_9",
+   "file": "synth_elysia.xfilter.500_9.jpg",
+   "md5": "f8d6be7513ba5f399c62eb0823b33691",
+   "profile": "elysia.xfilter.500",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1249
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1181
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1198
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_0",
+   "file": "synth_elysia.xfilter.me_0.jpg",
+   "md5": "9175d3753acf57ba45397973f647cf0d",
+   "profile": "elysia.xfilter.me",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2681
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 3219
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 3148
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_1",
+   "file": "synth_elysia.xfilter.me_1.jpg",
+   "md5": "d3e51cdf4f054f45d50aecbb933633c5",
+   "profile": "elysia.xfilter.me",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2376
+    },
+    "0.10.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1106
+    },
+    "0.11.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1041
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_2",
+   "file": "synth_elysia.xfilter.me_2.jpg",
+   "md5": "35dea767dfdc63126722a9658b54537c",
+   "profile": "elysia.xfilter.me",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 10,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2400
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1055
+    },
+    "0.11.0": {
+     "correct": 10,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1085
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_3",
+   "file": "synth_elysia.xfilter.me_3.jpg",
+   "md5": "fb0b9281a2a3634c83390209c8c77f69",
+   "profile": "elysia.xfilter.me",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2545
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 997
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1086
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_4",
+   "file": "synth_elysia.xfilter.me_4.jpg",
+   "md5": "457d70a6f7d73cd351f0f6a71134bebb",
+   "profile": "elysia.xfilter.me",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2499
+    },
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2894
+    },
+    "0.11.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2831
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_5",
+   "file": "synth_elysia.xfilter.me_5.jpg",
+   "md5": "9a26136b506602e050d5d40a9155bada",
+   "profile": "elysia.xfilter.me",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2190
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2825
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2878
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_6",
+   "file": "synth_elysia.xfilter.me_6.jpg",
+   "md5": "5151b3c45b6ae644940f8cc6667d1d91",
+   "profile": "elysia.xfilter.me",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2518
+    },
+    "0.10.0": {
+     "correct": 10,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1174
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1072
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_7",
+   "file": "synth_elysia.xfilter.me_7.jpg",
+   "md5": "4efc51ae50c7d41068d73704230b8b70",
+   "profile": "elysia.xfilter.me",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2491
+    },
+    "0.10.0": {
+     "correct": 10,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1236
+    },
+    "0.11.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 1098
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_8",
+   "file": "synth_elysia.xfilter.me_8.jpg",
+   "md5": "a9d6cc6c49e83995eac7f18327fc71e2",
+   "profile": "elysia.xfilter.me",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 6,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2292
+    },
+    "0.10.0": {
+     "correct": 6,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2601
+    },
+    "0.11.0": {
+     "correct": 6,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2616
+    }
+   }
+  },
+  {
+   "id": "elysia.xfilter.me_9",
+   "file": "synth_elysia.xfilter.me_9.jpg",
+   "md5": "c482e42c981e6c9d4a267e923a319ee1",
+   "profile": "elysia.xfilter.me",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2284
+    },
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2855
+    },
+    "0.11.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 14,
+     "ms": 2656
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_0",
+   "file": "synth_elysia.xmax.500_0.jpg",
+   "md5": "3361e2b9fd5a146dfb239787ea2dc1bc",
+   "profile": "elysia.xmax.500",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1567
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1519
+    },
+    "0.11.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1650
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_1",
+   "file": "synth_elysia.xmax.500_1.jpg",
+   "md5": "47bd6cc0eca670f20b8dcfd6e152ff7b",
+   "profile": "elysia.xmax.500",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1250
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1253
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1238
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_2",
+   "file": "synth_elysia.xmax.500_2.jpg",
+   "md5": "ae827b464857bc957fc782c45d89fa39",
+   "profile": "elysia.xmax.500",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1308
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1306
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1431
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_3",
+   "file": "synth_elysia.xmax.500_3.jpg",
+   "md5": "0639c50c3ef431e752e7db38722285c0",
+   "profile": "elysia.xmax.500",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1245
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1150
+    },
+    "0.11.0": {
+     "correct": 15,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1272
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_4",
+   "file": "synth_elysia.xmax.500_4.jpg",
+   "md5": "7c0267f7dedafaaa84e955891eb2ba0a",
+   "profile": "elysia.xmax.500",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1282
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1285
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1295
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_5",
+   "file": "synth_elysia.xmax.500_5.jpg",
+   "md5": "8b5fa3f565c4f969a0a3548abc5ce24f",
+   "profile": "elysia.xmax.500",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1219
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1216
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1229
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_6",
+   "file": "synth_elysia.xmax.500_6.jpg",
+   "md5": "e69bb682079b41d1581bc6eac85dd030",
+   "profile": "elysia.xmax.500",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1113
+    },
+    "0.10.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1111
+    },
+    "0.11.0": {
+     "correct": 11,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1128
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_7",
+   "file": "synth_elysia.xmax.500_7.jpg",
+   "md5": "94633edcc00c495d5c8b4598ba03feb1",
+   "profile": "elysia.xmax.500",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1420
+    },
+    "0.10.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1542
+    },
+    "0.11.0": {
+     "correct": 14,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1411
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_8",
+   "file": "synth_elysia.xmax.500_8.jpg",
+   "md5": "8b69404ae51c588fdc55ac30409d34dd",
+   "profile": "elysia.xmax.500",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1347
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1365
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1275
+    }
+   }
+  },
+  {
+   "id": "elysia.xmax.500_9",
+   "file": "synth_elysia.xmax.500_9.jpg",
+   "md5": "590936c87a628f4c7c5319e3569c3a3a",
+   "profile": "elysia.xmax.500",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1168
+    },
+    "0.10.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1202
+    },
+    "0.11.0": {
+     "correct": 13,
+     "wrong": 0,
+     "readable": 15,
+     "ms": 1242
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_0",
+   "file": "synth_spl.vitalizer.mk3t_0.jpg",
+   "md5": "70682b46314b879f41406925e5f7f1ea",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1327
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1282
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1199
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_1",
+   "file": "synth_spl.vitalizer.mk3t_1.jpg",
+   "md5": "5d42d9eeda2bc4a370490aaf0d0b1f9a",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 712
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 606
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 618
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_2",
+   "file": "synth_spl.vitalizer.mk3t_2.jpg",
+   "md5": "e7b2673e2f512f0636c33f9b6e235bf5",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 603
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 583
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 599
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_3",
+   "file": "synth_spl.vitalizer.mk3t_3.jpg",
+   "md5": "2f0eee68cdf1354cd828ef75e8ed8e41",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 500
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 585
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 512
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_4",
+   "file": "synth_spl.vitalizer.mk3t_4.jpg",
+   "md5": "65ab5065fcf87a7f407e69a873e818c9",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 1,
+     "readable": 9,
+     "ms": 658
+    },
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 601
+    },
+    "0.11.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 583
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_5",
+   "file": "synth_spl.vitalizer.mk3t_5.jpg",
+   "md5": "9133886a0a248ca1d320e412b9d10d6e",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 1,
+     "readable": 9,
+     "ms": 584
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 658
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 582
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_6",
+   "file": "synth_spl.vitalizer.mk3t_6.jpg",
+   "md5": "21cc3cd3a3a84c1bf1fdae6e7ce9b7f2",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 7,
+     "wrong": 2,
+     "readable": 9,
+     "ms": 560
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 550
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 541
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_7",
+   "file": "synth_spl.vitalizer.mk3t_7.jpg",
+   "md5": "9e9c6b48f855613e86f7186fa5a6fd3d",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 7,
+     "wrong": 2,
+     "readable": 9,
+     "ms": 634
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 567
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 596
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_8",
+   "file": "synth_spl.vitalizer.mk3t_8.jpg",
+   "md5": "47b809c9654ac93f24847ce8c61d48ab",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 530
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 533
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 571
+    }
+   }
+  },
+  {
+   "id": "spl.vitalizer.mk3t_9",
+   "file": "synth_spl.vitalizer.mk3t_9.jpg",
+   "md5": "026c1b0ef48a80697fb224d06cac1292",
+   "profile": "spl.vitalizer.mk3t",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 554
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 565
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 605
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_0",
+   "file": "synth_wesaudio.rhea_0.jpg",
+   "md5": "d66567c66486998853f957ac5ddccfff",
+   "profile": "wesaudio.rhea",
+   "scene": 0,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1441
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1388
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1456
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_1",
+   "file": "synth_wesaudio.rhea_1.jpg",
+   "md5": "5fa6d464c4f09c1391c6d5b5da99020c",
+   "profile": "wesaudio.rhea",
+   "scene": 1,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1024
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1103
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1024
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_2",
+   "file": "synth_wesaudio.rhea_2.jpg",
+   "md5": "406ec06750f154225a1cbb76d999c6bf",
+   "profile": "wesaudio.rhea",
+   "scene": 2,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1006
+    },
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 960
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 874
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_3",
+   "file": "synth_wesaudio.rhea_3.jpg",
+   "md5": "3efc4d4f31c141d31c7a9f57569993fd",
+   "profile": "wesaudio.rhea",
+   "scene": 3,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 920
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 947
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 808
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_4",
+   "file": "synth_wesaudio.rhea_4.jpg",
+   "md5": "8ed20145d9686304e2f4245dbd52cf04",
+   "profile": "wesaudio.rhea",
+   "scene": 4,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 815
+    },
+    "0.10.0": {
+     "correct": 7,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 839
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 840
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_5",
+   "file": "synth_wesaudio.rhea_5.jpg",
+   "md5": "926d537dd9af77d8c0a52d5669bcbd2a",
+   "profile": "wesaudio.rhea",
+   "scene": 5,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 850
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 815
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 800
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_6",
+   "file": "synth_wesaudio.rhea_6.jpg",
+   "md5": "1423648a3a5b5551079a94f7978a4d99",
+   "profile": "wesaudio.rhea",
+   "scene": 6,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 932
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 961
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 869
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_7",
+   "file": "synth_wesaudio.rhea_7.jpg",
+   "md5": "dfdcc88825d900b0a970f7ac79c8d514",
+   "profile": "wesaudio.rhea",
+   "scene": 7,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1047
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1116
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 938
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_8",
+   "file": "synth_wesaudio.rhea_8.jpg",
+   "md5": "1829cb756b031cdb20eca59a5392d775",
+   "profile": "wesaudio.rhea",
+   "scene": 8,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 924
+    },
+    "0.10.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 964
+    },
+    "0.11.0": {
+     "correct": 8,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 884
+    }
+   }
+  },
+  {
+   "id": "wesaudio.rhea_9",
+   "file": "synth_wesaudio.rhea_9.jpg",
+   "md5": "f364a8b9da007b4cc860984e85541c11",
+   "profile": "wesaudio.rhea",
+   "scene": 9,
+   "kind": "synteticka scena (jeden pristroj)",
+   "conditions": "vykresleny panel, meritko 55-93 %, natoceni -5..+5 st., okoli, nerovne svetlo, sum, JPEG 85 %",
+   "truth": "presna (scena se vykreslila se znamym nastavenim)",
+   "verification": "exact-synthetic",
+   "source": "vlastni render pluginu Rack Memory 0.10.0 (Tests.cpp, RM_SCENES=10); kresba panelu z Assets/",
+   "results": {
+    "0.9.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1009
+    },
+    "0.10.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 1045
+    },
+    "0.11.0": {
+     "correct": 9,
+     "wrong": 0,
+     "readable": 9,
+     "ms": 951
+    }
+   }
+  }
+ ]
+}
