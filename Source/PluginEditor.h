@@ -429,7 +429,6 @@ public:
     // aktualizace z noveho balicku (Stazene / Plocha)
     struct Update { juce::File file; juce::String version; };
     static Update findUpdate (const juce::Array<juce::File>& folders, const juce::String& currentVersion);
-    static juce::Result installUpdate (const juce::File& package, const juce::File& componentsDir);
 
 private:
     RackMemoryProcessor& proc;
@@ -521,7 +520,8 @@ private:
     void refreshUpdateButton();
     juce::SharedResourcePointer<rm::Updater> updater;
     juce::uint32 updaterRevision = 0;
-    bool updateRequested = false, manualCheck = false, libraryCheckRequested = false;
+    bool updateRequested = false, manualCheck = false, libraryCheckRequested = false, resultShown = false;
+    int lastUpdateState = -1;
     juce::String lastUpdateError;
 
     // musi byt posledni: zanikne prvni (zrusi a pocka na rozbehlou analyzu, nez zaniknou ostatni casti okna)

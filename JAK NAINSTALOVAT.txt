@@ -10,8 +10,14 @@ PRVNI INSTALACE
 Kdyz ho Logic nenacte: Nastaveni systemu > Soukromi a zabezpeceni > dole "Presto povolit",
 pak Logic znovu otevri. (Plugin neni podepsany u Applu.)
 
-DALSI VERZE
-Novy zip (napr. "Rack Memory 0.5.1.zip") jen uloz do Stazenych nebo na Plochu.
-V pluginu se nahore objevi zelene tlacitko AKTUALIZOVAT - klikni, pak restartuj Logic.
+DALSI VERZE (od 0.12)
+Plugin se sam podiva na GitHub. Kdyz je nova verze, nahore se objevi AKTUALIZACE x.y.z:
+1. klik -> Stahnout (na pozadi, s procenty; jde zrusit) -> plugin balicek overi
+2. INSTALOVAT -> potvrdit. Instalace probehne, AZ ZAVRES LOGIC (nacteny plugin se neprepisuje).
+   Soucasna verze se zalohuje, nova se overi (auval); kdyz overeni selze, vrati se puvodni.
+3. Logic znovu otevri - plugin ukaze vysledek.
+Vratit predchozi verzi: ••• > Vratit predchozi verzi pluginu.
+Zip ze Stazenych (napr. "Rack Memory 0.12.0.zip"): tlacitko AKTUALIZOVAT ... (ze Stazenych) - stejny bezpecny postup.
+Z verzi 0.8-0.11 na 0.12: rucne (zip z GitHubu, krok PRVNI INSTALACE) - stare verze instaluji primo pres nacteny plugin.
 
 Tvoje ulozena nastaveni jsou v ~/Music/Rack Memory (aktualizace je nemaze).

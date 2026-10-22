@@ -2441,6 +2441,7 @@ void RackMemoryEditor::showMenu()
     m.addSeparator();
     m.addSectionHeader (U ("Aktualizace"));
     m.addItem (10, U ("Zkontrolovat aktualizace pluginu"));
+    m.addItem (17, U ("Vrátit předchozí verzi pluginu…"), updater->hasBackup());
     m.addItem (16, U ("Zkontrolovat knihovnu hardwaru (") + String (rm::hardwareLibraryVersion() > 0 ? U ("v") + String (rm::hardwareLibraryVersion()) : U ("vestavěná")) + ")");
     m.addItem (8, U ("Aktualizovat ze souboru…"));
     m.addItem (9, U ("Nainstalovaná verze ") + String (JucePlugin_VersionString), false);
@@ -2474,6 +2475,21 @@ void RackMemoryEditor::showMenu()
             safe->refreshAll();
         }
         else if (r == 10) { safe->manualCheck = true; safe->updater->checkNow(); safe->setStatus (U ("Hledám aktualizaci…")); }
+        else if (r == 17)
+        {
+            juce::AlertWindow::showAsync (juce::MessageBoxOptions().withIconType (juce::MessageBoxIconType::QuestionIcon)
+                                              .withTitle (U ("Vrátit předchozí verzi?"))
+                                              .withMessage (U ("Instalátor po zavření Logicu vrátí poslední zálohu pluginu (verze se uloží při každé aktualizaci). Nastavení se nemění."))
+                                              .withButton (U ("Vrátit po zavření Logicu")).withButton (U ("Zrušit")).withAssociatedComponent (safe.getComponent()),
+                                          [safe] (int rr)
+                                          {
+                                              if (safe == nullptr || rr != 1) return;
+                                              String err;
+                                              if (safe->updater->scheduleRollback (err)) safe->showInfo (U ("Zavři Logic – předchozí verze se vrátí během pár sekund."));
+                                              else safe->showError (err);
+                                              safe->refreshUpdateButton();
+                                          });
+        }
         else if (r == 16) { safe->libraryCheckRequested = true; safe->updater->checkLibraryNow(); safe->setStatus (U ("Hledám novou knihovnu hardwaru…")); }
         else if (r == 7)
         {
@@ -2570,18 +2586,13 @@ RackMemoryEditor::Update RackMemoryEditor::findUpdate (const juce::Array<juce::F
         if (! dir.isDirectory()) continue;
         for (auto& f : dir.findChildFiles (juce::File::findFiles, false, "Rack Memory*.zip"))
         {
-            const auto v = f.getFileNameWithoutExtension().fromFirstOccurrenceOf ("Rack Memory", false, true).trim();
+            const auto v = f.getFileNameWithoutExtension().fromFirstOccurrenceOf ("Rack Memory", false, true).trim().upToFirstOccurrenceOf (" ", false, false);   // "0.12.0 (x86_64)"
             if (v.isEmpty() || ! v.containsOnly ("0123456789.")) continue;
             const auto vv = versionValue (v);
             if (vv > bestV) { bestV = vv; best.file = f; best.version = v; }
         }
     }
     return best;
-}
-
-juce::Result RackMemoryEditor::installUpdate (const juce::File& package, const juce::File& componentsDir)
-{
-    return rm::installComponentFromZip (package, componentsDir);
 }
 
 // Tlacitko nahore: 1) nova verze na GitHubu (stahne, overi, nainstaluje), 2) novejsi zip ve Stazenych / na Plose.
@@ -2599,23 +2610,28 @@ void RackMemoryEditor::refreshUpdateButton()
     String text; bool visible = false, enabled = true;
     switch (st.state)
     {
-        case S::available:   text = U ("AKTUALIZOVAT ") + st.latest.version; visible = true; break;
-        case S::downloading: text = U ("stahuji ") + String (juce::roundToInt (st.progress * 100.0f)) + " %"; visible = true; enabled = false; break;
-        case S::verifying:   text = U ("ověřuji…"); visible = true; enabled = false; break;
-        case S::installing:  text = U ("instaluji…"); visible = true; enabled = false; break;
-        case S::manualOnly:  text = U ("NOVÁ VERZE ") + st.latest.version; visible = true; break;
-        case S::installed:   text = U ("RESTARTUJ LOGIC"); visible = true; enabled = false; break;
-        case S::failed:      if (updateRequested) { text = U ("ZKUSIT ZNOVU"); visible = true; } break;
+        case S::available:        text = U ("AKTUALIZACE ") + st.latest.version + (st.latest.size > 0 ? U (" · ") + juce::File::descriptionOfSizeInBytes (st.latest.size) : String()); visible = true; break;
+        case S::downloading:      text = U ("STAHUJI ") + String (juce::roundToInt (st.progress * 100.0f)) + " %"
+                                         + (st.bytesPerSecond > 0 ? U (" · ") + juce::File::descriptionOfSizeInBytes ((juce::int64) st.bytesPerSecond) + "/s" : String()) + U ("  ✕");
+                                  visible = true; break;
+        case S::verifying:        text = U ("OVĚŘUJI…"); visible = true; enabled = false; break;
+        case S::readyToInstall:   text = U ("INSTALOVAT ") + st.stagedVersion; visible = true; break;
+        case S::installScheduled: text = U ("ZAVŘI LOGIC → INSTALACE"); visible = true; break;
+        case S::manualOnly:       text = U ("NOVÁ VERZE ") + st.latest.version; visible = true; break;
+        case S::installed:        if (rm::versionValue (st.resultVersion) != rm::versionValue (JucePlugin_VersionString)) { text = U ("RESTARTUJ LOGIC"); visible = true; } break;
+        case S::rolledBack:       if (rm::versionValue (st.resultVersion) != rm::versionValue (JucePlugin_VersionString)) { text = U ("RESTARTUJ LOGIC"); visible = true; } break;
+        case S::failed:           if (updateRequested || st.resultVersion.isNotEmpty()) { text = U ("AKTUALIZACE SELHALA"); visible = true; } break;
         default: break;
     }
-    if (! visible && update.file.existsAsFile()) { text = U ("AKTUALIZOVAT ") + update.version; visible = true; }
+    if (! visible && update.file.existsAsFile()) { text = U ("AKTUALIZOVAT ") + update.version + U (" (ze Stažených)"); visible = true; }
     const bool changed = updateButton.isVisible() != visible;
     updateButton.setButtonText (text);
     updateButton.setEnabled (enabled);
     updateButton.setVisible (visible);
-    if (st.latest.version.isNotEmpty())
-        updateButton.setTooltip (U ("Nainstalováno: ") + updater->getInstalledVersion() + U ("   Nová: ") + st.latest.version
-                                 + (st.latest.notes.isNotEmpty() ? U ("\nCo je nového: ") + st.latest.notes : String()));
+    updateButton.setTooltip (U ("Nainstalováno: ") + updater->getInstalledVersion()
+                             + (st.latest.version.isNotEmpty() ? U ("   Na GitHubu: ") + st.latest.version : String())
+                             + U ("\n") + st.message
+                             + (st.latest.notes.isNotEmpty() ? U ("\nCo je nového: ") + st.latest.notes : String()));
     if (changed) resized();
 
     // knihovna hardwaru (samostatne od pluginu)
@@ -2643,71 +2659,98 @@ void RackMemoryEditor::refreshUpdateButton()
         }
     }
 
-    // vysledek akce, o kterou si uzivatel rekl
-    if (updateRequested && st.state == S::installed)
-    {
-        updateRequested = false;
-        showInfo (U ("Rack Memory ") + st.latest.version + U (" je nainstalovaný (ověřeno na disku).\nZavři a znovu otevři Logic – do té doby běží ") + String (JucePlugin_VersionString)
-                  + U (".\n\nTvoje nastavení, verze skladeb i rack zůstaly beze změny.")
-                  + (st.latest.notes.isNotEmpty() ? U ("\n\nCo je nového: ") + st.latest.notes : String()));
-    }
-    else if (updateRequested && st.state == S::failed && lastUpdateError != st.message)
+    // vysledky akci, o ktere si uzivatel rekl
+    if (updateRequested && st.state == S::readyToInstall && lastUpdateState != (int) S::readyToInstall)
+        setStatus (st.message + U (". Klikni na INSTALOVAT."), kOk, 15);
+    if (updateRequested && st.state == S::failed && lastUpdateError != st.message)
     {
         lastUpdateError = st.message;
         showError (U ("Aktualizace se nepovedla: ") + st.message + U ("\nNainstalovaná verze zůstala beze změny."));
     }
-    else if (manualCheck && (st.state == S::upToDate || st.state == S::offline || st.state == S::notConfigured || st.state == S::manualOnly
-                             || st.state == S::available || (st.state == S::failed && ! updateRequested)))
+    if (manualCheck && (st.state == S::upToDate || st.state == S::offline || st.state == S::notConfigured || st.state == S::manualOnly
+                        || st.state == S::available || st.state == S::failed || st.state == S::readyToInstall))
     {
         manualCheck = false;
         setStatus (st.state == S::notConfigured ? U ("Aktualizace nejsou nastavené (chybí GitHub repozitář).")
                    : U ("Nainstalováno ") + updater->getInstalledVersion() + U (" – ") + st.message, st.state == S::available ? kOk : kDim, 12);
     }
+    if (! resultShown && (st.state == S::installed || st.state == S::rolledBack || (st.state == S::failed && st.resultVersion.isNotEmpty())))
+    {
+        resultShown = true;
+        setStatus (st.message, st.state == S::failed ? kAccent : kOk, 20);
+        // vysledek, ktery uz plati (bezi nainstalovana verze / selhani nahlaseno), se priste neukazuje
+        if (st.state == S::failed || rm::versionValue (st.resultVersion) == rm::versionValue (JucePlugin_VersionString)) updater->acknowledgeResult();
+    }
+    lastUpdateState = (int) st.state;
 }
 
 void RackMemoryEditor::startUpdate()
 {
     using S = rm::Updater::State;
-    const auto st = updater->getStatus().state;
-    if (st == S::available) { updateRequested = true; lastUpdateError.clear(); updater->downloadAndInstall(); }
-    else if (st == S::manualOnly)
+    const auto st = updater->getStatus();
+    juce::Component::SafePointer<RackMemoryEditor> safe (this);
+    auto ask = [this, safe] (const String& title, const String& msg, const String& yes, const String& no, std::function<void()> onYes)
     {
-        auto info = updater->getStatus().latest;
-        showInfo (updater->getStatus().message + U ("\n\nOtevřu stránku vydání – stáhni zip a nainstaluj podle JAK NAINSTALOVAT.txt."));
-        juce::URL (info.notesUrl.isNotEmpty() ? info.notesUrl : "https://github.com/" + rm::Updater::builtInRepo() + "/releases/latest").launchInDefaultBrowser();
+        juce::AlertWindow::showAsync (juce::MessageBoxOptions().withIconType (juce::MessageBoxIconType::QuestionIcon)
+                                          .withTitle (title).withMessage (msg).withButton (yes).withButton (no).withAssociatedComponent (this),
+                                      [safe, onYes] (int r) { if (safe != nullptr && r == 1) onYes(); });
+    };
+    if (st.state == S::available)
+    {
+        ask (U ("Rack Memory ") + st.latest.version,
+             U ("Nainstalováno: ") + updater->getInstalledVersion() + U ("\nNová verze: ") + st.latest.version
+             + (st.latest.size > 0 ? U ("  (") + juce::File::descriptionOfSizeInBytes (st.latest.size) + ")" : String())
+             + (st.latest.notes.isNotEmpty() ? U ("\n\nCo je nového: ") + st.latest.notes : String())
+             + U ("\n\nStáhnu ji na pozadí a ověřím (kontrolní součet, verze, procesor). Nic se zatím neinstaluje."),
+             U ("Stáhnout"), U ("Teď ne"), [this] { updateRequested = true; lastUpdateError.clear(); updater->startDownload(); refreshUpdateButton(); });
     }
-    else if (st == S::failed && updateRequested) { updater->checkNow(); }
+    else if (st.state == S::downloading)
+        ask (U ("Zrušit stahování?"), U ("Staženo ") + juce::File::descriptionOfSizeInBytes (st.bytesDone) + U (" z ") + juce::File::descriptionOfSizeInBytes (st.bytesTotal)
+             + U (". Nic se nezmění, stáhnout jde později znovu."), U ("Zrušit stahování"), U ("Pokračovat"), [this] { updater->cancelDownload(); });
+    else if (st.state == S::readyToInstall)
+    {
+        const auto installed = updater->getInstalledVersion();
+        ask (U ("Nainstalovat Rack Memory ") + st.stagedVersion + U ("?"),
+             U ("Balíček je stažený a ověřený.\n\n"
+                "Načtený plugin se z běžícího Logicu přepsat nesmí. Po potvrzení se spustí samostatný instalátor, který:\n"
+                "1. počká, až zavřeš Logic (a plugin nebude nikde načtený),\n"
+                "2. zálohuje současnou verzi ") + installed + U (",\n"
+                "3. nainstaluje ") + st.stagedVersion + U (" a ověří ji (auval),\n"
+                "4. když ověření selže, vrátí ") + installed + U (".\n\n"
+                "Pak Logic znovu otevři – plugin ukáže výsledek. Nastavení, verze skladeb ani rack se nemění."),
+             U ("Nainstalovat po zavření Logicu"), U ("Později"),
+             [this]
+             {
+                 String err;
+                 if (updater->scheduleInstall (err)) showInfo (U ("Hotovo – teď zavři Logic (uložit projekt!). Instalace proběhne sama během pár sekund po zavření.\n\nPostup se zapisuje do:\n") + updater->logFile().getFullPathName());
+                 else showError (err);
+                 refreshUpdateButton();
+             });
+    }
+    else if (st.state == S::installScheduled)
+        ask (U ("Instalace čeká na zavření Logicu"), st.message + U ("\n\nZavři Logic – instalátor pak během pár sekund dokončí instalaci.\nLog: ") + updater->logFile().getFullPathName(),
+             U ("Zrušit instalaci"), U ("OK"), [this] { updater->cancelScheduledInstall(); refreshUpdateButton(); });
+    else if (st.state == S::manualOnly)
+    {
+        showInfo (st.message + U ("\n\nOtevřu stránku vydání – stáhni zip a nainstaluj podle JAK NAINSTALOVAT.txt."));
+        juce::URL (st.latest.notesUrl.isNotEmpty() ? st.latest.notesUrl : "https://github.com/" + rm::Updater::builtInRepo() + "/releases/latest").launchInDefaultBrowser();
+    }
+    else if (st.state == S::installed || st.state == S::rolledBack)
+        showInfo (st.message + U ("\n\nZavři a znovu otevři Logic, aby se načetla nová verze."));
+    else if (st.state == S::failed)
+        ask (U ("Aktualizace se nepovedla"), st.message + U ("\n\nPodrobnosti: ") + updater->logFile().getFullPathName(), U ("Zkusit znovu"), U ("Zavřít"),
+             [this] { updateRequested = false; updater->checkNow(); });
     else if (update.file.existsAsFile()) runUpdate (update.file);
     refreshUpdateButton();
 }
 
+// Zip ze Stazenych / vybrany rucne: overi se obsah (verze, procesor) a pak stejna bezpecna instalace jako z GitHubu
 void RackMemoryEditor::runUpdate (const juce::File& package)
 {
-    updateButton.setEnabled (false);
-    updateButton.setButtonText (U ("instaluji…"));
-    juce::Component::SafePointer<RackMemoryEditor> safe (this);
-    juce::Thread::launch ([safe, package]
-    {
-        const auto dir = juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile ("Library/Audio/Plug-Ins/Components");
-        const auto r = installUpdate (package, dir);
-        juce::MessageManager::callAsync ([safe, r]
-        {
-            if (safe == nullptr) return;
-            safe->updateButton.setEnabled (true);
-            if (r.wasOk())
-            {
-                safe->update = {};
-                safe->updateButton.setVisible (false);
-                safe->resized();
-                safe->showInfo (U ("Nová verze je nainstalovaná.\nZavři a znovu otevři Logic."));
-            }
-            else
-            {
-                safe->updateButton.setButtonText (U ("AKTUALIZOVAT ") + safe->update.version);
-                safe->showError (r.getErrorMessage());
-            }
-        });
-    });
+    String err;
+    if (updater->stageLocalPackage (package, err)) { updateRequested = true; update = {}; startUpdate(); }
+    else showError (U ("Balíček nejde použít: ") + err);
+    refreshUpdateButton();
 }
 
 //==============================================================================

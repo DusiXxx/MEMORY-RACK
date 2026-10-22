@@ -33,6 +33,7 @@ struct Result
     int tooSmall = 0;
     juce::Image rectified;                 // fotka narovnana do souradnic panelu
     juce::String message;
+    double exposure = 1.0;                 // jas nejsvetlejsiho potisku (99. percentil); < 0.45 = tmava fotka
     bool cancelled = false;                // analyza zrusena (novejsi fotka / zavreni okna) - vysledek se nepouzije
     bool fromCache = false;                // stejna fotka + profil + verze algoritmu uz byla analyzovana
     juce::String algorithm;                // verze algoritmu, ktera vysledek spocitala

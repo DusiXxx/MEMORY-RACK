@@ -1,30 +1,31 @@
-# Rack Memory 0.11.0
+# Rack Memory 0.12.0
 
 AU plugin pro Logic Pro: paměť nastavení analogového racku + hlasitost a měření do/z hardwaru. Celý rack je na jedné stránce. Hardware se **neovládá**; zvuk prochází beze změny (jen volitelný gain, 0 dB = bitově beze změny).
 
 Skupiny (záložky): **Mixing**, **Mastering** a vlastní – každá má svůj rack a své verze. Nahoře **PATCHBAY** (Samson S-patch Plus, Neutrik NYS-SPP-L1).
 Přístroje: SPL Vitalizer Mk3-T, elysia xfilter (1U i Mastering Edition), xmax 500, nvelope 500, WesAudio _RHEA, Warm Audio WA76, WA-2A, API 512c, AMS Neve 1073LB, Cranborne Camden 500 + vlastní přístroje (+ PŘÍSTROJ → Vlastní přístroj).
 
-**Co je nového: `docs/STABILITA-0.11.md` (0.11 – zahřívání, regrese čtení z fotky, pevná regresní sada), `docs/FOTO-A-KNIHOVNA-0.10.md` (0.10) a `docs/OPRAVY-0.9.md` (0.9) – včetně postupu testu v Logicu.**
+**Co je nového: `docs/AKTUALIZACE-A-FOTKY-0.12.md` (0.12 – bezpečné aktualizace, sada fotek), `docs/STABILITA-0.11.md` (0.11 – zahřívání, regrese čtení z fotky, pevná regresní sada), `docs/FOTO-A-KNIHOVNA-0.10.md` (0.10) a `docs/OPRAVY-0.9.md` (0.9) – včetně postupu testu v Logicu.**
 
 ## Instalace (u tebe)
 
 Dvojklik na `Instalovat Rack Memory.command` (ve složce RackMemory), nebo v Terminálu:
 
-    cd ~/Downloads && rm -rf RackMemory && unzip -oq RackMemory-0.11.0.zip && bash RackMemory/build.sh
+    cd ~/Downloads && rm -rf RackMemory && unzip -oq RackMemory-0.12.0.zip && bash RackMemory/build.sh
 
 Build šetří počítač: jen pro tento Mac, o jedno jádro méně než má procesor (`RM_JOBS=2 bash RackMemory/build.sh` = ještě méně),
 s nízkou prioritou, a složka buildu je v `~/Library/Caches/RackMemoryBuild` – při další verzi se překládá jen to, co se změnilo.
-Na konci uloží do Stažených `Rack Memory 0.11.0 (x86_64).zip` (jen pro Mac se stejným procesorem).
+Na konci uloží do Stažených `Rack Memory 0.12.0 (x86_64).zip` (jen pro Mac se stejným procesorem).
 Univerzální plugin (Intel i Apple Silicon) pro kamarády: `bash RackMemory/build.sh --universal` (dělá ho i `Tools/release.sh`).
 
 ## Pro kamaráda (bez Terminálu)
 
 Pošli mu jen `Rack Memory <verze>.zip`. Uvnitř je plugin a návod `JAK NAINSTALOVAT.txt`:
 první instalace = přetáhnout `Rack Memory.component` do `~/Library/Audio/Plug-Ins/Components`.
-**Další verze se instalují samy:** plugin se podívá na GitHub (github.com/DusiXxx/MEMORY-RACK), a když je novější verze,
-ukáže zelené tlačítko **AKTUALIZOVAT x.y.z**. Jedno kliknutí → stáhne, ověří kontrolní součet, nainstaluje → **RESTARTUJ LOGIC**.
-Ručně: ••• → Zkontrolovat aktualizace. Bez internetu: nový zip do Stažených, ••• → Aktualizovat ze souboru…
+**Další verze (od 0.12):** plugin se podívá na GitHub (github.com/DusiXxx/MEMORY-RACK) a ukáže **AKTUALIZACE x.y.z · velikost**.
+Stáhnout (procenta, rychlost, zrušit) → ověření (SHA-256, verze, procesor) → **INSTALOVAT** → instalace proběhne až po zavření Logicu
+(samostatný instalátor: záloha, výměna, ověření auval, při chybě návrat). ••• → Vrátit předchozí verzi pluginu.
+Ze 0.8–0.11 na 0.12 ručně (zip z GitHubu) – staré verze by přepisovaly načtený plugin.
 Vydání nové verze: viz `RELEASING.md` (`bash Tools/release.sh "co je nového"`).
 
 ## Nastavení z fotky

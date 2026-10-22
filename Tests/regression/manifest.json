@@ -1,6 +1,6 @@
 {
  "note": "Pevna regresni sada cteni z fotky. Stejne soubory a stejna pravda pro kazdou verzi. Spusteni: RackMemoryTests regress Tests/regression [vystup.json]. Hodnoceni: knob do 9 st., stupnovy do 1 kroku, prepinac presne. 'baseline' = co nova verze nesmi zhorsit (kontroluje i bezny beh testu).",
- "algorithm": "rmcv-0.11.0",
+ "algorithm": "rmcv-0.12.0",
  "baseline": {
   "elysia.nvelope.500": {
    "minCorrect": 156,

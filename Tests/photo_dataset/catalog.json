@@ -1,0 +1,2813 @@
+{
+ "schema": 1,
+ "note": "Katalog fotek pro test cteni. Fotky NEJSOU v gitu (autorska prava): lezi v Tests/photo_dataset/local/ jen u toho, kdo je ma. use: test = meri se; reference = podle ni je nakreslen panel (testovat na ni by bylo zkreslene); excluded = nejasne povoleni / spatne oznaceni. truth.verification: none / eye (odhad okem) / verified (overeno na pristroji). Jako overovaci vzorek se pocita jen eye a verified.",
+ "photos": [
+  {
+   "id": "xmax500_product_front",
+   "file": "elysia_xmax500_product_front.png",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "a9adac433a7d97d5f9eaf5aacea4d54f9cad4ba7c7555109793329f7fdd32925",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "",
+   "originalName": "rm_xmax500.png"
+  },
+  {
+   "id": "xfilter500_product_angle",
+   "file": "elysia_xfilter500_product_angle.jpg",
+   "device": "elysia xfilter 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~30 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "13a1539ceeab67a9013859a5ae63b865306e0c7ea352518d81ccfb85eeb79643",
+   "expected": [
+    "elysia.xfilter.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "",
+   "originalName": "rm_xfilter500.jpg"
+  },
+  {
+   "id": "xfilter500_product_small",
+   "file": "elysia_xfilter500_product_small.jpg",
+   "device": "elysia xfilter 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku, maly na snimku",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "2560x1440",
+   "sha256": "8727edff06abc6603d08852400fa2591e8037489736b936fb01c27e48cc9f3f1",
+   "expected": [
+    "elysia.xfilter.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "",
+   "originalName": "rm_xfilter500_product.jpg"
+  },
+  {
+   "id": "nvelope500_product_angle",
+   "file": "elysia_nvelope500_product_angle.jpg",
+   "device": "elysia nvelope 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~30 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "db536f9f940e9224a9a6d55cf083021ac53307bd0ffb5b8213817ef09c827520",
+   "expected": [
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "",
+   "originalName": "rm_nvelope500.jpg"
+  },
+  {
+   "id": "xfilterme_front_black",
+   "file": "elysia_xfilterme_front_black.png",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME, stazeno 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "reference",
+   "angle": "zepredu, mirne shora",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "1067x800",
+   "sha256": "94a05daef2888bd78d6b39235c0c934401f3da9f23b67b9221b7707b86ba1614",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "podle teto fotky je nakreslen panel ME -> nelze pouzit jako test",
+   "originalName": "me_xfilter_mastering_front_black_web2.png"
+  },
+  {
+   "id": "xfilterme_grey_angle",
+   "file": "elysia_xfilterme_grey_angle.png",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "855b00aed42a9f8f865c2e2774abb788f14b02305f1d6e1cd272b0e345761667",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "",
+   "originalName": "me_grey.png"
+  },
+  {
+   "id": "xfilterme_retailer_angle",
+   "file": "elysia_xfilterme_retailer_angle.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "prodejce",
+   "source": "SoundPure (produktova fotka, uzivatel ulozil 12.10.2026)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~25 st., malé rozliseni",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "640x427",
+   "sha256": "320199a880e0de156ea9a338f017c831776e68c8628fd837a7a90de568cac3c1",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "",
+   "originalName": "_30924_30924-elysia-xfilter-mastering-edition-stereo-linked-eq-1813feb775b-62-large.jpg"
+  },
+  {
+   "id": "xfilter1u_front",
+   "file": "elysia_xfilter1u_front.png",
+   "device": "elysia xfilter (1U)",
+   "origin": "vyrobce",
+   "source": "elysia.com (xfilter 19\", stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "reference",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x492",
+   "sha256": "44c7b2446db5c2023a1e905605b4a7b15c4ad364d4abba6cab2874f1cdd321ab",
+   "expected": [
+    "elysia.xfilter.1u"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "podle teto fotky je nakreslen panel 1U -> nelze pouzit jako test",
+   "originalName": "rm_xfilter_19-1-1.webp.png"
+  },
+  {
+   "id": "vitalizer_front_flat",
+   "file": "spl_vitalizer_front_flat.png",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "vyrobce",
+   "source": "spl.audio (VitalizerMk3-T Front flat)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "reference",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "3795x347",
+   "sha256": "37f41ef1f3c51d68cf3776b56fc1d4739c0117a9b61a705a1dc656fe3a4fab9d",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "podle teto fotky je nakreslen panel -> nelze pouzit jako test",
+   "originalName": "rm_vitalizer_front.png"
+  },
+  {
+   "id": "vitalizer_thomann",
+   "file": "vitalizer_thomann.png",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "51a0ddae88602148740407d76c07dab23284ef8248c021371f4ec2596e4b4baf",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "",
+   "originalName": "825256812_1119479390554763_5451013823783448631_n.png"
+  },
+  {
+   "id": "rhea_product_front",
+   "file": "wesaudio_rhea_product_front.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (produktova fotka 12a)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "reference",
+   "angle": "zepredu",
+   "lighting": "studiove, LED nesviti",
+   "distance": "jeden pristroj",
+   "size": "800x800",
+   "sha256": "91be0bae9aa1cacbd3047a3e99bad7994dea06ce429cb4c1487c78cd51673de6",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "shoda potisku s nakreslenym panelem 1.00 -> panel _RHEA je nakreslen podle teto fotky; nelze pouzit jako test",
+   "originalName": "rm_rhea-product-wesaudio-12a.jpg"
+  },
+  {
+   "id": "rhea_product_angle1",
+   "file": "wesaudio_rhea_product_angle1.png",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "79c6acacea9d554cf5f864119045dc3b93fecb1eea2f7539d49bee12ea542e86",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "",
+   "originalName": "rm_main-image-rhea.webp"
+  },
+  {
+   "id": "rhea_product_angle2",
+   "file": "wesaudio_rhea_product_angle2.png",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "00ff43a163721e74019593d869e6d8b27f5f58c82ba272613acf49aabcd8290c",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "",
+   "originalName": "rm_main-image-rhea-2b.webp"
+  },
+  {
+   "id": "rhea_gallery1",
+   "file": "wesaudio_rhea_gallery1.png",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 1)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "silne zboku",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "4d4775d4d0e285e74355314e6894a429b813ec5df2aa989aa76fcbae07fb06a8",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "castecne",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "",
+   "originalName": "rm_rhea-gallery-1.webp"
+  },
+  {
+   "id": "rhea_gallery5",
+   "file": "wesaudio_rhea_gallery5.png",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "e85a9d64324e30754075e6849fcba183d91cab868b4c4454c6f8a1161604badd",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "",
+   "originalName": "rm_rhea-gallery-5.webp"
+  },
+  {
+   "id": "rhea_overview_small",
+   "file": "wesaudio_rhea_overview_small.png",
+   "device": "WesAudio _RHEA (u monitoru)",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (overview)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku, maly, scena s monitorem",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "834x561",
+   "sha256": "ecae0f2e9e523d911f84b5edef04bf93e6a9a44222af7899f1db74498a3694db",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, velmi male",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "",
+   "originalName": "rm_overview-image-rhea.webp"
+  },
+  {
+   "id": "user_rack_full_phone",
+   "file": "user_rack_full_phone.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "a49f7a4770e08f180308ec15b0633fa3eec5caa343a48be07c20710fd72ede6c",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "",
+   "originalName": "851373995_1521043629851480_2963086647827230331_n.jpg"
+  },
+  {
+   "id": "neg_nvelope19",
+   "file": "elysia_nvelope19_store.png",
+   "device": "elysia nvelope 19\" (NEPODPOROVANY model)",
+   "origin": "vyrobce",
+   "source": "elysia.com (nvelope 19\")",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x614",
+   "sha256": "81fe95a5bb54ecdd6fe38184f6f1cad95282d3fb2987f764d6b887c144332196",
+   "expected": [],
+   "visibleControls": "-",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "negativni vzorek: nesmi se najit nic (podobny potisk jako nvelope 500)",
+   "originalName": "rm_nvelope-19inch-store.jpg.png"
+  },
+  {
+   "id": "neg_xmax19",
+   "file": "elysia_xmax19_series.png",
+   "device": "elysia xmax 19\" (NEPODPOROVANY model)",
+   "origin": "vyrobce",
+   "source": "elysia.com (xmax 19\")",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x614",
+   "sha256": "428933d86cd3fdc34587fd594d82f9a1f49c10f0ec915a37c89f57723e6a749b",
+   "expected": [],
+   "visibleControls": "-",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "negativni vzorek",
+   "originalName": "rm_xmax-19-inch-Series.avif.png"
+  },
+  {
+   "id": "neg_manley_slam",
+   "file": "manley_slam_front.png",
+   "device": "Manley SLAM (NEPODPOROVANY)",
+   "origin": "vyrobce",
+   "source": "manley.com (SLAM front)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2500x459",
+   "sha256": "6ae5806e8a568455c6d2b0d980f8db4165fa1b28b4c2b1e10bad2fbe2767eadf",
+   "expected": [],
+   "visibleControls": "-",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "negativni vzorek",
+   "originalName": "rm_mmsslc_f_2021_53c3ce0331.png"
+  },
+  {
+   "id": "xmax500_product_front__tma",
+   "file": "variants/xmax500_product_front__tma.jpg",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "c3b6b56e1151891a9a574a5c0df6887b1b0b10610b4a2d7b3ac878fbee97e57e",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xmax500_product_front (tma); pravda zdedena",
+   "variantOf": "xmax500_product_front"
+  },
+  {
+   "id": "xmax500_product_front__rozmazana",
+   "file": "variants/xmax500_product_front__rozmazana.jpg",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "8ab0b91377fcf79d2c1b69416a6a9bb39868901ec4411a4a705635679c2ea23c",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xmax500_product_front (rozmazana); pravda zdedena",
+   "variantOf": "xmax500_product_front"
+  },
+  {
+   "id": "xmax500_product_front__polovicni",
+   "file": "variants/xmax500_product_front__polovicni.jpg",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "a41e5bcb089f09b2fa9363c6d36c7ca1af460cefdf5026d54fafa826bd344ab4",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xmax500_product_front (polovicni); pravda zdedena",
+   "variantOf": "xmax500_product_front"
+  },
+  {
+   "id": "xmax500_product_front__ctvrtinova",
+   "file": "variants/xmax500_product_front__ctvrtinova.jpg",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "b8c21fd48bb255ec6dbed595e2e5b5f2ae1d37a9f4a9aebeda6cb74c4832703b",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xmax500_product_front (ctvrtinova); pravda zdedena",
+   "variantOf": "xmax500_product_front"
+  },
+  {
+   "id": "xmax500_product_front__zboku",
+   "file": "variants/xmax500_product_front__zboku.jpg",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "b7a230eff02e980bfc49935ff25a199dc7c72fca94bdf0f5af38a82aaa5fbf4d",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xmax500_product_front (zboku); pravda zdedena",
+   "variantOf": "xmax500_product_front"
+  },
+  {
+   "id": "xmax500_product_front__jpeg30",
+   "file": "variants/xmax500_product_front__jpeg30.jpg",
+   "device": "elysia xmax 500",
+   "origin": "vyrobce",
+   "source": "elysia.com (produktova fotka, stazeno 11.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "mirne zboku (render)",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2560x1707",
+   "sha256": "700161c776332845aa7602d8388b2a1377fdb735ee34deefd903d93f49bc07c3",
+   "expected": [
+    "elysia.xmax.500"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "jen tlacitka (svitici kruhy lowmo, punch, hit it jasne viditelne); knoby na renderu necitelne -> bez pravdy",
+    "devices": {
+     "elysia.xmax.500": {
+      "positions": {
+       "lowmo": 1,
+       "punch": 1,
+       "hitit": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xmax500_product_front (jpeg30); pravda zdedena",
+   "variantOf": "xmax500_product_front"
+  },
+  {
+   "id": "xfilterme_grey_angle__tma",
+   "file": "variants/xfilterme_grey_angle__tma.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "e110bdb3f3560d6e2046b3370aa94de59fdc26698c1f5652efc7aba1fbb35b53",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xfilterme_grey_angle (tma); pravda zdedena",
+   "variantOf": "xfilterme_grey_angle"
+  },
+  {
+   "id": "xfilterme_grey_angle__rozmazana",
+   "file": "variants/xfilterme_grey_angle__rozmazana.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "2e4528d6a356f76c9d9c579d9cbcf30d7072dfa175f96a8a2fe0e487ed8a4786",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xfilterme_grey_angle (rozmazana); pravda zdedena",
+   "variantOf": "xfilterme_grey_angle"
+  },
+  {
+   "id": "xfilterme_grey_angle__polovicni",
+   "file": "variants/xfilterme_grey_angle__polovicni.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "9dedfb5a544ad9595abc71746d231a0b7e7eae0ec6b7e630e643298a7e2e35df",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xfilterme_grey_angle (polovicni); pravda zdedena",
+   "variantOf": "xfilterme_grey_angle"
+  },
+  {
+   "id": "xfilterme_grey_angle__ctvrtinova",
+   "file": "variants/xfilterme_grey_angle__ctvrtinova.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "9ad1806bc7855f1dc91e58cc4cadf6e74e0ceb1543cb103124f6ec1a8b9ab4b6",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xfilterme_grey_angle (ctvrtinova); pravda zdedena",
+   "variantOf": "xfilterme_grey_angle"
+  },
+  {
+   "id": "xfilterme_grey_angle__zboku",
+   "file": "variants/xfilterme_grey_angle__zboku.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "c9f94a631a39e7deb3f3ae323cffc9ac3615301c55d780524c8a81ef54ec51fa",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xfilterme_grey_angle (zboku); pravda zdedena",
+   "variantOf": "xfilterme_grey_angle"
+  },
+  {
+   "id": "xfilterme_grey_angle__jpeg30",
+   "file": "variants/xfilterme_grey_angle__jpeg30.jpg",
+   "device": "elysia xfilter Mastering Edition",
+   "origin": "vyrobce",
+   "source": "elysia.com (fotka xfilter ME na sedem pozadi, 12.10.2026)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, mirne shora, 2 kusy nad sebou",
+   "lighting": "studiove",
+   "distance": "jeden pristroj (2 kusy)",
+   "size": "1067x800",
+   "sha256": "68abc879d0a90c5cc9c737beaf2f8ff8315c60be7b3444608b3cd71dd4edcc52",
+   "expected": [
+    "elysia.xfilter.me"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "zarezy na stribrnych knobech kolem 12 hodin; LED u vsech 6 tlacitek sviti",
+    "devices": {
+     "elysia.xfilter.me": {
+      "angles": {
+       "ls_gain": 0,
+       "ls_freq": 0,
+       "lm_gain": 0,
+       "lm_freq": 0,
+       "hm_gain": 0,
+       "hm_freq": 0,
+       "hs_gain": 0,
+       "hs_freq": 0
+      },
+      "positions": {
+       "hitit": 1,
+       "low_cut": 1,
+       "lm_q": 1,
+       "hm_q": 1,
+       "high_cut": 1,
+       "passive": 1
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z xfilterme_grey_angle (jpeg30); pravda zdedena",
+   "variantOf": "xfilterme_grey_angle"
+  },
+  {
+   "id": "vitalizer_thomann__tma",
+   "file": "variants/vitalizer_thomann__tma.jpg",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "146146d5321b688f660e7c668d86dcef9616fb2d91f915f925c896f0e7f61901",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z vitalizer_thomann (tma); pravda zdedena",
+   "variantOf": "vitalizer_thomann"
+  },
+  {
+   "id": "vitalizer_thomann__rozmazana",
+   "file": "variants/vitalizer_thomann__rozmazana.jpg",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "b28eed7c0c7944e52d091c2a3d177ee0b316e78caa78b3cba39bd760ca23be81",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z vitalizer_thomann (rozmazana); pravda zdedena",
+   "variantOf": "vitalizer_thomann"
+  },
+  {
+   "id": "vitalizer_thomann__polovicni",
+   "file": "variants/vitalizer_thomann__polovicni.jpg",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "5c7f7013c438d4ce057ed643f20d434b4837738ea0b427fd6b70d272a2399281",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z vitalizer_thomann (polovicni); pravda zdedena",
+   "variantOf": "vitalizer_thomann"
+  },
+  {
+   "id": "vitalizer_thomann__ctvrtinova",
+   "file": "variants/vitalizer_thomann__ctvrtinova.jpg",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "07ef49f56acbabb40f847650db964dcec3bfadb0cffa12f3662a973abe61a67b",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z vitalizer_thomann (ctvrtinova); pravda zdedena",
+   "variantOf": "vitalizer_thomann"
+  },
+  {
+   "id": "vitalizer_thomann__zboku",
+   "file": "variants/vitalizer_thomann__zboku.jpg",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "b6d18aeb0f1068a72711e31b2cb647f86f9839820354c087dbda10b3ffea7117",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z vitalizer_thomann (zboku); pravda zdedena",
+   "variantOf": "vitalizer_thomann"
+  },
+  {
+   "id": "vitalizer_thomann__jpeg30",
+   "file": "variants/vitalizer_thomann__jpeg30.jpg",
+   "device": "SPL Vitalizer Mk3-T",
+   "origin": "prodejce",
+   "source": "thomann (produktova fotka)",
+   "license": "prodejce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "2884x422",
+   "sha256": "abf43e02109657c13c771a0ace2a5d0bc33b9a658958a31dabd00fac59207f2a",
+   "expected": [
+    "spl.vitalizer.mk3t"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "note": "cerne knoby s bilou ryskou, zepredu, jasne citelne",
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": 20,
+       "bass": 0,
+       "basscomp": -150,
+       "midhi": -150,
+       "process": -150,
+       "lceq": -150,
+       "intensity": -150,
+       "expander": -150
+      }
+     }
+    }
+   },
+   "notes": "odvozeno z vitalizer_thomann (jpeg30); pravda zdedena",
+   "variantOf": "vitalizer_thomann"
+  },
+  {
+   "id": "rhea_product_angle1__tma",
+   "file": "variants/rhea_product_angle1__tma.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "9a6a6cf206cd7f24ba332ebf6e7517c436972344ecb8d9ee22df097fb3841411",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle1 (tma); pravda zdedena",
+   "variantOf": "rhea_product_angle1"
+  },
+  {
+   "id": "rhea_product_angle1__rozmazana",
+   "file": "variants/rhea_product_angle1__rozmazana.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "d5f7b3fe4f5e8868511f89cadbef3f019edae17ef128ef3e8f316620f8ee6131",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle1 (rozmazana); pravda zdedena",
+   "variantOf": "rhea_product_angle1"
+  },
+  {
+   "id": "rhea_product_angle1__polovicni",
+   "file": "variants/rhea_product_angle1__polovicni.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "edc74c91e921073cae2fbfd64226e3265c9d056518d57bd14593f2e101862c92",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle1 (polovicni); pravda zdedena",
+   "variantOf": "rhea_product_angle1"
+  },
+  {
+   "id": "rhea_product_angle1__ctvrtinova",
+   "file": "variants/rhea_product_angle1__ctvrtinova.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "800ed37ea1a4dd2fe1c22d245df25bab25040d4adb59204f2ab6c19453b0230e",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle1 (ctvrtinova); pravda zdedena",
+   "variantOf": "rhea_product_angle1"
+  },
+  {
+   "id": "rhea_product_angle1__zboku",
+   "file": "variants/rhea_product_angle1__zboku.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "2e82539a47caf7a2d8dbefd633c409c9bc9f50e5918465ba9c7001b472ca8acb",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle1 (zboku); pravda zdedena",
+   "variantOf": "rhea_product_angle1"
+  },
+  {
+   "id": "rhea_product_angle1__jpeg30",
+   "file": "variants/rhea_product_angle1__jpeg30.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st., otevreny modul",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x789",
+   "sha256": "8848adf1164592f4fcfddb49e3cd2c60e8594b0fce08135f30487fa0e76a869c",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle1 (jpeg30); pravda zdedena",
+   "variantOf": "rhea_product_angle1"
+  },
+  {
+   "id": "rhea_product_angle2__tma",
+   "file": "variants/rhea_product_angle2__tma.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "b86fe5499fd7e4e289416e42eb0a690dbe5b508233c1e4966aefc5074c9513b3",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle2 (tma); pravda zdedena",
+   "variantOf": "rhea_product_angle2"
+  },
+  {
+   "id": "rhea_product_angle2__rozmazana",
+   "file": "variants/rhea_product_angle2__rozmazana.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "1e46d94fe1284c20eeb8d2b21f2127797d048f729b616dcdd5c18654d066ed7f",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle2 (rozmazana); pravda zdedena",
+   "variantOf": "rhea_product_angle2"
+  },
+  {
+   "id": "rhea_product_angle2__polovicni",
+   "file": "variants/rhea_product_angle2__polovicni.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "7d5cf1d5ac5278aa8cb92079eadb4835d6a589f17d6db95dbbf0090153e3b5b1",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle2 (polovicni); pravda zdedena",
+   "variantOf": "rhea_product_angle2"
+  },
+  {
+   "id": "rhea_product_angle2__ctvrtinova",
+   "file": "variants/rhea_product_angle2__ctvrtinova.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "021166af8bb8b61f7dd16f37665a33686ad734f4213ae9cdb90908cb65b4e35d",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle2 (ctvrtinova); pravda zdedena",
+   "variantOf": "rhea_product_angle2"
+  },
+  {
+   "id": "rhea_product_angle2__zboku",
+   "file": "variants/rhea_product_angle2__zboku.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "b7b149d2990ef2bcd2602f764c999dce39ae7763ae15632cad7ad85e5304b747",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle2 (zboku); pravda zdedena",
+   "variantOf": "rhea_product_angle2"
+  },
+  {
+   "id": "rhea_product_angle2__jpeg30",
+   "file": "variants/rhea_product_angle2__jpeg30.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (main image 2b)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zboku ~35 st.",
+   "lighting": "studiove",
+   "distance": "jeden pristroj",
+   "size": "788x595",
+   "sha256": "525a2970d3283f3c4193ed2bc5594f15dfb99e6932811612be8760b1ee33690d",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_product_angle2 (jpeg30); pravda zdedena",
+   "variantOf": "rhea_product_angle2"
+  },
+  {
+   "id": "rhea_gallery5__tma",
+   "file": "variants/rhea_gallery5__tma.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "a176a5bf4e2eb7952ff223231b9d54b1e238bfaf2ac0b1660cd4bff21bd5b8bf",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_gallery5 (tma); pravda zdedena",
+   "variantOf": "rhea_gallery5"
+  },
+  {
+   "id": "rhea_gallery5__rozmazana",
+   "file": "variants/rhea_gallery5__rozmazana.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "55fb99f47b7ebd09e7436b141e71c2ed6c0c785f0d956e00d32fbd68b280a626",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_gallery5 (rozmazana); pravda zdedena",
+   "variantOf": "rhea_gallery5"
+  },
+  {
+   "id": "rhea_gallery5__polovicni",
+   "file": "variants/rhea_gallery5__polovicni.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "0bdd071794782ef94b104f7a800cfa30870ac69dce08d202475f98ffb3ef380c",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_gallery5 (polovicni); pravda zdedena",
+   "variantOf": "rhea_gallery5"
+  },
+  {
+   "id": "rhea_gallery5__ctvrtinova",
+   "file": "variants/rhea_gallery5__ctvrtinova.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "02d540e9e18c055abe08703e0727942e27526b38d9332e40e82ab034ff90d364",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_gallery5 (ctvrtinova); pravda zdedena",
+   "variantOf": "rhea_gallery5"
+  },
+  {
+   "id": "rhea_gallery5__zboku",
+   "file": "variants/rhea_gallery5__zboku.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "eb7aa460e586c481f05bbc9c744c99ba8201a4677eea93b7f32c07ba3523591f",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_gallery5 (zboku); pravda zdedena",
+   "variantOf": "rhea_gallery5"
+  },
+  {
+   "id": "rhea_gallery5__jpeg30",
+   "file": "variants/rhea_gallery5__jpeg30.jpg",
+   "device": "WesAudio _RHEA",
+   "origin": "vyrobce",
+   "source": "wesaudio.com (galerie 5)",
+   "license": "vyrobce - vsechna prava vyhrazena; jen lokalni test, nesirit, neni v gitu",
+   "use": "test",
+   "angle": "zepredu, maly",
+   "lighting": "studiove",
+   "distance": "pristroj z dalky",
+   "size": "1250x568",
+   "sha256": "88044c11a87be302dadb94b4260595cc4bd7a595f6d204038a4fc917129ca771",
+   "expected": [
+    "wesaudio.rhea"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "note": "LED kruhy nesviti (produktova fotka) -> hodnota se NESMI precist",
+    "devices": {
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ]
+     }
+    }
+   },
+   "notes": "odvozeno z rhea_gallery5 (jpeg30); pravda zdedena",
+   "variantOf": "rhea_gallery5"
+  },
+  {
+   "id": "user_rack_full_phone__tma",
+   "file": "variants/user_rack_full_phone__tma.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "cf42af4d9c2300502deb84244afe59f2ef0c0b465c8a604e68d5e3ecfc16677e",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "tma",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "odvozeno z user_rack_full_phone (tma); pravda zdedena",
+   "variantOf": "user_rack_full_phone"
+  },
+  {
+   "id": "user_rack_full_phone__rozmazana",
+   "file": "variants/user_rack_full_phone__rozmazana.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "7b4db841e1644b36e67d3ce7bda54c0b4002bd8ac2cc1860aa8d78fd8e875652",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "rozmazana",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "odvozeno z user_rack_full_phone (rozmazana); pravda zdedena",
+   "variantOf": "user_rack_full_phone"
+  },
+  {
+   "id": "user_rack_full_phone__polovicni",
+   "file": "variants/user_rack_full_phone__polovicni.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "aed57376afc97e660d0d9ec5347efb49d48978310753cb6d9c9508a436b4c2b7",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "polovicni",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "odvozeno z user_rack_full_phone (polovicni); pravda zdedena",
+   "variantOf": "user_rack_full_phone"
+  },
+  {
+   "id": "user_rack_full_phone__ctvrtinova",
+   "file": "variants/user_rack_full_phone__ctvrtinova.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "3dd914b10434891f8a9f5d91fe3ae08ea0b5538c7d1f25748985a948ae726a23",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "ctvrtinova",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "odvozeno z user_rack_full_phone (ctvrtinova); pravda zdedena",
+   "variantOf": "user_rack_full_phone"
+  },
+  {
+   "id": "user_rack_full_phone__zboku",
+   "file": "variants/user_rack_full_phone__zboku.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "303163127acd4db476d7c0317e8f40adb61dc1d2e619e613e6e895075ad24b84",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "zboku",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "odvozeno z user_rack_full_phone (zboku); pravda zdedena",
+   "variantOf": "user_rack_full_phone"
+  },
+  {
+   "id": "user_rack_full_phone__jpeg30",
+   "file": "variants/user_rack_full_phone__jpeg30.jpg",
+   "device": "cely rack uzivatele",
+   "origin": "uzivatel",
+   "source": "vlastni fotka uzivatele 20.10.2026 (iPhone)",
+   "license": "uzivatel - vlastni fotka, jen lokalne (neni na GitHubu)",
+   "use": "test",
+   "angle": "shora (paralaxa)",
+   "lighting": "tlumene teple",
+   "distance": "cely rack",
+   "size": "2480x3307",
+   "sha256": "d8ccf0ad39df38f1ea912ea1c36e818a746077ef07e72a6d16f34341e3a58f16",
+   "expected": [
+    "spl.vitalizer.mk3t",
+    "elysia.xfilter.1u",
+    "elysia.xmax.500",
+    "wesaudio.rhea",
+    "elysia.nvelope.500"
+   ],
+   "visibleControls": "vsechny, male",
+   "condition": "jpeg30",
+   "truth": {
+    "verification": "eye",
+    "tolerance": 20,
+    "devices": {
+     "spl.vitalizer.mk3t": {
+      "angles": {
+       "drive": -85,
+       "bass": 75,
+       "basscomp": -30,
+       "midhi": -145,
+       "process": -150,
+       "lceq": 115,
+       "intensity": 60,
+       "expander": -45
+      }
+     },
+     "elysia.xmax.500": {
+      "angles": {
+       "link": -140,
+       "thr_mid": -120,
+       "thr_side": -120,
+       "thr_low": -90,
+       "xfreq": -45,
+       "release": 40,
+       "tone": 150,
+       "gain_mid": -5,
+       "gain_side": 0,
+       "gain_low": 45,
+       "sclip": -75
+      },
+      "positions": {
+       "lowmo": 0,
+       "punch": 0,
+       "hitit": 0
+      }
+     },
+     "elysia.nvelope.500": {
+      "angles": {
+       "ch1_attack": 140,
+       "ch2_attack": 150,
+       "ch1_freq_a": -30,
+       "ch2_freq_a": -40,
+       "ch1_sustain": 0,
+       "ch2_sustain": -10,
+       "ch1_freq_s": 120,
+       "ch2_freq_s": 100
+      },
+      "positions": {
+       "autogain": 0,
+       "ch2_fullrange": 1,
+       "ch2_eqmode": 1,
+       "ch2_on": 0,
+       "link": 0,
+       "ch1_fullrange": 1,
+       "ch1_eqmode": 0
+      }
+     },
+     "elysia.xfilter.1u": {
+      "angles": {
+       "ls_gain": 50,
+       "ls_freq": -50,
+       "lm_gain": 45,
+       "lm_freq": -30,
+       "hm_gain": 40,
+       "hm_freq": -30,
+       "hs_gain": 30,
+       "hs_freq": -60
+      }
+     },
+     "wesaudio.rhea": {
+      "unknown": [
+       "input",
+       "threshold",
+       "output",
+       "attack",
+       "mix",
+       "release"
+      ],
+      "positions": {
+       "thd": 0,
+       "scfilter": 0
+      }
+     }
+    },
+    "note": "odhad okem z fotky v plnem rozliseni"
+   },
+   "notes": "odvozeno z user_rack_full_phone (jpeg30); pravda zdedena",
+   "variantOf": "user_rack_full_phone"
+  }
+ ],
+ "candidates": [
+  {
+   "device": "WesAudio _RHEA (skutecne fotky, inzerat)",
+   "source": "https://reverb.com/item/99261257-wesaudio-_rhea-stereo-vari-mu-tube-compressor-analog-tube-warmth-thd-color-daw-recallwes-audio-rhea",
+   "license": "vsechna prava vyhrazena (prodavajici) - potreba povoleni",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "WesAudio _RHEA (inzerat)",
+   "source": "https://www.finn.no/recommerce/forsale/item/244736041",
+   "license": "vsechna prava vyhrazena - potreba povoleni",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "elysia (inzerat)",
+   "source": "https://www.finn.no/381353275",
+   "license": "vsechna prava vyhrazena - potreba povoleni",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "WesAudio _RHEA (obchod)",
+   "source": "https://bigbearsound.com/products/wes-audio-rhea-stereo-vari-mu-tube-compressor-with-digital-recall",
+   "license": "prodejce - vsechna prava vyhrazena",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "WesAudio _RHEA (manual - fotky panelu)",
+   "source": "https://fullcompass.com/common/files/89781-RHEAUserGuide.pdf",
+   "license": "manual vyrobce - reference, ne test",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "Warm Audio WA76 (obchod)",
+   "source": "https://www.scan.co.uk/products/warm-audio-wa76-fet-compressor-modern-reproduction-of-the-classic-76-revision-d",
+   "license": "prodejce - vsechna prava vyhrazena",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "Warm Audio WA76 (obchod)",
+   "source": "https://www.audiosteps.io/en/product/warm-audio-wa76-fet-compressor-limiter/",
+   "license": "prodejce - vsechna prava vyhrazena",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "Warm Audio WA76 (obchod)",
+   "source": "https://www.fullcompass.com/prod/285446-warm-audio-wa76-classic-style-fet-compressor",
+   "license": "prodejce - vsechna prava vyhrazena",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "elysia xfilter ME (recenze)",
+   "source": "https://thomann.fr/elysia_xfilter_mastering_edition_reviews.htm",
+   "license": "prodejce - vsechna prava vyhrazena",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "elysia xmax/xfilter (obchod)",
+   "source": "https://www.soundhouse.co.jp/en/products/detail/item/268723/",
+   "license": "prodejce - vsechna prava vyhrazena",
+   "status": "nalezeno, nestazeno"
+  },
+  {
+   "device": "Samson S-patch Plus, Neutrik NYS-SPP-L1, WA-2A, WA76 (screenshoty obchodu u uzivatele)",
+   "source": "uzivatel - Stazene (Kaufland, Thomann, gear4music)",
+   "license": "screenshot obchodu",
+   "status": "vylouceno: pristroj na snimku ~100 px, necitelne"
+  }
+ ],
+ "baseline": {
+  "version": "0.12.0",
+  "algorithm": "rmcv-0.12.0",
+  "found": 72,
+  "expected": 83,
+  "falsePositives": 0,
+  "correct": 374,
+  "truth": 672,
+  "wrong": 8,
+  "note": "photoset: nic z toho se nesmi zhorsit (found >=, falsePositives <=, correct >=, wrong <=)",
+  "before": {
+   "version": "0.11.0",
+   "found": 60,
+   "falsePositives": 3,
+   "correct": 348,
+   "wrong": 14
+  }
+ }
+}

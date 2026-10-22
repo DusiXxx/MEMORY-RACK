@@ -56,6 +56,9 @@ ditto "$COMP" "$STAGE/Rack Memory.component"
 cp "JAK NAINSTALOVAT.txt" "$STAGE/" 2>/dev/null || true
 ditto -c -k --sequesterRsrc "$STAGE" "$OUT/$ASSET"
 rm -rf "$STAGE"
+# kontrola obsahu: plugin 0.12+ instaluje jen balicek s Rack Memory.component spravne verze
+unzip -l "$OUT/$ASSET" | grep -q "Rack Memory.component/Contents/Info.plist" || { echo "CHYBA: v zipu chybi Rack Memory.component"; exit 1; }
+unzip -l "$OUT/$ASSET" | grep -q "Rack Memory.component/Contents/MacOS/Rack Memory" || { echo "CHYBA: v zipu chybi binarka pluginu"; exit 1; }
 SHA=$(shasum -a 256 "$OUT/$ASSET" | awk '{print $1}')
 SIZE=$(stat -f%z "$OUT/$ASSET")
 ARCHS=$(lipo -archs "$COMP/Contents/MacOS/Rack Memory" 2>/dev/null || echo "x86_64")
@@ -69,7 +72,7 @@ import json, sys
 data = {
   "version": "$VERSION",
   "channel": "stable",
-  "minimum_version": "0.8.0",
+  "minimum_version": "0.12.0",   # 0.8-0.11 instaluji primo pres nacteny plugin -> radsi rucne (otevre se stranka vydani)
   "notes": """$NOTES""",
   "notes_url": "https://github.com/$REPO/releases/tag/$TAG",
   "download": "https://github.com/$REPO/releases/download/$TAG/$ASSET",

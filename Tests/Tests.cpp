@@ -104,13 +104,59 @@ static RealScore evaluateRealPhotos (bool verbose)
     return sc;
 }
 
+
+// Testovaci balicek pluginu: zip s "Rack Memory.component" (Info.plist + hlavicka Mach-O)
+static juce::File makePluginZip (const juce::File& dir, const juce::String& version, const juce::StringArray& archs,
+                                 const juce::String& bundleId = "com.dusix.rackmemory", const juce::String& minSys = "10.13")
+{
+    auto stage = dir.getChildFile ("stage_" + version + "_" + archs.joinIntoString ("_"));
+    stage.deleteRecursively();
+    auto comp = stage.getChildFile ("Rack Memory.component/Contents");
+    comp.getChildFile ("MacOS").createDirectory();
+    comp.getChildFile ("Info.plist").replaceWithText (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\"><dict>"
+        "<key>CFBundleIdentifier</key><string>" + bundleId + "</string>"
+        "<key>CFBundleShortVersionString</key><string>" + version + "</string>"
+        "<key>LSMinimumSystemVersion</key><string>" + minSys + "</string></dict></plist>\n");
+    juce::MemoryOutputStream bin;
+    auto be = [&bin] (juce::uint32 v) { bin.writeByte ((char) (v >> 24)); bin.writeByte ((char) (v >> 16)); bin.writeByte ((char) (v >> 8)); bin.writeByte ((char) v); };
+    be (0xcafebabe); be ((juce::uint32) archs.size());
+    for (auto& a : archs) { be (a == "arm64" ? 0x0100000cu : 0x01000007u); be (3); be (4096); be (1000); be (12); }
+    for (int i = 0; i < 2000; ++i) bin.writeByte (0);
+    comp.getChildFile ("MacOS/Rack Memory").replaceWithData (bin.getData(), bin.getDataSize());
+    auto zip = dir.getChildFile ("RackMemory-" + version + "-" + archs.joinIntoString ("-") + bundleId.retainCharacters ("x") + ".zip");
+    zip.deleteFile();
+    juce::ZipFile::Builder zb;
+    for (auto& f : stage.findChildFiles (juce::File::findFiles, true))
+        zb.addFile (f, 6, f.getRelativePathFrom (stage).replaceCharacter ('\\', '/'));
+    juce::FileOutputStream os (zip); zb.writeToStream (os, nullptr);
+    return zip;
+}
+static juce::String sha256Of (const juce::File& f) { juce::FileInputStream in (f); return juce::SHA256 (in).toHexString(); }
 #include "UiFlow.inc"
 #include "Regress.inc"
+#include "PhotoSet.inc"
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
     if (argc > 4 && juce::String (argv[1]) == "uiflow") return runUiFlow (argc, argv);
     if (argc > 2 && juce::String (argv[1]) == "regress") return runRegress (argc, argv);
+    if (argc > 3 && juce::String (argv[1]) == "photoset") return runPhotoSet (argc, argv);
+    // overeni skutecneho vydani: RackMemoryTests checkpackage <zip> <latest.json>
+    if (argc > 3 && juce::String (argv[1]) == "checkpackage")
+    {
+        const auto cwd = juce::File::getCurrentWorkingDirectory();
+        auto zip = cwd.getChildFile (juce::String (argv[2]));
+        auto info = rm::ReleaseInfo::parse (cwd.getChildFile (juce::String (argv[3])).loadFileAsString());
+        std::cout << "latest.json: " << (info.valid ? "platny" : "NEPLATNY " + info.error) << ", verze " << info.version << ", velikost " << info.size << std::endl;
+        const bool sizeOk = info.size == zip.getSize();
+        const auto sha = sha256Of (zip).toLowerCase();
+        std::cout << "velikost: " << (sizeOk ? "sedi" : "NESEDI") << " (" << zip.getSize() << " B), SHA-256: " << (sha == info.sha256 ? "sedi" : "NESEDI") << std::endl;
+        auto pk = rm::inspectPackage (zip);
+        std::cout << "obsah: " << (pk.ok ? "OK" : "CHYBA " + pk.error) << ", verze " << pk.version << ", id " << pk.bundleId << ", architektury " << pk.architectures.joinIntoString (" ")
+                  << ", min. macOS " << pk.minSystem << std::endl;
+        return info.valid && sizeOk && sha == info.sha256 && pk.ok && rm::versionValue (pk.version) == rm::versionValue (info.version) ? 0 : 1;
+    }
 
     if (argc > 3 && juce::String (argv[1]) == "notch")
     {
@@ -858,47 +904,71 @@ int main (int argc, char** argv)
         CHECK (r.order.size() == 3 && r.order[1] == "elysia.xfilter.me");
     }
 
-    section ("aktualizace z GitHubu (simulovana sit)");
+    section ("aktualizace z GitHubu: zjisteni, stazeni (procenta, rychlost, zruseni), overeni, pripraveno k instalaci");
     {
         auto dir = tmp.getChildFile ("gh"); dir.createDirectory();
-        auto zip = dir.getChildFile ("Rack Memory 9.1.0.zip");
-        zip.replaceWithText ("tohle by byl zip s pluginem");
-        juce::FileInputStream zin (zip); const auto sha = juce::SHA256 (zin).toHexString();
+        auto zip = makePluginZip (dir, "9.1.0", { "x86_64", "arm64" });
+        const auto sha = sha256Of (zip);
         auto manifest = [&] (const juce::String& version, const juce::String& hash, juce::int64 size, const juce::String& arch)
         {
             return "{ \"version\": \"" + version + "\", \"download\": \"https://github.com/x/y/releases/download/v" + version + "/Rack.Memory.zip\", "
                    "\"sha256\": \"" + hash + "\", \"size\": " + juce::String (size) + ", \"architectures\": [" + arch + "], \"notes\": \"test\" }";
         };
         juce::String body; bool online = true; juce::URL lastUrl;
-        juce::File installedFrom; int installs = 0;
+        juce::File serve = zip;
+        std::atomic<int> chunkDelayMs { 0 };
+        juce::StringArray launched;
         rm::Updater u;
         u.setRepo ("DusiXxx/MEMORY-RACK");
         u.setInstalledVersion ("0.8.0");
-        u.setWorkFolder (dir.getChildFile ("work"));
+        u.setArchitecture ("x86_64");
+        u.setStateFolder (dir.getChildFile ("Updates"));
+        u.setComponentsFolder (dir.getChildFile ("Components"));
+        u.setLauncher ([&] (const juce::StringArray& args) { launched = args; return true; });
         u.setNetwork ([&] (const juce::URL& url, juce::String& b, juce::String& err) { lastUrl = url; if (! online) { err = "offline"; return false; } b = body; return true; },
-                      [&] (const juce::URL&, const juce::File& target, const std::function<bool (float)>& prog, juce::String&) { prog (0.5f); return zip.copyFileTo (target); });
-        juce::String onDisk = "0.8.0";       // co je po instalaci opravdu na disku
-        u.setInstaller ([&] (const juce::File& f) { ++installs; installedFrom = f; CHECK (f.loadFileAsString() == zip.loadFileAsString()); onDisk = "9.1.0"; return juce::Result::ok(); });
-        u.setInstalledProbe ([&] { return onDisk; });
+                      [&] (const juce::URL&, const juce::File& target, const std::function<bool (juce::int64, juce::int64)>& prog, juce::String& err)
+                      {
+                          // stahovani po kouscich (jako sit): prubeh + moznost zruseni
+                          juce::MemoryBlock all; serve.loadFileAsData (all);
+                          juce::FileOutputStream os (target);
+                          const size_t step = juce::jmax ((size_t) 1, all.getSize() / 10);
+                          for (size_t done = 0; done < all.getSize(); done += step)
+                          {
+                              const size_t n = juce::jmin (step, all.getSize() - done);
+                              os.write (static_cast<const char*> (all.getData()) + done, n);
+                              if (chunkDelayMs > 0) juce::Thread::sleep (chunkDelayMs);
+                              if (! prog ((juce::int64) (done + n), (juce::int64) all.getSize())) { err = "zruseno"; return false; }
+                          }
+                          return true;
+                      });
         u.setRetryDelay (5);
         using S = rm::Updater::State;
 
         CHECK (rm::Updater::manifestUrl ("DusiXxx/MEMORY-RACK") == "https://github.com/DusiXxx/MEMORY-RACK/releases/latest/download/latest.json");
         CHECK (rm::versionValue ("0.10.0") > rm::versionValue ("0.9.9") && rm::versionValue ("v1.2.3") == rm::versionValue ("1.2.3"));
 
+        // obsah balicku se overuje bez rozbaleni
+        auto pk = rm::inspectPackage (zip);
+        CHECK (pk.ok && pk.version == "9.1.0" && pk.architectures.contains ("x86_64") && pk.architectures.contains ("arm64") && pk.bundleId == "com.dusix.rackmemory");
+        CHECK (! rm::inspectPackage (makePluginZip (dir, "9.1.0", { "x86_64" }, "com.cizi.plugin")).ok);
+        auto notZip = dir.getChildFile ("nic.zip"); notZip.replaceWithText ("tohle neni zip");
+        CHECK (! rm::inspectPackage (notZip).ok);
+
         body = manifest ("0.8.0", sha, zip.getSize(), "\"x86_64\", \"arm64\"");
         u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::upToDate);
         CHECK (lastUrl.toString (false).endsWith ("/releases/latest/download/latest.json"));
 
+        // spatny soucet: stazeni probehne, overeni ne -> nic pripraveno
         body = manifest ("9.1.0", sha.replaceSection (0, 1, sha[0] == 'a' ? "b" : "a"), zip.getSize(), "\"x86_64\", \"arm64\"");
         u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::available);
-        u.downloadAndInstall(); CHECK (u.waitUntilIdle (5000));
-        CHECK (u.getStatus().state == S::failed && installs == 0);           // spatny soucet: nic se neinstaluje
+        CHECK (u.getStatus().message.contains ("9.1.0") && u.getStatus().latest.size == zip.getSize());          // verze a velikost
+        u.startDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::failed && u.getStatus().message.contains ("SHA-256") && launched.isEmpty());
         std::cout << "  spatny soucet: " << u.getStatus().message << std::endl;
 
         body = manifest ("9.1.0", sha, zip.getSize() + 5, "");
-        u.checkNow(); CHECK (u.waitUntilIdle (5000)); u.downloadAndInstall(); CHECK (u.waitUntilIdle (5000));
-        CHECK (u.getStatus().state == S::failed && installs == 0);           // spatna velikost
+        u.checkNow(); CHECK (u.waitUntilIdle (5000)); u.startDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::failed && u.getStatus().message.contains ("velikost"));
 
         body = manifest ("9.1.0", sha, zip.getSize(), "\"neexistuje\"");
         u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::upToDate);   // jina architektura
@@ -908,15 +978,145 @@ int main (int argc, char** argv)
         online = false; u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::offline);
         online = true;
 
-        body = manifest ("9.1.0", sha, zip.getSize(), "\"x86_64\", \"arm64\"");
-        u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::available && u.getStatus().latest.version == "9.1.0");
-        u.downloadAndInstall(); CHECK (u.waitUntilIdle (5000));
-        CHECK (u.getStatus().state == S::installed && installs == 1 && ! installedFrom.existsAsFile());   // stazeny zip se po instalaci smaze
-        std::cout << "  " << u.getStatus().message << std::endl;
-        u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::upToDate);       // po instalaci uz nic nenabizi
+        // GitHub hlasi 9.1.0, ale v zipu je jina verze / jen Apple Silicon -> neinstaluje se
+        auto wrongVer = makePluginZip (dir, "9.0.5", { "x86_64" });
+        serve = wrongVer; body = manifest ("9.1.0", sha256Of (wrongVer), wrongVer.getSize(), "");
+        u.checkNow(); CHECK (u.waitUntilIdle (5000)); u.startDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::failed && u.getStatus().message.contains ("9.0.5"));
+        auto armOnly = makePluginZip (dir, "9.1.0", { "arm64" });
+        serve = armOnly; body = manifest ("9.1.0", sha256Of (armOnly), armOnly.getSize(), "");
+        u.checkNow(); CHECK (u.waitUntilIdle (5000)); u.startDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::failed && u.getStatus().message.contains ("procesor") == false && u.getStatus().message.contains ("x86_64"));
+
+        // zruseni stahovani: nic se nezmeni, jde stahnout znovu
+        serve = zip; body = manifest ("9.1.0", sha, zip.getSize(), "\"x86_64\", \"arm64\"");
+        u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::available);
+        chunkDelayMs = 60;
+        u.startDownload();
+        for (int i = 0; i < 100 && u.getStatus().bytesDone == 0; ++i) juce::Thread::sleep (5);
+        const auto mid = u.getStatus();
+        CHECK (mid.state == S::downloading && mid.bytesDone > 0 && mid.bytesTotal == zip.getSize() && mid.progress > 0.0f && mid.bytesPerSecond > 0);
+        u.cancelDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::available && ! dir.getChildFile ("Updates/staged/download.part").exists());
+        std::cout << "  zruseno pri " << juce::roundToInt (mid.progress * 100) << " % (" << juce::roundToInt (mid.bytesPerSecond) << " B/s): " << u.getStatus().message << std::endl;
+
+        // cele stazeni -> overeno -> pripraveno k instalaci (nic se neinstaluje bez potvrzeni)
+        chunkDelayMs = 0;
+        u.startDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::readyToInstall && u.getStatus().stagedVersion == "9.1.0" && launched.isEmpty());
+        CHECK (dir.getChildFile ("Updates/staged/RackMemory-9.1.0.zip").existsAsFile() && sha256Of (dir.getChildFile ("Updates/staged/RackMemory-9.1.0.zip")) == sha);
+        u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::readyToInstall);     // kontrola nic nezahodi
+        // po restartu Logicu: pripraveny balicek plati dal
+        {
+            rm::Updater u2; u2.setInstalledVersion ("0.8.0"); u2.setStateFolder (dir.getChildFile ("Updates"));
+            CHECK (u2.getStatus().state == S::readyToInstall && u2.getStatus().stagedVersion == "9.1.0");
+            rm::Updater u3; u3.setInstalledVersion ("9.1.0"); u3.setStateFolder (dir.getChildFile ("Updates"));
+            CHECK (u3.getStatus().state != S::readyToInstall);       // uz nainstalovano -> nic nenabizi
+        }
+        // instalace = spusteni samostatneho instalatoru (plugin sam nic neprepisuje)
+        juce::String err;
+        CHECK (u.scheduleInstall (err) && u.getStatus().state == S::installScheduled);
+        CHECK (launched.size() == 6 && launched[1] == "install" && launched[3] == "9.1.0" && juce::File (launched[0]).existsAsFile()
+               && juce::File (launched[2]).existsAsFile() && launched[4].endsWith ("Components"));
+        CHECK (juce::File (launched[0]).loadFileAsString().contains ("AU VALIDATION SUCCEEDED"));
+        CHECK (dir.getChildFile ("Updates/Instalovat aktualizaci Rack Memory.command").existsAsFile());
+        u.cancelScheduledInstall();
+        CHECK (dir.getChildFile ("Updates/cancel").existsAsFile() && u.getStatus().state == S::readyToInstall);
+
+        // vysledek instalatoru: jen to, co instalator opravdu potvrdil
+        auto st = dir.getChildFile ("Updates/install-status.json");
+        st.replaceWithText (R"J({"state":"failed","version":"9.1.0","previous":"0.8.0","message":"nova verze neprosla overenim (auval) - vracena 0.8.0","time":1,"pid":1,"mode":"install"})J");
+        u.refreshInstallResult(); CHECK (u.getStatus().state == S::failed && u.getStatus().message.contains ("auval"));
+        st.replaceWithText (R"J({"state":"waiting","version":"9.1.0","previous":"0.8.0","message":"ceka","time":1,"pid":999999,"mode":"install"})J");
+        u.refreshInstallResult(); CHECK (u.getStatus().state == S::readyToInstall);       // instalator uz nebezi (restart Macu) -> znovu nabidnout
+        st.replaceWithText (R"J({"state":"installed","version":"9.1.0","previous":"0.8.0","message":"ok","time":1,"pid":1,"mode":"install"})J");
+        u.refreshInstallResult(); CHECK (u.getStatus().state == S::installed && u.getStatus().message.contains ("restartuj Logic"));
+        CHECK (! dir.getChildFile ("Updates/staged").exists());
 
         rm::Updater none; none.setRepo ({}); none.checkNow(); CHECK (none.getStatus().state == S::notConfigured);
         CHECK (rm::Updater::builtInRepo() == "DusiXxx/MEMORY-RACK");
+    }
+
+    section ("aktualizace: samostatny instalator (skript) - ceka na Logic, zaloha, vymena, overeni, navrat");
+    {
+        // Skript se spousti skutecne (sh); systemove prikazy macOS nahrazuji jednoduche nahrady (RM_*).
+        auto dir = tmp.getChildFile ("inst"); dir.createDirectory();
+        auto bin = dir.getChildFile ("bin"); bin.createDirectory();
+        auto shim = [&] (const juce::String& name, const juce::String& body)
+        { auto f = bin.getChildFile (name); f.replaceWithText ("#!/bin/sh\n" + body + "\n", false, false, "\n"); f.setExecutePermission (true); return f.getFullPathName(); };
+        const auto ditto = shim ("ditto", "if [ \"$1\" = \"-x\" ]; then mkdir -p \"$4\" && cd \"$4\" && unzip -q \"$3\"; else cp -R \"$1\" \"$2\"; fi");
+        const auto plist = shim ("plistbuddy", "python3 -c \"import plistlib,sys;print(plistlib.load(open(sys.argv[1],'rb'))['CFBundleShortVersionString'])\" \"$3\" 2>/dev/null");
+        const auto lipo = shim ("file", "echo 'Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit bundle x86_64] [arm64]'");
+        const auto lsof = shim ("lsof", "[ -f \"" + dir.getFullPathName() + "/busy\" ] && echo 4242; exit 0");
+        const auto pgrep = shim ("pgrep", "exit 1");
+        const auto auval = shim ("auval", "if [ -f \"" + dir.getFullPathName() + "/auvalfail\" ]; then echo FAILED; else echo '* * PASS'; echo 'AU VALIDATION SUCCEEDED.'; fi");
+        const auto ok = shim ("ok", "exit 0");
+        juce::String src;
+        for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+            if (juce::String (BinaryData::originalFilenames[i]) == "rackmemory-install.sh")
+            { int sz = 0; auto* d = BinaryData::getNamedResource (BinaryData::namedResourceList[i], sz); src = juce::String::fromUTF8 (d, sz); }
+        auto script = dir.getChildFile ("rackmemory-install.sh"); script.replaceWithText (src, false, false, "\n");
+        auto comps = dir.getChildFile ("Components"), state = dir.getChildFile ("Updates");
+        // nainstalovana 0.11.0
+        auto oldZip = makePluginZip (dir, "0.11.0", { "x86_64", "arm64" });
+        juce::ZipFile (oldZip).uncompressTo (comps);
+        auto run = [&] (const juce::StringArray& args, int waitStepMs = 0) -> juce::var
+        {
+            juce::String cmd = "RM_DITTO='" + ditto + "' RM_PLISTBUDDY='" + plist + "' RM_FILE='" + lipo + "' RM_LSOF='" + lsof + "' RM_PGREP='" + pgrep
+                             + "' RM_AUVAL='" + auval + "' RM_KILLALL='" + ok + "' RM_XATTR='" + ok + "' RM_ARCH=x86_64 RM_WAIT_STEP=1 /bin/sh '" + script.getFullPathName() + "'";
+            for (auto& a : args) cmd << " '" << a << "'";
+            cmd << " >> '" << dir.getFullPathName() << "/log.txt' 2>&1";
+            juce::ignoreUnused (waitStepMs);
+            std::system (cmd.toRawUTF8());
+            return juce::JSON::parse (state.getChildFile ("install-status.json"));
+        };
+        auto installed = [&] { return rm::installedComponentVersion (comps); };
+        CHECK (installed() == "0.11.0");
+
+        // 1) uspech: zaloha 0.11.0, nainstalovana 0.12.0, overeno
+        auto newZip = makePluginZip (dir, "0.12.0", { "x86_64", "arm64" });
+        auto r = run ({ "install", newZip.getFullPathName(), "0.12.0", comps.getFullPathName(), state.getFullPathName() });
+        CHECK (r["state"] == "installed" && r["previous"] == "0.11.0" && installed() == "0.12.0");
+        CHECK (state.getChildFile ("Backups/Rack Memory 0.11.0.component/Contents/Info.plist").existsAsFile());
+        if (r["state"] != "installed") std::cout << dir.getChildFile ("log.txt").loadFileAsString() << std::endl;
+        std::cout << "  instalace: " << r["state"].toString() << " " << r["previous"].toString() << " -> " << r["version"].toString() << std::endl;
+
+        // 2) overeni (auval) selze -> vraceno, co bylo
+        auto badZip = makePluginZip (dir, "0.13.0", { "x86_64", "arm64" });
+        state.getSiblingFile ("auvalfail").replaceWithText ("1");
+        r = run ({ "install", badZip.getFullPathName(), "0.13.0", comps.getFullPathName(), state.getFullPathName() });
+        state.getSiblingFile ("auvalfail").deleteFile();
+        CHECK (r["state"] == "failed" && installed() == "0.12.0" && r["message"].toString().contains ("auval"));
+
+        // 3) balicek s jinou verzi, nez se ceka -> nic se nemeni
+        r = run ({ "install", badZip.getFullPathName(), "0.14.0", comps.getFullPathName(), state.getFullPathName() });
+        CHECK (r["state"] == "failed" && installed() == "0.12.0");
+
+        // 4) plugin je nacteny (Logic bezi) -> ceka; zruseni behem cekani nic nezmeni
+        state.getSiblingFile ("busy").replaceWithText ("1");
+        juce::String cmdBg = "RM_DITTO='" + ditto + "' RM_PLISTBUDDY='" + plist + "' RM_FILE='" + lipo + "' RM_LSOF='" + lsof + "' RM_PGREP='" + pgrep
+                           + "' RM_AUVAL='" + auval + "' RM_KILLALL='" + ok + "' RM_XATTR='" + ok + "' RM_ARCH=x86_64 RM_WAIT_STEP=1 /bin/sh '" + script.getFullPathName()
+                           + "' install '" + badZip.getFullPathName() + "' 0.13.0 '" + comps.getFullPathName() + "' '" + state.getFullPathName() + "' >/dev/null 2>&1 &";
+        std::system (cmdBg.toRawUTF8());
+        juce::var w;
+        for (int i = 0; i < 50; ++i) { juce::Thread::sleep (100); w = juce::JSON::parse (state.getChildFile ("install-status.json")); if (w["state"] == "waiting") break; }
+        CHECK (w["state"] == "waiting" && installed() == "0.12.0");
+        state.getChildFile ("cancel").replaceWithText ("1");
+        for (int i = 0; i < 50; ++i) { juce::Thread::sleep (100); w = juce::JSON::parse (state.getChildFile ("install-status.json")); if (w["state"] != "waiting") break; }
+        CHECK (w["state"] == "cancelled" && installed() == "0.12.0");
+        // znovu, a Logic se "zavre" -> instalace dobehne
+        std::system (cmdBg.toRawUTF8());
+        for (int i = 0; i < 50; ++i) { juce::Thread::sleep (100); w = juce::JSON::parse (state.getChildFile ("install-status.json")); if (w["state"] == "waiting") break; }
+        CHECK (w["state"] == "waiting" && installed() == "0.12.0");
+        state.getSiblingFile ("busy").deleteFile();
+        for (int i = 0; i < 80; ++i) { juce::Thread::sleep (100); w = juce::JSON::parse (state.getChildFile ("install-status.json")); if (w["state"] == "installed" || w["state"] == "failed") break; }
+        CHECK (w["state"] == "installed" && installed() == "0.13.0");
+
+        // 5) vraceni predchozi verze (posledni zaloha = 0.12.0)
+        r = run ({ "rollback", "-", "-", comps.getFullPathName(), state.getFullPathName() });
+        CHECK (r["state"] == "rolledBack" && installed() == "0.12.0");
+        CHECK (state.getChildFile ("Backups").findChildFiles (juce::File::findDirectories, false, "*.component").size() <= 2);
+        std::cout << "  vraceni: " << r["state"].toString() << " -> " << installed() << std::endl;
     }
 
     section ("aktualizace z balicku");
@@ -925,10 +1125,14 @@ int main (int argc, char** argv)
         dir.getChildFile ("Rack Memory 0.4.9.zip").replaceWithText ("x");
         dir.getChildFile ("Rack Memory 0.6.1.zip").replaceWithText ("x");
         dir.getChildFile ("Rack Memory 0.10.0.zip").replaceWithText ("x");
+        dir.getChildFile ("Rack Memory 0.9.5 (x86_64).zip").replaceWithText ("x");
         dir.getChildFile ("RackMemory-0.9.0.zip").replaceWithText ("x");          // zdrojaky, ne balicek
         auto u = RackMemoryEditor::findUpdate ({ dir }, "0.5.0");
         CHECK (u.version == "0.10.0" && u.file.getFileName() == "Rack Memory 0.10.0.zip");
         CHECK (RackMemoryEditor::findUpdate ({ dir }, "0.10.0").file == juce::File());
+        CHECK (RackMemoryEditor::findUpdate ({ dir }, "0.9.0").version == "0.10.0" && RackMemoryEditor::findUpdate ({ dir }, "0.9.4").version == "0.10.0");
+        dir.getChildFile ("Rack Memory 0.10.0.zip").deleteFile();
+        CHECK (RackMemoryEditor::findUpdate ({ dir }, "0.9.0").version == "0.9.5");      // balicek s architekturou v nazvu
         CHECK (RackMemoryEditor::findUpdate ({ tmp.getChildFile ("nic") }, "0.5.0").version.isEmpty());
     }
 
@@ -1372,15 +1576,12 @@ int main (int argc, char** argv)
                    + "\", \"size\": " + juce::String (zip.getSize()) + extra + " }";
         };
         juce::String body = manifest (""); int fails = 0;
-        juce::String onDisk = "0.8.0";
         rm::Updater u; u.setRepo ("DusiXxx/MEMORY-RACK"); u.setInstalledVersion ("0.9.0"); u.setWorkFolder (dir.getChildFile ("w")); u.setRetryDelay (5);
         u.setNetwork ([&] (const juce::URL&, juce::String& b, juce::String& err) { if (fails > 0) { --fails; err = "offline"; return false; } b = body; return true; },
-                      [&] (const juce::URL&, const juce::File& t, const std::function<bool (float)>&, juce::String&) { return zip.copyFileTo (t); });
-        u.setInstaller ([&] (const juce::File&) { return juce::Result::ok(); });      // "nainstalovano", ale na disku nic noveho
-        u.setInstalledProbe ([&] { return onDisk; });
+                      [&] (const juce::URL&, const juce::File& t, const std::function<bool (juce::int64, juce::int64)>&, juce::String&) { return zip.copyFileTo (t); });
         fails = 2; u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::available);   // 2x vypadek, 3. pokus OK
-        u.downloadAndInstall(); CHECK (u.waitUntilIdle (5000));
-        CHECK (u.getStatus().state == S::failed && u.getInstalledVersion() == "0.9.0");   // stazeno != nainstalovano
+        u.startDownload(); CHECK (u.waitUntilIdle (5000));
+        CHECK (u.getStatus().state == S::failed && u.getInstalledVersion() == "0.9.0");   // "zip" bez pluginu: neprojde overenim obsahu
         body = manifest (", \"minimum_version\": \"0.9.5\""); u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::manualOnly);
         u.setSystemVersion ("10.13.6");
         body = manifest (", \"macos_min\": \"11.0\""); u.checkNow(); CHECK (u.waitUntilIdle (5000)); CHECK (u.getStatus().state == S::upToDate);
@@ -1405,7 +1606,7 @@ int main (int argc, char** argv)
         rm::Updater L; L.setRepo ("DusiXxx/MEMORY-RACK"); L.setLibraryFolder (libDir); L.setLibraryVersion (1); L.setWorkFolder (dir.getChildFile ("w2")); L.setRetryDelay (5);
         juce::String lbody;
         L.setNetwork ([&] (const juce::URL&, juce::String& b, juce::String&) { b = lbody; return true; },
-                      [&] (const juce::URL&, const juce::File& t, const std::function<bool (float)>&, juce::String&) { return libZip.copyFileTo (t); });
+                      [&] (const juce::URL&, const juce::File& t, const std::function<bool (juce::int64, juce::int64)>&, juce::String&) { return libZip.copyFileTo (t); });
         using LS = rm::Updater::LibState;
         lbody = "{\"schema\":1,\"libraryVersion\":2,\"download\":\"https://github.com/x/y/releases/download/hardware/hw.zip\",\"sha256\":\"" + lsha.replaceSection (0, 1, lsha[0] == 'a' ? "b" : "a") + "\",\"changes\":[\"Novy pristroj\"]}";
         L.checkLibraryNow(); CHECK (L.waitUntilIdle (5000)); CHECK (L.getLibraryStatus().state == LS::available && L.getLibraryStatus().changes.size() == 1);
@@ -1449,6 +1650,24 @@ int main (int argc, char** argv)
                 }
         }
         else std::cout << "  (regresni sada chybi)" << std::endl;
+    }
+
+    section ("sada skutecnych fotek (Tests/photo_dataset, jen lokalne): nic se nesmi zhorsit");
+    {
+        auto pdir = juce::File (__FILE__).getSiblingFile ("photo_dataset");
+        juce::var cat;
+        if (pdir.getChildFile ("local").isDirectory() && juce::JSON::parse (pdir.getChildFile ("catalog.json").loadFileAsString(), cat).wasOk())
+        {
+            auto out = tmp.getChildFile ("photoset.json");
+            juce::String a0 = "x", a1 = "photoset", a2 = pdir.getChildFile ("catalog.json").getFullPathName(), a3 = pdir.getChildFile ("local").getFullPathName(), a4 = out.getFullPathName();
+            char* args[] = { (char*) a0.toRawUTF8(), (char*) a1.toRawUTF8(), (char*) a2.toRawUTF8(), (char*) a3.toRawUTF8(), (char*) a4.toRawUTF8() };
+            runPhotoSet (5, args);
+            auto got = juce::JSON::parse (out)["all"];
+            auto base = cat["baseline"];
+            CHECK ((int) got["found"] >= (int) base["found"] && (int) got["falsePositives"] <= (int) base["falsePositives"]);
+            CHECK ((int) got["correct"] >= (int) base["correct"] && (int) got["wrong"] <= (int) base["wrong"]);
+        }
+        else std::cout << "  (fotky nejsou u tohoto pocitace - Tools/photo_dataset_from_downloads.py)" << std::endl;
     }
 
     section ("stabilita: jedno pracovni vlakno, zruseni, ukonceni, cache vysledku");

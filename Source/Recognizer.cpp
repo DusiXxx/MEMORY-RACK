@@ -1631,7 +1631,7 @@ juce::Image loadPhoto (const juce::File& file, String& error)
 }
 
 //==============================================================================
-const char* const kAlgorithmVersion = "rmcv-0.11.0";
+const char* const kAlgorithmVersion = "rmcv-0.12.0";
 
 namespace { thread_local const std::atomic<bool>* tCancel = nullptr; }
 CancelScope::CancelScope (const std::atomic<bool>* flag) : previous (tCancel)   { tCancel = flag; }
@@ -1699,7 +1699,7 @@ std::shared_ptr<const std::vector<KeyPt>> photoKeypoints (const Photo& ph, doubl
         auto it = cache.find (key);
         if (it != cache.end()) return it->second;
     }
-    const Plane small = fs < 1.0 ? resampleBox (ph.gray, fs) : ph.gray;
+    const Plane small = std::abs (fs - 1.0) > 1e-3 ? resampleBox (ph.gray, fs) : ph.gray;
     auto kps = detectKeypoints (small, nullptr, maxPts, std::getenv ("RM_CPH") ? (float) atof (std::getenv ("RM_CPH")) : 0.03f);
     for (auto& k : kps) { k.x = (float) ((k.x + 0.5) / fs - 0.5); k.y = (float) ((k.y + 0.5) / fs - 0.5); k.sigma = (float) (k.sigma / fs); }
     auto ptr = std::make_shared<const std::vector<KeyPt>> (std::move (kps));
@@ -1822,19 +1822,25 @@ Result recognizeImpl (const juce::Image& image, const rm::DeviceProfile& prof, c
         std::vector<double> sizes { 1600.0 };
         if (std::getenv ("RM_SIFT") != nullptr) sizes = { atof (std::getenv ("RM_SIFT")) };
         else if (longSide > 1900) sizes.push_back (juce::jmin (2800.0, (double) longSide));
+        else if (longSide >= 1000) sizes.push_back (juce::jmin (2800.0, longSide * 1.8));   // mensi fotka celeho racku: zvetsit (0.12: polovicni rozliseni 2/5 -> ?)
         Transform best;
+        std::vector<std::pair<int, Transform>> passes;      // kazdy pruchod svou hypotezu (zvetseni muze najit i neco jineho)
         for (const double size : sizes)
         {
-            const double fs = juce::jmin (1.0, size / longSide);
+            // zvetsuje se jen v pruchodu k tomu urcenem (> 1.5x delka fotky); prvni pruchod je jako drive (max 1:1)
+            const double fs = size > longSide * 1.5 ? size / longSide : juce::jmin (1.0, size / longSide);
             const auto kps = photoKeypoints (ph, fs, size > 2000 ? 12000 : 5000);
             const auto matches = matchKeypoints (refKps, *kps, 0.8f);
             if (debug) std::cout << "  body: reference " << refKps.size() << ", fotka " << kps->size() << " (" << size << " px)" << std::endl;
             Transform t;
             const int in = ransacPanel (refKps, *kps, matches, prof, ph.gray.w, ph.gray.h, t, debug);
+            if (in >= 8) passes.push_back ({ in, t });
             if (in > siftInliers) { siftInliers = in; best = t; }
             if (siftInliers >= 25 || cancelled()) break;
         }
         if (siftInliers >= 8) hyps.push_back (best);
+        for (auto& pt : passes)                                // druha hypoteza: rozhodne az shoda potisku
+            if (pt.first < siftInliers) hyps.push_back (pt.second);
     }
 
     std::vector<Anchor> anchors;
@@ -2098,6 +2104,20 @@ Result recognizeImpl (const juce::Image& image, const rm::DeviceProfile& prof, c
 
     if (cancelled()) return res;
     // ---- 3) cteni ovladacu
+    // expozice: jas nejsvetlejsiho potisku na panelu (99. percentil) - tmava fotka = nizka hodnota
+    double exposure = 1.0;
+    {
+        std::vector<float> g;
+        for (int iy = 1; iy < 40; ++iy)
+            for (int ix = 1; ix < 40; ++ix)
+            {
+                double px, py; xp.map (prof.w * ix / 40.0, prof.h * iy / 40.0, px, py);
+                if (px >= 0 && py >= 0 && px < ph.gray.w - 1 && py < ph.gray.h - 1) g.push_back (ph.gray.bil (px, py));
+            }
+        if (g.size() > 100) { std::sort (g.begin(), g.end()); exposure = g[g.size() * 99 / 100]; }
+        res.exposure = exposure;
+        if (debug) std::cout << "  expozice " << exposure << std::endl;
+    }
     // LED: nejdriv svitivost vsech LED pristroje, prah je spolecny (expozice fotky)
     std::map<const rm::ControlDef*, std::vector<double>> leds;
     std::vector<double> allLeds;
@@ -2173,9 +2193,26 @@ Result recognizeImpl (const juce::Image& image, const rm::DeviceProfile& prof, c
         else if (c.read == "ledring")   v = readLedRing (leds[&c], c, ledThr);
         else if (c.read == "ledsel")    v = readLedSelect (leds[&c], c, ledThr);
 
+        // "nesviti" se smi tvrdit jen tam, kde by svitici LED byla videt: dost svetla fotka a LED aspon par px.
+        // Na tmave nebo male fotce se z neviditelne LED stava "vypnuto" -> tam radsi nejiste (sada fotek 0.12:
+        // xmax tma 3 spatne, xfilter ME ctvrtinova 6 spatne).
+        if (v.known && (c.read == "led" || c.read == "ringglow" || c.read == "rectglow" || c.read == "ledsel"))
+        {
+            bool lit = false;
+            if (c.read == "ledsel") { for (auto lv : leds[&c]) lit = lit || lv > ledThr.thr; }
+            else lit = v.pos >= 0.5;
+            double gx = c.x, gy = c.y;
+            if (c.read == "ringglow" || c.read == "rectglow") { gx = c.draw.gx; gy = c.draw.gy; }
+            double j[4]; xp.jacobian (gx, gy, j);
+            const double sc = std::sqrt (std::abs (j[0] * j[3] - j[1] * j[2])) / ph.scale;
+            const double ledPx = (c.read == "ringglow" ? c.draw.gr : c.read == "rectglow" ? juce::jmin (c.draw.gw, c.draw.gh) * 0.5 : c.draw.ledR) * sc;
+            if (ledPx > 0 && ledPx < 1.5) { v.known = false; v.confidence = juce::jmin (v.confidence, 0.2); res.states[c.id] = "small"; }
+            else if (! lit && exposure < 0.45) { v.known = false; v.confidence = juce::jmin (v.confidence, 0.2); }
+        }
+
         v.source = "recognized";
         res.values[c.id] = v;
-        res.states[c.id] = v.known ? "recognized" : "uncertain";
+        if (res.states[c.id] != "small") res.states[c.id] = v.known ? "recognized" : "uncertain";
         if (v.known) ++res.read;
     }
 

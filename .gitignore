@@ -6,3 +6,4 @@ Tests/photos_real/*.jpg
 __pycache__/
 build-*/
 build/
+Tests/photo_dataset/local/
