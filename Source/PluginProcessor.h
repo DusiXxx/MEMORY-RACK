@@ -125,7 +125,9 @@ public:
                               const std::map<juce::String, juce::String>& states);
     // Zapise do ~/Music/Rack Memory/Corrections/corrections.jsonl hodnoty, ktere uzivatel po fotce potvrdil
     // nebo opravil. Jen lokalne, nikam se neposila, nic se z toho samo neuci. Vraci pocet novych zaznamu.
-    int capturePhotoFeedback();
+    // bulk = "Potvrdit vse" (uzivatel nekontroloval kazdy ovladac zvlast -> slaby dukaz, neni overena pravda);
+    // jinak potvrzeni jednoho ovladace nebo rucni oprava (overeno uzivatelem).
+    int capturePhotoFeedback (bool bulk = false);
     juce::File correctionsFile() const;
     juce::StringArray captured;      // co uz se v teto relaci zapsalo (bez duplicit)
     void unlinkPhoto (const juce::String& deviceId);            // odebrat fotku pristroje - nastaveni zustava

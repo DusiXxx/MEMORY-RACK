@@ -1051,6 +1051,7 @@ int main (int argc, char** argv)
         const auto pgrep = shim ("pgrep", "exit 1");
         const auto auval = shim ("auval", "if [ -f \"" + dir.getFullPathName() + "/auvalfail\" ]; then echo FAILED; else echo '* * PASS'; echo 'AU VALIDATION SUCCEEDED.'; fi");
         const auto ok = shim ("ok", "exit 0");
+        const auto osa = shim ("osascript", "echo \"$2\" >> \"" + dir.getFullPathName() + "/notifications.txt\"");
         juce::String src;
         for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
             if (juce::String (BinaryData::originalFilenames[i]) == "rackmemory-install.sh")
@@ -1063,7 +1064,7 @@ int main (int argc, char** argv)
         auto run = [&] (const juce::StringArray& args, int waitStepMs = 0) -> juce::var
         {
             juce::String cmd = "RM_DITTO='" + ditto + "' RM_PLISTBUDDY='" + plist + "' RM_FILE='" + lipo + "' RM_LSOF='" + lsof + "' RM_PGREP='" + pgrep
-                             + "' RM_AUVAL='" + auval + "' RM_KILLALL='" + ok + "' RM_XATTR='" + ok + "' RM_ARCH=x86_64 RM_WAIT_STEP=1 /bin/sh '" + script.getFullPathName() + "'";
+                             + "' RM_AUVAL='" + auval + "' RM_KILLALL='" + ok + "' RM_XATTR='" + ok + "' RM_OSASCRIPT='" + osa + "' RM_ARCH=x86_64 RM_WAIT_STEP=1 /bin/sh '" + script.getFullPathName() + "'";
             for (auto& a : args) cmd << " '" << a << "'";
             cmd << " >> '" << dir.getFullPathName() << "/log.txt' 2>&1";
             juce::ignoreUnused (waitStepMs);
@@ -1072,6 +1073,17 @@ int main (int argc, char** argv)
         };
         auto installed = [&] { return rm::installedComponentVersion (comps); };
         CHECK (installed() == "0.11.0");
+        // knihovna uzivatele vedle Updates (verze skladeb, presety, rack, vlastni hardware, knihovna hardwaru, opravy)
+        for (auto rel : { "Snapshots/a1.json", "Presets/elysia.xmax.500/vokaly.json", "rack.json", "UserHardware/muj.json", "Hardware/library.json", "Corrections/corrections.jsonl", "Photos/f.jpg" })
+            dir.getChildFile (rel).create(), dir.getChildFile (rel).replaceWithText (juce::String ("obsah ") + rel);
+        auto libraryHash = [&]
+        {
+            juce::String h;
+            for (auto rel : { "Snapshots/a1.json", "Presets/elysia.xmax.500/vokaly.json", "rack.json", "UserHardware/muj.json", "Hardware/library.json", "Corrections/corrections.jsonl", "Photos/f.jpg" })
+                h << rel << "=" << sha256Of (dir.getChildFile (rel)) << dir.getChildFile (rel).getLastModificationTime().toMilliseconds() << ";";
+            return h;
+        };
+        const auto libBefore = libraryHash();
 
         // 1) uspech: zaloha 0.11.0, nainstalovana 0.12.0, overeno
         auto newZip = makePluginZip (dir, "0.12.0", { "x86_64", "arm64" });
@@ -1095,7 +1107,7 @@ int main (int argc, char** argv)
         // 4) plugin je nacteny (Logic bezi) -> ceka; zruseni behem cekani nic nezmeni
         state.getSiblingFile ("busy").replaceWithText ("1");
         juce::String cmdBg = "RM_DITTO='" + ditto + "' RM_PLISTBUDDY='" + plist + "' RM_FILE='" + lipo + "' RM_LSOF='" + lsof + "' RM_PGREP='" + pgrep
-                           + "' RM_AUVAL='" + auval + "' RM_KILLALL='" + ok + "' RM_XATTR='" + ok + "' RM_ARCH=x86_64 RM_WAIT_STEP=1 /bin/sh '" + script.getFullPathName()
+                           + "' RM_AUVAL='" + auval + "' RM_KILLALL='" + ok + "' RM_XATTR='" + ok + "' RM_OSASCRIPT='" + osa + "' RM_ARCH=x86_64 RM_WAIT_STEP=1 /bin/sh '" + script.getFullPathName()
                            + "' install '" + badZip.getFullPathName() + "' 0.13.0 '" + comps.getFullPathName() + "' '" + state.getFullPathName() + "' >/dev/null 2>&1 &";
         std::system (cmdBg.toRawUTF8());
         juce::var w;
@@ -1117,6 +1129,13 @@ int main (int argc, char** argv)
         CHECK (r["state"] == "rolledBack" && installed() == "0.12.0");
         CHECK (state.getChildFile ("Backups").findChildFiles (juce::File::findDirectories, false, "*.component").size() <= 2);
         std::cout << "  vraceni: " << r["state"].toString() << " -> " << installed() << std::endl;
+        // po 5 instalacich / vracenich: knihovna uzivatele nedotcena (obsah i cas zmeny)
+        CHECK (libraryHash() == libBefore);
+        // prubeh je videt v notifikacich (Logic je pri instalaci zavreny)
+        const auto notes = dir.getChildFile ("notifications.txt").loadFileAsString();
+        CHECK (notes.contains ("krok 2/5") && notes.contains ("krok 3/5") && notes.contains ("krok 4/5") && notes.contains ("krok 5/5"));
+        CHECK (notes.contains (juce::String::fromUTF8 ("zavři Logic")) && notes.contains ("Hotovo") && notes.contains ("nepovedla"));
+        std::cout << "  notifikaci: " << juce::StringArray::fromLines (notes.trim()).size() << std::endl;
     }
 
     section ("aktualizace z balicku");
@@ -1828,7 +1847,7 @@ int main (int argc, char** argv)
         for (auto& l : lines)
         {
             auto v = juce::JSON::parse (l);
-            if (v["status"] == "confirmed") ++confirmedN;
+            if (v["status"] == "confirmed") { ++confirmedN; CHECK (v["verification"] == "user-bulk"); }   // "Potvrdit vse" != overeno
             if (v["status"] == "corrected") ++correctedN;
             CHECK (v["photoFingerprint"] == "abc123" && v["model"] == X && v["algorithm"].toString() == rmcv::kAlgorithmVersion);
         }
@@ -1839,6 +1858,18 @@ int main (int argc, char** argv)
         const int n1 = juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim()).size();
         p.capturePhotoFeedback();
         CHECK (juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim()).size() == n1);   // bez duplicit
+        CHECK (juce::JSON::parse (juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim())[n1 - 1])["verification"] == "user-corrected");
+        // jednotlivy ovladac potvrzeny v detailu (ne hromadne) = overeno uzivatelem
+        {
+            std::map<juce::String, rm::ControlValue> one; one["level"] = V (17);
+            p.rememberPredictions (X, "abc123", rmcv::kAlgorithmVersion, "foto.jpg", one, { { "level", "recognized" } });
+            p.working.values.erase (key ("level"));
+            p.applyRecognition (X, one);
+            p.working.values[key ("level")].confirmed = true;
+            CHECK (p.capturePhotoFeedback() == 1);
+            auto last = juce::StringArray::fromLines (p.correctionsFile().loadFileAsString().trim());
+            CHECK (juce::JSON::parse (last[last.size() - 1])["verification"] == "user-individual");
+        }
         CHECK (p.correctionsFile().loadFileAsString().contains ("\"control\": \"gain_mid\"") || p.correctionsFile().loadFileAsString().contains ("\"control\":\"gain_mid\""));
 
         // otisk fotky a verze cteni se ulozi s projektem a s verzi; starsi stav bez nich se nacte

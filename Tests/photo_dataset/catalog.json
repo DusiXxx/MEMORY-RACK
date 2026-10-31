@@ -35,7 +35,8 @@
     }
    },
    "notes": "",
-   "originalName": "rm_xmax500.png"
+   "originalName": "rm_xmax500.png",
+   "md5": "56fe27191475c13446a878f218821d6f"
   },
   {
    "id": "xfilter500_product_angle",
@@ -59,7 +60,8 @@
     "verification": "none"
    },
    "notes": "",
-   "originalName": "rm_xfilter500.jpg"
+   "originalName": "rm_xfilter500.jpg",
+   "md5": "c900fe8e240767e39f926225cf328272"
   },
   {
    "id": "xfilter500_product_small",
@@ -83,7 +85,8 @@
     "verification": "none"
    },
    "notes": "",
-   "originalName": "rm_xfilter500_product.jpg"
+   "originalName": "rm_xfilter500_product.jpg",
+   "md5": "3404d6c93b467faf3af1a9276cb6087e"
   },
   {
    "id": "nvelope500_product_angle",
@@ -107,7 +110,8 @@
     "verification": "none"
    },
    "notes": "",
-   "originalName": "rm_nvelope500.jpg"
+   "originalName": "rm_nvelope500.jpg",
+   "md5": "c435707548f0aef3399aebc6a1ced0b7"
   },
   {
    "id": "xfilterme_front_black",
@@ -131,7 +135,8 @@
     "verification": "none"
    },
    "notes": "podle teto fotky je nakreslen panel ME -> nelze pouzit jako test",
-   "originalName": "me_xfilter_mastering_front_black_web2.png"
+   "originalName": "me_xfilter_mastering_front_black_web2.png",
+   "md5": "63dc970ca4ed50e28c8729c978564b4b"
   },
   {
    "id": "xfilterme_grey_angle",
@@ -179,7 +184,8 @@
     }
    },
    "notes": "",
-   "originalName": "me_grey.png"
+   "originalName": "me_grey.png",
+   "md5": "5f61b2560ddcfb508751f6efbf6c5672"
   },
   {
    "id": "xfilterme_retailer_angle",
@@ -203,7 +209,8 @@
     "verification": "none"
    },
    "notes": "",
-   "originalName": "_30924_30924-elysia-xfilter-mastering-edition-stereo-linked-eq-1813feb775b-62-large.jpg"
+   "originalName": "_30924_30924-elysia-xfilter-mastering-edition-stereo-linked-eq-1813feb775b-62-large.jpg",
+   "md5": "a88f3ed5d70fffcf6f8158f3be5008b4"
   },
   {
    "id": "xfilter1u_front",
@@ -227,7 +234,8 @@
     "verification": "none"
    },
    "notes": "podle teto fotky je nakreslen panel 1U -> nelze pouzit jako test",
-   "originalName": "rm_xfilter_19-1-1.webp.png"
+   "originalName": "rm_xfilter_19-1-1.webp.png",
+   "md5": "be31895bffbfbadd332767165494e00b"
   },
   {
    "id": "vitalizer_front_flat",
@@ -251,7 +259,8 @@
     "verification": "none"
    },
    "notes": "podle teto fotky je nakreslen panel -> nelze pouzit jako test",
-   "originalName": "rm_vitalizer_front.png"
+   "originalName": "rm_vitalizer_front.png",
+   "md5": "5359e099edefde071a2e973f5edc6fab"
   },
   {
    "id": "vitalizer_thomann",
@@ -291,7 +300,8 @@
     }
    },
    "notes": "",
-   "originalName": "825256812_1119479390554763_5451013823783448631_n.png"
+   "originalName": "825256812_1119479390554763_5451013823783448631_n.png",
+   "md5": "837a4320dc05386f4753b6268c0c7ebb"
   },
   {
    "id": "rhea_product_front",
@@ -315,7 +325,8 @@
     "verification": "none"
    },
    "notes": "shoda potisku s nakreslenym panelem 1.00 -> panel _RHEA je nakreslen podle teto fotky; nelze pouzit jako test",
-   "originalName": "rm_rhea-product-wesaudio-12a.jpg"
+   "originalName": "rm_rhea-product-wesaudio-12a.jpg",
+   "md5": "af5f18235c2f6adbb5902842a2ca1d6f"
   },
   {
    "id": "rhea_product_angle1",
@@ -352,7 +363,8 @@
     }
    },
    "notes": "",
-   "originalName": "rm_main-image-rhea.webp"
+   "originalName": "rm_main-image-rhea.webp",
+   "md5": "e91d231f911b44e4fc26f58eb8e57b8e"
   },
   {
    "id": "rhea_product_angle2",
@@ -389,7 +401,8 @@
     }
    },
    "notes": "",
-   "originalName": "rm_main-image-rhea-2b.webp"
+   "originalName": "rm_main-image-rhea-2b.webp",
+   "md5": "59455f70d46a603bb112c331d9516f23"
   },
   {
    "id": "rhea_gallery1",
@@ -413,7 +426,8 @@
     "verification": "none"
    },
    "notes": "",
-   "originalName": "rm_rhea-gallery-1.webp"
+   "originalName": "rm_rhea-gallery-1.webp",
+   "md5": "a800a7219f0178c9dde8bfa134dde956"
   },
   {
    "id": "rhea_gallery5",
@@ -450,7 +464,8 @@
     }
    },
    "notes": "",
-   "originalName": "rm_rhea-gallery-5.webp"
+   "originalName": "rm_rhea-gallery-5.webp",
+   "md5": "1d10e4f02aff08f001eab1d7400f0ad6"
   },
   {
    "id": "rhea_overview_small",
@@ -474,7 +489,8 @@
     "verification": "none"
    },
    "notes": "",
-   "originalName": "rm_overview-image-rhea.webp"
+   "originalName": "rm_overview-image-rhea.webp",
+   "md5": "6046063a30f0d116e67494879e14764d"
   },
   {
    "id": "user_rack_full_phone",
@@ -585,7 +601,8 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "",
-   "originalName": "851373995_1521043629851480_2963086647827230331_n.jpg"
+   "originalName": "851373995_1521043629851480_2963086647827230331_n.jpg",
+   "md5": "35221feb77b184696ba8063404f120bd"
   },
   {
    "id": "neg_nvelope19",
@@ -607,7 +624,8 @@
     "verification": "none"
    },
    "notes": "negativni vzorek: nesmi se najit nic (podobny potisk jako nvelope 500)",
-   "originalName": "rm_nvelope-19inch-store.jpg.png"
+   "originalName": "rm_nvelope-19inch-store.jpg.png",
+   "md5": "d1535efdba5964ee0598f341124a9584"
   },
   {
    "id": "neg_xmax19",
@@ -629,7 +647,8 @@
     "verification": "none"
    },
    "notes": "negativni vzorek",
-   "originalName": "rm_xmax-19-inch-Series.avif.png"
+   "originalName": "rm_xmax-19-inch-Series.avif.png",
+   "md5": "96f06dfbe8f1c943d1093ddb75ab8787"
   },
   {
    "id": "neg_manley_slam",
@@ -651,7 +670,8 @@
     "verification": "none"
    },
    "notes": "negativni vzorek",
-   "originalName": "rm_mmsslc_f_2021_53c3ce0331.png"
+   "originalName": "rm_mmsslc_f_2021_53c3ce0331.png",
+   "md5": "6c8787acd38c2a9f29305a6968d78e9d"
   },
   {
    "id": "xmax500_product_front__tma",
@@ -686,7 +706,8 @@
     }
    },
    "notes": "odvozeno z xmax500_product_front (tma); pravda zdedena",
-   "variantOf": "xmax500_product_front"
+   "variantOf": "xmax500_product_front",
+   "md5": "2f73c34d7df94701c06fd272dc99c86c"
   },
   {
    "id": "xmax500_product_front__rozmazana",
@@ -721,7 +742,8 @@
     }
    },
    "notes": "odvozeno z xmax500_product_front (rozmazana); pravda zdedena",
-   "variantOf": "xmax500_product_front"
+   "variantOf": "xmax500_product_front",
+   "md5": "9b98dbbc3dcdc30aff2bd5753d38937f"
   },
   {
    "id": "xmax500_product_front__polovicni",
@@ -756,7 +778,8 @@
     }
    },
    "notes": "odvozeno z xmax500_product_front (polovicni); pravda zdedena",
-   "variantOf": "xmax500_product_front"
+   "variantOf": "xmax500_product_front",
+   "md5": "b8a2de60383a108485c8c45dc6d1cebf"
   },
   {
    "id": "xmax500_product_front__ctvrtinova",
@@ -791,7 +814,8 @@
     }
    },
    "notes": "odvozeno z xmax500_product_front (ctvrtinova); pravda zdedena",
-   "variantOf": "xmax500_product_front"
+   "variantOf": "xmax500_product_front",
+   "md5": "41e98a509cf0acfb80ccdf65c061f18b"
   },
   {
    "id": "xmax500_product_front__zboku",
@@ -826,7 +850,8 @@
     }
    },
    "notes": "odvozeno z xmax500_product_front (zboku); pravda zdedena",
-   "variantOf": "xmax500_product_front"
+   "variantOf": "xmax500_product_front",
+   "md5": "13ead75a69fde406993e647935fa1442"
   },
   {
    "id": "xmax500_product_front__jpeg30",
@@ -861,7 +886,8 @@
     }
    },
    "notes": "odvozeno z xmax500_product_front (jpeg30); pravda zdedena",
-   "variantOf": "xmax500_product_front"
+   "variantOf": "xmax500_product_front",
+   "md5": "ae3fd6c5054893d8aaa013d01a2eaf5c"
   },
   {
    "id": "xfilterme_grey_angle__tma",
@@ -909,7 +935,8 @@
     }
    },
    "notes": "odvozeno z xfilterme_grey_angle (tma); pravda zdedena",
-   "variantOf": "xfilterme_grey_angle"
+   "variantOf": "xfilterme_grey_angle",
+   "md5": "2df4e11d767c8eb75e29e223d97652f6"
   },
   {
    "id": "xfilterme_grey_angle__rozmazana",
@@ -957,7 +984,8 @@
     }
    },
    "notes": "odvozeno z xfilterme_grey_angle (rozmazana); pravda zdedena",
-   "variantOf": "xfilterme_grey_angle"
+   "variantOf": "xfilterme_grey_angle",
+   "md5": "0c5a60fcadf24f0634502cdad3a4cd9a"
   },
   {
    "id": "xfilterme_grey_angle__polovicni",
@@ -1005,7 +1033,8 @@
     }
    },
    "notes": "odvozeno z xfilterme_grey_angle (polovicni); pravda zdedena",
-   "variantOf": "xfilterme_grey_angle"
+   "variantOf": "xfilterme_grey_angle",
+   "md5": "bbd5d640bb4bcb962b4f2827056fa64b"
   },
   {
    "id": "xfilterme_grey_angle__ctvrtinova",
@@ -1053,7 +1082,8 @@
     }
    },
    "notes": "odvozeno z xfilterme_grey_angle (ctvrtinova); pravda zdedena",
-   "variantOf": "xfilterme_grey_angle"
+   "variantOf": "xfilterme_grey_angle",
+   "md5": "8977ba510e5261c5be02502cd4595f84"
   },
   {
    "id": "xfilterme_grey_angle__zboku",
@@ -1101,7 +1131,8 @@
     }
    },
    "notes": "odvozeno z xfilterme_grey_angle (zboku); pravda zdedena",
-   "variantOf": "xfilterme_grey_angle"
+   "variantOf": "xfilterme_grey_angle",
+   "md5": "242386a8ba8899855e796a781436f05b"
   },
   {
    "id": "xfilterme_grey_angle__jpeg30",
@@ -1149,7 +1180,8 @@
     }
    },
    "notes": "odvozeno z xfilterme_grey_angle (jpeg30); pravda zdedena",
-   "variantOf": "xfilterme_grey_angle"
+   "variantOf": "xfilterme_grey_angle",
+   "md5": "79fcff07b8dc1f9c472d4b0a0b6770ce"
   },
   {
    "id": "vitalizer_thomann__tma",
@@ -1189,7 +1221,8 @@
     }
    },
    "notes": "odvozeno z vitalizer_thomann (tma); pravda zdedena",
-   "variantOf": "vitalizer_thomann"
+   "variantOf": "vitalizer_thomann",
+   "md5": "7e942d1ff5de6e09a0014701b336179c"
   },
   {
    "id": "vitalizer_thomann__rozmazana",
@@ -1229,7 +1262,8 @@
     }
    },
    "notes": "odvozeno z vitalizer_thomann (rozmazana); pravda zdedena",
-   "variantOf": "vitalizer_thomann"
+   "variantOf": "vitalizer_thomann",
+   "md5": "5bfb7961243f109fa146fac10778501b"
   },
   {
    "id": "vitalizer_thomann__polovicni",
@@ -1269,7 +1303,8 @@
     }
    },
    "notes": "odvozeno z vitalizer_thomann (polovicni); pravda zdedena",
-   "variantOf": "vitalizer_thomann"
+   "variantOf": "vitalizer_thomann",
+   "md5": "0ab6b3f1f659e5a372db1ab2cea208b9"
   },
   {
    "id": "vitalizer_thomann__ctvrtinova",
@@ -1309,7 +1344,8 @@
     }
    },
    "notes": "odvozeno z vitalizer_thomann (ctvrtinova); pravda zdedena",
-   "variantOf": "vitalizer_thomann"
+   "variantOf": "vitalizer_thomann",
+   "md5": "2bcaadd2f4ab4cab9d91b6dfaf4f9667"
   },
   {
    "id": "vitalizer_thomann__zboku",
@@ -1349,7 +1385,8 @@
     }
    },
    "notes": "odvozeno z vitalizer_thomann (zboku); pravda zdedena",
-   "variantOf": "vitalizer_thomann"
+   "variantOf": "vitalizer_thomann",
+   "md5": "6a173ec402e40645950aa9579d488be5"
   },
   {
    "id": "vitalizer_thomann__jpeg30",
@@ -1389,7 +1426,8 @@
     }
    },
    "notes": "odvozeno z vitalizer_thomann (jpeg30); pravda zdedena",
-   "variantOf": "vitalizer_thomann"
+   "variantOf": "vitalizer_thomann",
+   "md5": "9a68e3d546a7f1e9a5a54089c4862b97"
   },
   {
    "id": "rhea_product_angle1__tma",
@@ -1426,7 +1464,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle1 (tma); pravda zdedena",
-   "variantOf": "rhea_product_angle1"
+   "variantOf": "rhea_product_angle1",
+   "md5": "4d34349d99bc7ba64bec22ad00ead8ad"
   },
   {
    "id": "rhea_product_angle1__rozmazana",
@@ -1463,7 +1502,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle1 (rozmazana); pravda zdedena",
-   "variantOf": "rhea_product_angle1"
+   "variantOf": "rhea_product_angle1",
+   "md5": "3e3e3908e747cf39fcd19312b65066b3"
   },
   {
    "id": "rhea_product_angle1__polovicni",
@@ -1500,7 +1540,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle1 (polovicni); pravda zdedena",
-   "variantOf": "rhea_product_angle1"
+   "variantOf": "rhea_product_angle1",
+   "md5": "f381ba3fb0b94c59c9fbd6bc98974b1a"
   },
   {
    "id": "rhea_product_angle1__ctvrtinova",
@@ -1537,7 +1578,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle1 (ctvrtinova); pravda zdedena",
-   "variantOf": "rhea_product_angle1"
+   "variantOf": "rhea_product_angle1",
+   "md5": "e280a38f1e7b6650aa2dfd43104514b0"
   },
   {
    "id": "rhea_product_angle1__zboku",
@@ -1574,7 +1616,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle1 (zboku); pravda zdedena",
-   "variantOf": "rhea_product_angle1"
+   "variantOf": "rhea_product_angle1",
+   "md5": "a75ba409bdcfde60f0a70a5d108f4067"
   },
   {
    "id": "rhea_product_angle1__jpeg30",
@@ -1611,7 +1654,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle1 (jpeg30); pravda zdedena",
-   "variantOf": "rhea_product_angle1"
+   "variantOf": "rhea_product_angle1",
+   "md5": "2248fc493089598edc6651abf5fd7423"
   },
   {
    "id": "rhea_product_angle2__tma",
@@ -1648,7 +1692,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle2 (tma); pravda zdedena",
-   "variantOf": "rhea_product_angle2"
+   "variantOf": "rhea_product_angle2",
+   "md5": "31ac2b7cba93541371a261dfd0b66d96"
   },
   {
    "id": "rhea_product_angle2__rozmazana",
@@ -1685,7 +1730,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle2 (rozmazana); pravda zdedena",
-   "variantOf": "rhea_product_angle2"
+   "variantOf": "rhea_product_angle2",
+   "md5": "1e985cc528ed175545ab83991e555aca"
   },
   {
    "id": "rhea_product_angle2__polovicni",
@@ -1722,7 +1768,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle2 (polovicni); pravda zdedena",
-   "variantOf": "rhea_product_angle2"
+   "variantOf": "rhea_product_angle2",
+   "md5": "d05352561653f116a1d7080d5a6e00a5"
   },
   {
    "id": "rhea_product_angle2__ctvrtinova",
@@ -1759,7 +1806,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle2 (ctvrtinova); pravda zdedena",
-   "variantOf": "rhea_product_angle2"
+   "variantOf": "rhea_product_angle2",
+   "md5": "0701ff34202fea70119b1fd32afc256c"
   },
   {
    "id": "rhea_product_angle2__zboku",
@@ -1796,7 +1844,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle2 (zboku); pravda zdedena",
-   "variantOf": "rhea_product_angle2"
+   "variantOf": "rhea_product_angle2",
+   "md5": "b8cbf9b74561c6f9ad5b17f7c87005f6"
   },
   {
    "id": "rhea_product_angle2__jpeg30",
@@ -1833,7 +1882,8 @@
     }
    },
    "notes": "odvozeno z rhea_product_angle2 (jpeg30); pravda zdedena",
-   "variantOf": "rhea_product_angle2"
+   "variantOf": "rhea_product_angle2",
+   "md5": "dfd9c4e8e513290534502fd321fb456d"
   },
   {
    "id": "rhea_gallery5__tma",
@@ -1870,7 +1920,8 @@
     }
    },
    "notes": "odvozeno z rhea_gallery5 (tma); pravda zdedena",
-   "variantOf": "rhea_gallery5"
+   "variantOf": "rhea_gallery5",
+   "md5": "3dbd85b6a777881053d21cecfd5d3a32"
   },
   {
    "id": "rhea_gallery5__rozmazana",
@@ -1907,7 +1958,8 @@
     }
    },
    "notes": "odvozeno z rhea_gallery5 (rozmazana); pravda zdedena",
-   "variantOf": "rhea_gallery5"
+   "variantOf": "rhea_gallery5",
+   "md5": "af4a9b79a953b6739ea2766db12af3dc"
   },
   {
    "id": "rhea_gallery5__polovicni",
@@ -1944,7 +1996,8 @@
     }
    },
    "notes": "odvozeno z rhea_gallery5 (polovicni); pravda zdedena",
-   "variantOf": "rhea_gallery5"
+   "variantOf": "rhea_gallery5",
+   "md5": "6096c9b768f030c800c39288767344ca"
   },
   {
    "id": "rhea_gallery5__ctvrtinova",
@@ -1981,7 +2034,8 @@
     }
    },
    "notes": "odvozeno z rhea_gallery5 (ctvrtinova); pravda zdedena",
-   "variantOf": "rhea_gallery5"
+   "variantOf": "rhea_gallery5",
+   "md5": "dac80f706a179c82041ca95ce291de31"
   },
   {
    "id": "rhea_gallery5__zboku",
@@ -2018,7 +2072,8 @@
     }
    },
    "notes": "odvozeno z rhea_gallery5 (zboku); pravda zdedena",
-   "variantOf": "rhea_gallery5"
+   "variantOf": "rhea_gallery5",
+   "md5": "62335a3fb303d11a9162b91efc495122"
   },
   {
    "id": "rhea_gallery5__jpeg30",
@@ -2055,7 +2110,8 @@
     }
    },
    "notes": "odvozeno z rhea_gallery5 (jpeg30); pravda zdedena",
-   "variantOf": "rhea_gallery5"
+   "variantOf": "rhea_gallery5",
+   "md5": "e3423695dbf7f358aaef6a9bd28775cf"
   },
   {
    "id": "user_rack_full_phone__tma",
@@ -2166,7 +2222,8 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "odvozeno z user_rack_full_phone (tma); pravda zdedena",
-   "variantOf": "user_rack_full_phone"
+   "variantOf": "user_rack_full_phone",
+   "md5": "1954de461190da747200788312ca46b8"
   },
   {
    "id": "user_rack_full_phone__rozmazana",
@@ -2277,7 +2334,8 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "odvozeno z user_rack_full_phone (rozmazana); pravda zdedena",
-   "variantOf": "user_rack_full_phone"
+   "variantOf": "user_rack_full_phone",
+   "md5": "9fda7644043250e8b08b4cfbfebcb3f6"
   },
   {
    "id": "user_rack_full_phone__polovicni",
@@ -2388,7 +2446,8 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "odvozeno z user_rack_full_phone (polovicni); pravda zdedena",
-   "variantOf": "user_rack_full_phone"
+   "variantOf": "user_rack_full_phone",
+   "md5": "7037f30fc1bdac662f781b7187921da2"
   },
   {
    "id": "user_rack_full_phone__ctvrtinova",
@@ -2499,7 +2558,8 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "odvozeno z user_rack_full_phone (ctvrtinova); pravda zdedena",
-   "variantOf": "user_rack_full_phone"
+   "variantOf": "user_rack_full_phone",
+   "md5": "9eed87a4c76575a0c86ccf041b353b97"
   },
   {
    "id": "user_rack_full_phone__zboku",
@@ -2610,7 +2670,8 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "odvozeno z user_rack_full_phone (zboku); pravda zdedena",
-   "variantOf": "user_rack_full_phone"
+   "variantOf": "user_rack_full_phone",
+   "md5": "868475e12df72ad78a062a94a5e2f069"
   },
   {
    "id": "user_rack_full_phone__jpeg30",
@@ -2721,7 +2782,28 @@
     "note": "odhad okem z fotky v plnem rozliseni"
    },
    "notes": "odvozeno z user_rack_full_phone (jpeg30); pravda zdedena",
-   "variantOf": "user_rack_full_phone"
+   "variantOf": "user_rack_full_phone",
+   "md5": "229a756feaa59af190ff7c8163ea630f"
+  },
+  {
+   "id": "user_plugin_screenshot",
+   "file": "(nestazeno do sady)",
+   "device": "screenshot okna pluginu v Logicu",
+   "origin": "uzivatel",
+   "source": "~/Music/Rack Memory/Photos/07c9dee6_1792524867412.png (uzivatel pustil do pluginu 20.10.2026)",
+   "license": "uzivatel",
+   "use": "excluded",
+   "angle": "-",
+   "lighting": "-",
+   "distance": "-",
+   "size": "3360x2100",
+   "expected": [],
+   "visibleControls": "-",
+   "condition": "puvodni",
+   "truth": {
+    "verification": "none"
+   },
+   "notes": "neni fotka hardwaru (kresba pluginu) - nepouzivat jako test ani pravdu"
   }
  ],
  "candidates": [

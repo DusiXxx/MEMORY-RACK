@@ -23,6 +23,7 @@ PGREP="${RM_PGREP:-/usr/bin/pgrep}"
 AUVAL="${RM_AUVAL:-/usr/bin/auval}"
 KILLALL="${RM_KILLALL:-/usr/bin/killall}"
 XATTR="${RM_XATTR:-/usr/bin/xattr}"
+OSASCRIPT="${RM_OSASCRIPT:-/usr/bin/osascript}"   # notifikace macOS: prubeh je videt, i kdyz je Logic zavreny
 ARCH="${RM_ARCH:-$(uname -m)}"
 WAIT_STEP="${RM_WAIT_STEP:-3}"
 MAX_WAIT="${RM_MAX_WAIT:-1209600}"        # 14 dni; pak se to vzda (plugin to nabidne znovu)
@@ -34,10 +35,17 @@ STATUS="$STATE/install-status.json"
 mkdir -p "$STATE" "$BACKUPS"
 
 log () { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
-status () {   # stav verze predchozi zprava
-    printf '{"state":"%s","version":"%s","previous":"%s","message":"%s","time":%s,"pid":%s,"mode":"%s"}\n' \
-        "$1" "$2" "$3" "$4" "$(date +%s)" "$$" "$MODE" > "$STATUS.tmp" && mv -f "$STATUS.tmp" "$STATUS"
-    log "stav: $1 $2 ($4)"
+STEP=0
+status () {   # stav verze predchozi zprava   (krok STEP z 5: cekani, priprava, zaloha, vymena, overeni)
+    printf '{"state":"%s","version":"%s","previous":"%s","message":"%s","time":%s,"pid":%s,"mode":"%s","step":%s,"steps":5}\n' \
+        "$1" "$2" "$3" "$4" "$(date +%s)" "$$" "$MODE" "$STEP" > "$STATUS.tmp" && mv -f "$STATUS.tmp" "$STATUS"
+    log "stav: $1 $2 krok $STEP/5 ($4)"
+}
+notify () {   # text
+    "$OSASCRIPT" -e "display notification \"$1\" with title \"Rack Memory\"" >/dev/null 2>&1 || true
+}
+step () {     # cislo text
+    STEP="$1"; status installing "$VER" "$OLD" "$2"; notify "Aktualizace $VER – krok $1/5: $2"
 }
 plist_version () { "$PLISTBUDDY" -c "Print :CFBundleShortVersionString" "$1/Contents/Info.plist" 2>/dev/null; }
 
@@ -56,6 +64,14 @@ validate () {   # 0 = auval potvrdil, ze plugin jde nacist
     sleep 1
     "$AUVAL" -v aufx Rkmm Dusx 2>&1 | grep -q "AU VALIDATION SUCCEEDED"
 }
+
+# kazde selhani (i v pripravnych krocich) se ohlasi notifikaci; plugin ho ukaze pri dalsim otevreni
+on_exit () {
+    grep -q '"state":"failed"' "$STATUS" 2>/dev/null && ! grep -q 'nepovedla' "$STATE/.notified" 2>/dev/null \
+        && notify "Aktualizace se nepovedla: $(sed -n 's/.*"message":"\([^"]*\)".*/\1/p' "$STATUS"). Nainstalovaná verze zůstala."
+    rm -f "$STATE/.notified"
+}
+trap on_exit EXIT
 
 OLD="$(plist_version "$COMP")"
 [ -z "$OLD" ] && OLD="-"
@@ -76,11 +92,11 @@ WAITED=0
 while busy; do
     [ -f "$STATE/cancel" ] && { rm -f "$STATE/cancel"; status cancelled "$VER" "$OLD" "zruseno uzivatelem"; exit 0; }
     [ $WAITED -ge "$MAX_WAIT" ] && { status failed "$VER" "$OLD" "Logic se nezavrel - instalace odlozena"; exit 1; }
-    [ $WAITED -eq 0 ] && status waiting "$VER" "$OLD" "ceka na zavreni Logicu"
+    [ $WAITED -eq 0 ] && { STEP=1; status waiting "$VER" "$OLD" "ceka na zavreni Logicu"; notify "Aktualizace $VER čeká – zavři Logic (ulož projekt)."; }
     sleep "$WAIT_STEP"; WAITED=$((WAITED + WAIT_STEP))
 done
 [ -f "$STATE/cancel" ] && { rm -f "$STATE/cancel"; status cancelled "$VER" "$OLD" "zruseno uzivatelem"; exit 0; }
-status installing "$VER" "$OLD" "instaluji"
+step 2 "připravuji a kontroluji balíček"
 
 # ---- 2. priprava nove verze (vedle, nic se zatim nemeni)
 WORK="$STATE/work.$$"
@@ -100,6 +116,7 @@ GOT="$(plist_version "$NEW")"
 "$XATTR" -dr com.apple.quarantine "$WORK/$NAME" >/dev/null 2>&1
 
 # ---- 3. zaloha soucasne verze (rollback zalohu nevytvari znovu)
+step 3 "zálohuji verzi $OLD"
 BACKUP=""
 if [ -d "$COMP" ] && [ "$MODE" = "install" ]; then
     BACKUP="$BACKUPS/Rack Memory $OLD.component"
@@ -111,6 +128,7 @@ if [ -d "$COMP" ] && [ "$MODE" = "install" ]; then
 fi
 
 # ---- 4. vymena (prejmenovani v ramci jedne slozky)
+step 4 "instaluji"
 mkdir -p "$COMPDIR"
 rm -rf "$COMPDIR/.rm-old.component"
 [ -d "$COMP" ] && mv "$COMP" "$COMPDIR/.rm-old.component"
@@ -121,11 +139,12 @@ fi
 rm -rf "$WORK"
 
 # ---- 5. overeni; pri chybe navrat
+step 5 "ověřuji (auval)"
 NOWV="$(plist_version "$COMP")"
 if [ "$NOWV" = "$VER" ] && validate; then
     rm -rf "$COMPDIR/.rm-old.component"
-    if [ "$MODE" = "rollback" ]; then status rolledBack "$VER" "$OLD" "vracena predchozi verze"
-    else status installed "$VER" "$OLD" "nainstalovano a overeno (auval)"; fi
+    if [ "$MODE" = "rollback" ]; then status rolledBack "$VER" "$OLD" "vracena predchozi verze"; notify "Vrácena verze $VER. Otevři Logic."
+    else status installed "$VER" "$OLD" "nainstalovano a overeno (auval)"; notify "Hotovo: Rack Memory $VER nainstalován a ověřen. Otevři Logic."; fi
     exit 0
 fi
 log "overeni selhalo (na disku $NOWV) - vracim puvodni"
@@ -135,4 +154,5 @@ if [ -d "$COMPDIR/.rm-old.component" ]; then
     "$KILLALL" -9 AudioComponentRegistrar >/dev/null 2>&1
 fi
 status failed "$VER" "$OLD" "nova verze neprosla overenim (auval) - vracena $OLD"
+notify "Aktualizace se nepovedla – vrácena verze $OLD (nic se neztratilo)."; echo nepovedla > "$STATE/.notified"
 exit 1

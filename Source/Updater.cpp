@@ -519,7 +519,9 @@ void Updater::refreshInstallResult()
        #if JUCE_MAC || JUCE_LINUX
         alive = pid > 0 && ::kill (pid, 0) == 0;
        #endif
-        if (alive) setState (State::installScheduled, U8 ("Instalace ") + ver + U8 (" čeká na zavření Logicu"));
+        const int step = (int) v.getProperty ("step", 0);
+        if (alive) setState (State::installScheduled, state == "waiting" ? U8 ("Instalace ") + ver + U8 (" čeká na zavření Logicu")
+                                                                       : U8 ("Instaluji ") + ver + U8 (" – krok ") + String (step) + "/5: " + msg);
         else if (getStatus().stagedVersion.isNotEmpty())
             setState (State::readyToInstall, U8 ("Instalace ") + ver + U8 (" neproběhla (restart Macu?) – připraveno znovu"));
     }

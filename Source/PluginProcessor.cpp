@@ -451,7 +451,7 @@ juce::File RackMemoryProcessor::correctionsFile() const
     return library.getRoot().getChildFile ("Corrections").getChildFile ("corrections.jsonl");
 }
 
-int RackMemoryProcessor::capturePhotoFeedback()
+int RackMemoryProcessor::capturePhotoFeedback (bool bulk)
 {
     String lines;
     int n = 0;
@@ -482,7 +482,9 @@ int RackMemoryProcessor::capturePhotoFeedback()
             if (pr.value.confidence >= 0) o->setProperty ("predictedConfidence", pr.value.confidence);
             o->setProperty ("value", cur.pos);
             o->setProperty ("status", status);              // confirmed = fotka mela pravdu, corrected = uzivatel opravil
-            o->setProperty ("verification", "user");        // overeno uzivatelem okem na hardwaru, ne referencni zdroj
+            // user-bulk: hromadne "Potvrdit vse" = NEoverena pravda; user-individual: potvrzen jeden ovladac;
+            // user-corrected: uzivatel hodnotu zmenil (nejsilnejsi dukaz). Jen individual/corrected smi do testovaci pravdy.
+            o->setProperty ("verification", status == "corrected" ? "user-corrected" : bulk ? "user-bulk" : "user-individual");
             lines << juce::JSON::toString (juce::var (o), true) << "\n";
             ++n;
         }
@@ -502,7 +504,7 @@ int RackMemoryProcessor::confirmRecognized (const String& deviceId)
     for (auto& kv : working.values)
         if (kv.first.upToFirstOccurrenceOf (":", false, false) == deviceId && kv.second.known && ! kv.second.confirmed)
         { kv.second.confirmed = true; ++n; }
-    if (n > 0) { markDirty(); capturePhotoFeedback(); }
+    if (n > 0) { markDirty(); capturePhotoFeedback (true); }
     return n;
 }
 
