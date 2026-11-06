@@ -5036,6 +5036,1703 @@
      }
     }
    ]
+  },
+  {
+   "id": "ua.1176ln",
+   "name": "Universal Audio 1176LN",
+   "manufacturer": "Universal Audio",
+   "formFactor": "19\" 2U",
+   "category": "mixing",
+   "kind": "compressor",
+   "w": 2400,
+   "h": 442,
+   "image": "ua1176ln.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Ovladače a rozsahy podle manuálu UA 1176LN, rozmístění orientační.",
+   "sources": [
+    "Universal Audio 1176LN Owner's Manual (c3.zzounds.com/media/1176LN_manual-….pdf)"
+   ],
+   "openQuestions": [
+    "Manuál neuvádí čísla na stupnicích INPUT/OUTPUT/ATTACK/RELEASE – ukládá se poloha.",
+    "Rozmístění ovladačů orientační – pošli fotku zepředu."
+   ],
+   "controls": [
+    {
+     "id": "input",
+     "name": "INPUT",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Vstupní úroveň: určuje práh a míru komprese, doprava = víc komprese (manuál UA). Manuál neuvádí čísla stupnice – ukládá se poloha.",
+     "x": 420,
+     "y": 230,
+     "r": 100,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#c8c8c8"
+     }
+    },
+    {
+     "id": "output",
+     "name": "OUTPUT",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Výstupní úroveň (zisk výstupního zesilovače), nastavuje se podle měřáku +4/+8 (manuál UA). Čísla stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 860,
+     "y": 230,
+     "r": 100,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#c8c8c8"
+     }
+    },
+    {
+     "id": "attack",
+     "name": "ATTACK",
+     "group": "",
+     "type": "knob",
+     "minLabel": "OFF",
+     "maxLabel": "FAST",
+     "verified": true,
+     "note": "20 µs až 800 µs; zcela doprava = nejrychlejší; zcela doleva = komprese vypnutá (manuál UA 1176LN).",
+     "x": 1240,
+     "y": 150,
+     "r": 50,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "release",
+     "name": "RELEASE",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "FAST",
+     "verified": true,
+     "note": "50 ms až 1,1 s; zcela doprava = nejrychlejší (manuál UA 1176LN).",
+     "x": 1240,
+     "y": 320,
+     "r": 50,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "ratio",
+     "name": "RATIO",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "4",
+      "8",
+      "12",
+      "20"
+     ],
+     "verified": true,
+     "note": "Tlačítka 20:1, 12:1, 8:1, 4:1 (vlevo od měřáku). 4 a 8 = komprese, 12 a 20 = limiter (manuál UA). Kombinace tlačítek manuál nepopisuje.",
+     "x": 1480.0,
+     "y": 214.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1480,
+        310
+       ],
+       [
+        1480,
+        246
+       ],
+       [
+        1480,
+        182
+       ],
+       [
+        1480,
+        118
+       ]
+      ],
+      "w": 60,
+      "h": 44,
+      "colour": "#f2f2ee",
+      "map": [
+       0,
+       1,
+       2,
+       3
+      ]
+     }
+    },
+    {
+     "id": "meter",
+     "name": "METER",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "GR",
+      "+8",
+      "+4",
+      "OFF"
+     ],
+     "verified": true,
+     "note": "GR = zeslabení v dB, +8 / +4 = výstupní úroveň, OFF = přístroj vypnutý; jiné tlačítko než OFF ho zapne (manuál UA).",
+     "x": 2190.0,
+     "y": 214.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2190,
+        118
+       ],
+       [
+        2190,
+        182
+       ],
+       [
+        2190,
+        246
+       ],
+       [
+        2190,
+        310
+       ]
+      ],
+      "w": 60,
+      "h": 44,
+      "colour": "#f2f2ee",
+      "map": [
+       0,
+       1,
+       2,
+       3
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "ua.la2a",
+   "name": "Teletronix LA-2A (Universal Audio)",
+   "manufacturer": "Universal Audio",
+   "formFactor": "19\" 3U",
+   "category": "mixing",
+   "kind": "compressor",
+   "w": 2400,
+   "h": 663,
+   "image": "la2a.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Ovladače podle manuálu UA LA-2A, rozmístění orientační.",
+   "sources": [
+    "Universal Audio LA-2A Manual (barryrudolph.com/recall/manuals/uaaudiola2.pdf)"
+   ],
+   "openQuestions": [
+    "Manuál neuvádí čísla stupnic GAIN a PEAK REDUCTION – ukládá se poloha.",
+    "Pořadí krajních poloh přepínače METER (+4 / +10) a poloha páčky LIMIT/COMPRESS neověřeny.",
+    "R37 (pre-emphasis) a R3 jsou trimry, ne ovladače na panelu – neukládají se.",
+    "Výška 3U podle běžného provedení – ověřit."
+   ],
+   "controls": [
+    {
+     "id": "gain",
+     "name": "GAIN",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Výstupní úroveň; kompresi neovlivňuje, nastavuje se až po PEAK REDUCTION (manuál UA). Čísla stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 560,
+     "y": 300,
+     "r": 140,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1c1c1c"
+     }
+    },
+    {
+     "id": "peak",
+     "name": "PEAK REDUCTION",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Práh a míra komprese, nastavuje se první (manuál UA). Čísla stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 1840,
+     "y": 300,
+     "r": 140,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1c1c1c"
+     }
+    },
+    {
+     "id": "mode",
+     "name": "LIMIT / COMPRESS",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "COMPRESS",
+      "LIMIT"
+     ],
+     "verified": false,
+     "note": "LIMIT = vyšší poměr komprese, COMPRESS = mírnější (manuál UA). Která poloha páčky je nahoře, manuál neuvádí.",
+     "x": 1080,
+     "y": 600,
+     "r": 36,
+     "draw": {
+      "kind": "vlever",
+      "points": [
+       [
+        1080,
+        562
+       ],
+       [
+        1080,
+        638
+       ]
+      ],
+      "colour": "#e8e8e8"
+     }
+    },
+    {
+     "id": "meter",
+     "name": "METER",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "+10",
+      "GAIN REDUCTION",
+      "+4"
+     ],
+     "verified": false,
+     "note": "Prostřední poloha = gain reduction; krajní = výstup +4 a +10 (manuál UA). Které krajní je vlevo, manuál neuvádí.",
+     "x": 1400,
+     "y": 610,
+     "r": 36,
+     "angleMin": -60,
+     "angleMax": 60,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    }
+   ]
+  },
+  {
+   "id": "empiricallabs.distressor",
+   "name": "Empirical Labs Distressor EL8",
+   "manufacturer": "Empirical Labs",
+   "formFactor": "19\" 1U",
+   "category": "mixing",
+   "kind": "compressor",
+   "w": 2400,
+   "h": 221,
+   "image": "distressor.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Ovladače a hodnoty podle manuálu Distressor, rozmístění orientační.",
+   "sources": [
+    "Empirical Labs Distressor EL8 Manual (barryrudolph.com/recall/manuals/distressor1.pdf)"
+   ],
+   "openQuestions": [
+    "Úhel stupnice 0–10½ na knobech neověřen (čísla ano, poloha na panelu podle kresby).",
+    "Počet a pořadí LED u RATIO manuál neuvádí.",
+    "Rozmístění ovladačů orientační – pošli fotku zepředu."
+   ],
+   "controls": [
+    {
+     "id": "input",
+     "name": "INPUT",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Vstup: víc = víc komprese; číslovaný knob 0 až 10½ (manuál Empirical Labs).",
+     "x": 300,
+     "y": 106,
+     "r": 62,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#2b2b2b"
+     },
+     "scale": [
+      [
+       0.0,
+       "0"
+      ],
+      [
+       0.09523809523809523,
+       "1"
+      ],
+      [
+       0.19047619047619047,
+       "2"
+      ],
+      [
+       0.2857142857142857,
+       "3"
+      ],
+      [
+       0.38095238095238093,
+       "4"
+      ],
+      [
+       0.47619047619047616,
+       "5"
+      ],
+      [
+       0.5714285714285714,
+       "6"
+      ],
+      [
+       0.6666666666666666,
+       "7"
+      ],
+      [
+       0.7619047619047619,
+       "8"
+      ],
+      [
+       0.8571428571428571,
+       "9"
+      ],
+      [
+       0.9523809523809523,
+       "10"
+      ]
+     ]
+    },
+    {
+     "id": "attack",
+     "name": "ATTACK",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Náběh 50 µs – 30 ms; nižší číslo = rychlejší, k 10 = pomalejší (manuál).",
+     "x": 620,
+     "y": 106,
+     "r": 62,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#2b2b2b"
+     },
+     "scale": [
+      [
+       0.0,
+       "0"
+      ],
+      [
+       0.09523809523809523,
+       "1"
+      ],
+      [
+       0.19047619047619047,
+       "2"
+      ],
+      [
+       0.2857142857142857,
+       "3"
+      ],
+      [
+       0.38095238095238093,
+       "4"
+      ],
+      [
+       0.47619047619047616,
+       "5"
+      ],
+      [
+       0.5714285714285714,
+       "6"
+      ],
+      [
+       0.6666666666666666,
+       "7"
+      ],
+      [
+       0.7619047619047619,
+       "8"
+      ],
+      [
+       0.8571428571428571,
+       "9"
+      ],
+      [
+       0.9523809523809523,
+       "10"
+      ]
+     ]
+    },
+    {
+     "id": "release",
+     "name": "RELEASE",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Návrat 0,05 – 3,5 s (v režimu 10:1 Opto až cca 20 s); nižší číslo = rychlejší (manuál).",
+     "x": 940,
+     "y": 106,
+     "r": 62,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#2b2b2b"
+     },
+     "scale": [
+      [
+       0.0,
+       "0"
+      ],
+      [
+       0.09523809523809523,
+       "1"
+      ],
+      [
+       0.19047619047619047,
+       "2"
+      ],
+      [
+       0.2857142857142857,
+       "3"
+      ],
+      [
+       0.38095238095238093,
+       "4"
+      ],
+      [
+       0.47619047619047616,
+       "5"
+      ],
+      [
+       0.5714285714285714,
+       "6"
+      ],
+      [
+       0.6666666666666666,
+       "7"
+      ],
+      [
+       0.7619047619047619,
+       "8"
+      ],
+      [
+       0.8571428571428571,
+       "9"
+      ],
+      [
+       0.9523809523809523,
+       "10"
+      ]
+     ]
+    },
+    {
+     "id": "output",
+     "name": "OUTPUT",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Výstup, kalibrovaný: 8 = +4 (páskový level), 6,5 = −10 zařízení (manuál).",
+     "x": 1260,
+     "y": 106,
+     "r": 62,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#2b2b2b"
+     },
+     "scale": [
+      [
+       0.0,
+       "0"
+      ],
+      [
+       0.09523809523809523,
+       "1"
+      ],
+      [
+       0.19047619047619047,
+       "2"
+      ],
+      [
+       0.2857142857142857,
+       "3"
+      ],
+      [
+       0.38095238095238093,
+       "4"
+      ],
+      [
+       0.47619047619047616,
+       "5"
+      ],
+      [
+       0.5714285714285714,
+       "6"
+      ],
+      [
+       0.6666666666666666,
+       "7"
+      ],
+      [
+       0.7619047619047619,
+       "8"
+      ],
+      [
+       0.8571428571428571,
+       "9"
+      ],
+      [
+       0.9523809523809523,
+       "10"
+      ]
+     ]
+    },
+    {
+     "id": "ratio",
+     "name": "RATIO",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "1:1",
+      "2:1",
+      "3:1",
+      "4:1",
+      "6:1",
+      "10:1",
+      "20:1",
+      "NUKE"
+     ],
+     "verified": false,
+     "note": "Tlačítko cyklicky: 1:1 (bez komprese, jen „hřejivé“ obvody), 2:1, 3:1, 4:1, 6:1 (žlutá LED), 10:1 Opto, 20:1, Nuke; po Nuke zpět (manuál). Kolik LED má panel, manuál neuvádí – kresba předpokládá jednu na polohu.",
+     "x": 1594.0,
+     "y": 70.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1440,
+        70
+       ],
+       [
+        1484,
+        70
+       ],
+       [
+        1528,
+        70
+       ],
+       [
+        1572,
+        70
+       ],
+       [
+        1616,
+        70
+       ],
+       [
+        1660,
+        70
+       ],
+       [
+        1704,
+        70
+       ],
+       [
+        1748,
+        70
+       ]
+      ],
+      "w": 20,
+      "h": 20,
+      "colour": "#ffcc33",
+      "map": [
+       0,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7
+      ]
+     }
+    },
+    {
+     "id": "det_hp",
+     "name": "DET HP",
+     "group": "Detector",
+     "type": "button",
+     "note": "Detektor: horní propust v postranním řetězci (zelená LED). Tlačítko DETECTOR cyklicky prochází 8 kombinací (manuál).",
+     "verified": true,
+     "x": 1870,
+     "y": 70,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1870,
+        70
+       ]
+      ],
+      "w": 20,
+      "h": 20,
+      "colour": "#3dff6e",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "det_band",
+     "name": "DET BAND",
+     "group": "Detector",
+     "type": "button",
+     "note": "Detektor: Band Emphasis 6 kHz (žlutá LED). Tlačítko DETECTOR cyklicky prochází 8 kombinací (manuál).",
+     "verified": true,
+     "x": 1930,
+     "y": 70,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1930,
+        70
+       ]
+      ],
+      "w": 20,
+      "h": 20,
+      "colour": "#ffd21a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "link",
+     "name": "LINK",
+     "group": "Detector",
+     "type": "button",
+     "note": "Stereo Link (červená LED). Tlačítko DETECTOR cyklicky prochází 8 kombinací (manuál).",
+     "verified": true,
+     "x": 1990,
+     "y": 70,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1990,
+        70
+       ]
+      ],
+      "w": 20,
+      "h": 20,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "audio_hp",
+     "name": "AUDIO HP",
+     "group": "Audio",
+     "type": "button",
+     "note": "Audio HP: Besselova horní propust cca 80 Hz (zelená LED). Tlačítko AUDIO cyklicky: Norm, HP, Dist 2, Dist 2 & HP, Dist 3, Dist 3 & HP (manuál).",
+     "verified": true,
+     "x": 2110,
+     "y": 70,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2110,
+        70
+       ]
+      ],
+      "w": 20,
+      "h": 20,
+      "colour": "#3dff6e",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "dist",
+     "name": "DIST",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "NORM",
+      "DIST 2",
+      "DIST 3"
+     ],
+     "verified": true,
+     "note": "Zkreslení: Dist 2 zdůrazní 2. harmonickou (žlutá LED), Dist 3 třetí (červená LED) (manuál).",
+     "x": 2200.0,
+     "y": 70.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2170,
+        70
+       ],
+       [
+        2230,
+        70
+       ]
+      ],
+      "w": 20,
+      "h": 20,
+      "colour": "#ffaa22",
+      "map": [
+       -1,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "id": "bypass",
+     "name": "BYPASS",
+     "group": "Switches",
+     "type": "button",
+     "note": "Bypass, červená LED svítí v bypassu (manuál).",
+     "verified": true,
+     "x": 1775,
+     "y": 163,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1775,
+        163
+       ]
+      ],
+      "w": 50,
+      "h": 34,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "api.2500plus",
+   "name": "API 2500+",
+   "manufacturer": "API",
+   "formFactor": "19\" 1U",
+   "category": "mastering",
+   "kind": "compressor",
+   "w": 2400,
+   "h": 221,
+   "image": "api2500plus.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Ovladače a polohy podle manuálu API 2500+, rozmístění orientační.",
+   "sources": [
+    "API 2500+ User Manual (apiaudio.com/docs/manuals/2500+_user_23-01-09.pdf)",
+    "apiaudio.com – rozměry 19\" × 1,75\""
+   ],
+   "openQuestions": [
+    "Manuál nepopisuje rozmístění na panelu – kresba je orientační, pošli fotku zepředu.",
+    "Starší API 2500 (bez +) nemá BLEND/MIX ani některé polohy – pro něj zatím nepoužívat beze změn."
+   ],
+   "controls": [
+    {
+     "id": "thresh",
+     "name": "THRESH",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Práh plynule +20 dBu až −20 dBu; červená LED = signál nad prahem (manuál API 2500+). Směr stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 540,
+     "y": 104,
+     "r": 34,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "ratio",
+     "name": "RATIO",
+     "group": "",
+     "type": "stepped",
+     "steps": 7,
+     "options": [
+      "1.5:1",
+      "2:1",
+      "3:1",
+      "4:1",
+      "6:1",
+      "10:1",
+      "∞:1"
+     ],
+     "verified": true,
+     "note": "7 poloh: 1.5:1, 2:1, 3:1, 4:1, 6:1, 10:1, ∞:1 (manuál).",
+     "x": 720,
+     "y": 104,
+     "r": 34,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "attack",
+     "name": "ATTACK",
+     "group": "",
+     "type": "stepped",
+     "steps": 7,
+     "options": [
+      "0.03 ms",
+      "0.1 ms",
+      "0.3 ms",
+      "1 ms",
+      "3 ms",
+      "10 ms",
+      "30 ms"
+     ],
+     "verified": true,
+     "note": "7 poloh: 0,03 / 0,1 / 0,3 / 1 / 3 / 10 / 30 ms (manuál).",
+     "x": 910,
+     "y": 104,
+     "r": 34,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "release",
+     "name": "RELEASE",
+     "group": "",
+     "type": "stepped",
+     "steps": 7,
+     "options": [
+      "0.05 s",
+      "0.1 s",
+      "0.2 s",
+      "0.5 s",
+      "1 s",
+      "2 s",
+      "VAR"
+     ],
+     "verified": true,
+     "note": "6 pevných poloh 0,05 / 0,1 / 0,2 / 0,5 / 1 / 2 s + VAR (plynule 50 ms – 3 s knobem VAR) (manuál).",
+     "x": 1100,
+     "y": 104,
+     "r": 34,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "release_var",
+     "name": "RELEASE VAR",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Plynulý release 50 ms – 3 s, platí jen v poloze RELEASE = VAR (manuál). Čísla stupnice neuvedena – ukládá se poloha.",
+     "x": 1240,
+     "y": 104,
+     "r": 26,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "knee",
+     "name": "KNEE",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "HARD",
+      "MED",
+      "SOFT"
+     ],
+     "verified": true,
+     "note": "HARD (červená), MED (žlutá), SOFT (zelená) (manuál).",
+     "x": 1360.0,
+     "y": 64.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1320.0,
+        64
+       ],
+       [
+        1360.0,
+        64
+       ],
+       [
+        1400.0,
+        64
+       ]
+      ],
+      "w": 16,
+      "h": 16,
+      "colour": "#ffd21a",
+      "map": [
+       0,
+       1,
+       2
+      ]
+     }
+    },
+    {
+     "id": "thrust",
+     "name": "THRUST",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "NORM",
+      "MED",
+      "LOUD"
+     ],
+     "verified": true,
+     "note": "NORM (zelená, bez filtru), MED (žlutá), LOUD (červená) (manuál).",
+     "x": 1490.0,
+     "y": 64.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1450.0,
+        64
+       ],
+       [
+        1490.0,
+        64
+       ],
+       [
+        1530.0,
+        64
+       ]
+      ],
+      "w": 16,
+      "h": 16,
+      "colour": "#ffd21a",
+      "map": [
+       0,
+       1,
+       2
+      ]
+     }
+    },
+    {
+     "id": "type",
+     "name": "TYPE",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "NEW",
+      "OLD"
+     ],
+     "verified": true,
+     "note": "NEW = feed-forward (žlutá), OLD = feed-back (zelená) (manuál).",
+     "x": 1600.0,
+     "y": 64.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1575.0,
+        64
+       ],
+       [
+        1625.0,
+        64
+       ]
+      ],
+      "w": 16,
+      "h": 16,
+      "colour": "#ffd21a",
+      "map": [
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "id": "link",
+     "name": "L/R LINK",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "IND",
+      "50",
+      "60",
+      "70",
+      "80",
+      "90",
+      "100"
+     ],
+     "verified": true,
+     "note": "IND (nezávisle), 50 / 60 / 70 / 80 / 90 / 100 % (manuál).",
+     "x": 1740.0,
+     "y": 64.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1665.0,
+        64
+       ],
+       [
+        1690.0,
+        64
+       ],
+       [
+        1715.0,
+        64
+       ],
+       [
+        1740.0,
+        64
+       ],
+       [
+        1765.0,
+        64
+       ],
+       [
+        1790.0,
+        64
+       ],
+       [
+        1815.0,
+        64
+       ]
+      ],
+      "w": 16,
+      "h": 16,
+      "colour": "#3dff6e",
+      "map": [
+       0,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "id": "shape",
+     "name": "SHAPE",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "FAST",
+      "SLOW",
+      "BOTH"
+     ],
+     "verified": true,
+     "note": "FAST (peak), SLOW (RMS), BOTH = svítí obě zelené LED (manuál).",
+     "x": 1880.0,
+     "y": 64.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1855.0,
+        64
+       ],
+       [
+        1905.0,
+        64
+       ]
+      ],
+      "w": 16,
+      "h": 16,
+      "colour": "#3dff6e",
+      "map": [
+       0,
+       1,
+       99
+      ]
+     }
+    },
+    {
+     "id": "manual",
+     "name": "MANUAL",
+     "group": "Output",
+     "type": "button",
+     "note": "Ruční make-up zisk (jinak automatický) (manuál).",
+     "verified": true,
+     "x": 1980,
+     "y": 133,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        1980,
+        133
+       ]
+      ],
+      "w": 48,
+      "h": 34,
+      "colour": "#3dff6e",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "gain",
+     "name": "GAIN",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "+24",
+     "verified": true,
+     "note": "Ruční make-up 0 až +24 dB, jen když je zapnuté MANUAL (manuál). Mezilehlé značky neuvedeny – ukládá se poloha.",
+     "x": 2070,
+     "y": 104,
+     "r": 28,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     }
+    },
+    {
+     "id": "blend",
+     "name": "BLEND",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "100%",
+      "X",
+      "||"
+     ],
+     "verified": true,
+     "note": "100 % komprese (bez LED), X = crossfade, || = paralelně (zelené LED) (manuál).",
+     "x": 2160.0,
+     "y": 64.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2145.0,
+        64
+       ],
+       [
+        2175.0,
+        64
+       ]
+      ],
+      "w": 16,
+      "h": 16,
+      "colour": "#3dff6e",
+      "map": [
+       -1,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "id": "mix",
+     "name": "MIX",
+     "group": "",
+     "type": "knob",
+     "minLabel": "",
+     "maxLabel": "",
+     "verified": true,
+     "note": "Poměr mixu, aretace v 50 %; platí jen v BLEND X nebo || (manuál).",
+     "x": 2215,
+     "y": 104,
+     "r": 26,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "small",
+      "colour": "#1a1a1a"
+     },
+     "centreLabel": "50%"
+    },
+    {
+     "id": "in",
+     "name": "IN",
+     "group": "Output",
+     "type": "button",
+     "note": "Tiché zapnutí/vypnutí komprese (zelená LED) (manuál).",
+     "verified": true,
+     "x": 2305,
+     "y": 133,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2305,
+        133
+       ]
+      ],
+      "w": 30,
+      "h": 34,
+      "colour": "#3dff6e",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "byp",
+     "name": "BYP",
+     "group": "Output",
+     "type": "button",
+     "note": "Tvrdý bypass relé (červená LED); sepne i při vypnutí (manuál).",
+     "verified": true,
+     "x": 2305,
+     "y": 64,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        2305,
+        64
+       ]
+      ],
+      "w": 30,
+      "h": 34,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "meter",
+     "name": "METER",
+     "group": "",
+     "type": "selector",
+     "options": [
+      "GR",
+      "OUT",
+      "IN"
+     ],
+     "verified": true,
+     "note": "Měřáky: GR (červená), OUT (žlutá), IN (zelená); 0 VU = +4 dBu (manuál).",
+     "x": 470.0,
+     "y": 94.0,
+     "r": 30,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        470,
+        66
+       ],
+       [
+        470,
+        94
+       ],
+       [
+        470,
+        122
+       ]
+      ],
+      "w": 14,
+      "h": 14,
+      "colour": "#ff8833",
+      "map": [
+       0,
+       1,
+       2
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "warmaudio.eqpwa",
+   "name": "Warm Audio EQP-WA",
+   "manufacturer": "Warm Audio",
+   "formFactor": "19\" 2U",
+   "category": "mixing",
+   "kind": "eq",
+   "w": 2400,
+   "h": 442,
+   "image": "eqpwa.jpg",
+   "profileVersion": 1,
+   "layoutVerified": false,
+   "anchor": "",
+   "imageNote": "Vlastní kresba (ne fotografie výrobce). Ovladače a hodnoty podle manuálu EQP-WA, rozmístění orientační.",
+   "sources": [
+    "Warm Audio EQP-WA User Manual (gear4music download_148361_1.pdf)",
+    "scan.co.uk – rozměry 19\" × 3,5\" (2U)"
+   ],
+   "openQuestions": [
+    "Manuál uvádí rozsahy v dB, ne čísla potisku 0–10 u BOOST/ATTEN – ukládá se poloha.",
+    "Rozmístění ovladačů orientační (manuál ho popisuje jen obrázkem) – pošli fotku zepředu.",
+    "Originální Pultec EQP-1A má jiné kmitočty (LOW 20/30/60/100, ATTEN SEL 5/10/20) – tento profil platí pro EQP-WA."
+   ],
+   "controls": [
+    {
+     "id": "low_freq",
+     "name": "LOW FREQ",
+     "group": "",
+     "type": "stepped",
+     "steps": 7,
+     "options": [
+      "20 Hz",
+      "30 Hz",
+      "60 Hz",
+      "100 Hz",
+      "200 Hz",
+      "400 Hz",
+      "800 Hz"
+     ],
+     "verified": true,
+     "note": "Kmitočet dolního pásma (boost i cut): 20, 30, 60, 100, 200, 400, 800 Hz (manuál Warm Audio).",
+     "x": 260,
+     "y": 190,
+     "r": 70,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "low_boost",
+     "name": "BOOST",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "+12 dB",
+     "verified": true,
+     "note": "Zdvih basů 0 (jednotkový zisk) až +12 dB (manuál). Mezilehlé značky stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 540,
+     "y": 190,
+     "r": 80,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1d1d1d"
+     }
+    },
+    {
+     "id": "low_cut",
+     "name": "ATTEN",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "-18 dB",
+     "verified": true,
+     "note": "Útlum basů 0 až −18 dB (manuál). Mezilehlé značky stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 800,
+     "y": 190,
+     "r": 80,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1d1d1d"
+     }
+    },
+    {
+     "id": "bandwidth",
+     "name": "BANDWIDTH",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "10",
+     "verified": true,
+     "note": "Šířka výškového zdvihu: 0 = úzká (sharp), 10 = široká (broad) (manuál).",
+     "x": 1080,
+     "y": 190,
+     "r": 80,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1d1d1d"
+     },
+     "scale": [
+      [
+       0.0,
+       "0"
+      ],
+      [
+       0.1,
+       "1"
+      ],
+      [
+       0.2,
+       "2"
+      ],
+      [
+       0.3,
+       "3"
+      ],
+      [
+       0.4,
+       "4"
+      ],
+      [
+       0.5,
+       "5"
+      ],
+      [
+       0.6,
+       "6"
+      ],
+      [
+       0.7,
+       "7"
+      ],
+      [
+       0.8,
+       "8"
+      ],
+      [
+       0.9,
+       "9"
+      ],
+      [
+       1.0,
+       "10"
+      ]
+     ]
+    },
+    {
+     "id": "high_boost",
+     "name": "BOOST",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "+18 dB",
+     "verified": true,
+     "note": "Zdvih výšek 0 až +18 dB (manuál). Mezilehlé značky stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 1360,
+     "y": 190,
+     "r": 80,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1d1d1d"
+     }
+    },
+    {
+     "id": "high_cut",
+     "name": "ATTEN",
+     "group": "",
+     "type": "knob",
+     "minLabel": "0",
+     "maxLabel": "-14 dB",
+     "verified": true,
+     "note": "Útlum výšek 0 až −14 dB (manuál). Mezilehlé značky stupnice manuál neuvádí – ukládá se poloha.",
+     "x": 1900,
+     "y": 190,
+     "r": 80,
+     "angleMin": -150,
+     "angleMax": 150,
+     "draw": {
+      "kind": "vknob",
+      "style": "skirt",
+      "colour": "#1d1d1d"
+     }
+    },
+    {
+     "id": "high_freq",
+     "name": "HIGH FREQ",
+     "group": "",
+     "type": "stepped",
+     "steps": 7,
+     "options": [
+      "3 kHz",
+      "4 kHz",
+      "5 kHz",
+      "8 kHz",
+      "10 kHz",
+      "12 kHz",
+      "16 kHz"
+     ],
+     "verified": true,
+     "note": "Kmitočet výškového zdvihu: 3, 4, 5, 8, 10, 12, 16 kHz (manuál).",
+     "x": 1630,
+     "y": 190,
+     "r": 70,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "high_cut_freq",
+     "name": "ATTEN SEL",
+     "group": "",
+     "type": "stepped",
+     "steps": 5,
+     "options": [
+      "3 kHz",
+      "4 kHz",
+      "5 kHz",
+      "10 kHz",
+      "20 kHz"
+     ],
+     "verified": true,
+     "note": "Kmitočet výškového útlumu: 3, 4, 5, 10, 20 kHz (manuál Warm Audio).",
+     "x": 2160,
+     "y": 190,
+     "r": 70,
+     "angleMin": -135,
+     "angleMax": 135,
+     "draw": {
+      "kind": "vknob",
+      "style": "chicken",
+      "colour": "#202020"
+     }
+    },
+    {
+     "id": "bypass",
+     "name": "BYPASS",
+     "group": "",
+     "type": "button",
+     "note": "Přepínač bypass vlevo dole (není „true bypass“) (manuál).",
+     "verified": true,
+     "x": 170,
+     "y": 395,
+     "r": 26,
+     "draw": {
+      "kind": "vbuttons",
+      "points": [
+       [
+        170,
+        395
+       ]
+      ],
+      "w": 40,
+      "h": 40,
+      "colour": "#ff3b2a",
+      "map": [
+       -1,
+       0
+      ]
+     }
+    }
+   ]
   }
  ]
 }

@@ -868,15 +868,19 @@ ReviewPanel::ReviewPanel()
     style (acceptProposals, U ("Převzít z fotky"), kPhoto);
     acceptProposals.setTooltip (U ("Fotka čte některé ovladače jinak, než máš nastaveno nebo potvrzeno. Tvoje hodnoty se samy nikdy nepřepíšou – tímhle je nahradíš tím, co je na fotce (jde vrátit Zpět)."));
     acceptProposals.onClick = [this] { if (onAcceptProposals) onAcceptProposals(); };
-    addAndMakeVisible (confirmAll); addAndMakeVisible (closeButton); addChildComponent (acceptProposals);
+    style (fillManually, U ("Doplnit ručně"), kPhoto);
+    fillManually.setTooltip (U ("Co fotka nepřečetla, napiš sám: otevře psaní u prvního nezadaného ovladače. Piš hodnotu jako na přístroji (dB, Hz, kHz, ms, číslo kroku nebo popisek), Tab = další, Enter = hotovo."));
+    fillManually.onClick = [this] { if (onFillManually) onFillManually(); };
+    addAndMakeVisible (confirmAll); addAndMakeVisible (closeButton); addChildComponent (acceptProposals); addChildComponent (fillManually);
 }
 
 void ReviewPanel::setItems (const std::vector<Item>& it)
 {
     items = it;
     bool any = false;
-    bool proposals = false;
-    for (auto& i : items) { any = any || i.unconfirmed > 0; proposals = proposals || ! i.proposals.isEmpty(); }
+    bool proposals = false, unknown = false;
+    for (auto& i : items) { any = any || i.unconfirmed > 0; proposals = proposals || ! i.proposals.isEmpty(); unknown = unknown || i.unknown > 0; }
+    fillManually.setVisible (unknown);
     confirmAll.setVisible (any);
     acceptProposals.setVisible (proposals);
     resized();
@@ -895,7 +899,8 @@ void ReviewPanel::resized()
     auto b = getLocalBounds().reduced (10).removeFromTop (28);
     closeButton.setBounds (b.removeFromRight (80)); b.removeFromRight (6);
     confirmAll.setBounds (b.removeFromRight (120)); b.removeFromRight (6);
-    acceptProposals.setBounds (b.removeFromRight (130));
+    if (acceptProposals.isVisible()) { acceptProposals.setBounds (b.removeFromRight (130)); b.removeFromRight (6); }
+    fillManually.setBounds (b.removeFromRight (120));
 }
 
 void ReviewPanel::paint (juce::Graphics& g)
@@ -904,7 +909,7 @@ void ReviewPanel::paint (juce::Graphics& g)
     g.setColour (kPhoto.withAlpha (0.7f)); g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 6.0f, 1.2f);
     auto b = getLocalBounds().reduced (12, 8).toFloat();
     g.setColour (kText); g.setFont (font (14.0f, true));
-    g.drawText (U ("Kontrola po fotce"), b.removeFromTop (24.0f).withTrimmedRight (220.0f), juce::Justification::centredLeft);
+    g.drawText (U ("Kontrola po fotce"), b.removeFromTop (24.0f).withTrimmedRight (480.0f), juce::Justification::centredLeft);
     links.clear();
     for (auto& it : items)
     {
@@ -916,6 +921,7 @@ void ReviewPanel::paint (juce::Graphics& g)
         if (it.tooSmall > 0)    head << U ("  ·  ") << it.tooSmall << U (" moc malých – vyfoť zblízka");
         if (it.notVisible > 0)  head << U ("  ·  ") << it.notVisible << U (" mimo fotku");
         if (it.unsupported > 0) head << U ("  ·  ") << it.unsupported << U (" se z fotky nečte");
+        if (it.unknown > 0)     head << U ("  ·  ") << it.unknown << U (" nezadáno – Doplnit ručně");
         if (! it.failed && it.unconfirmed > 0) head << U ("  ·  modré = zkontroluj a potvrď");
         g.drawText (head, top, juce::Justification::centredLeft);
         if (! it.proposals.isEmpty())

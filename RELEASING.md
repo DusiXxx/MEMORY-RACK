@@ -6,6 +6,15 @@ Když je tam vyšší verze, ukáže zelené tlačítko **AKTUALIZOVAT x.y.z**. 
 velikost a SHA-256, nahradí `~/Library/Audio/Plug-Ins/Components/Rack Memory.component` (stará verze
 se při chybě vrátí) → **RESTARTUJ LOGIC**. Bez hesla, bez Terminálu. Nastavení a verze skladeb se nemění.
 
+## Od 0.13: vydává GitHub sám
+Stačí zvýšit verzi v `CMakeLists.txt`, napsat první odstavec do `RELEASE_NOTES.md` a poslat značku:
+
+    git tag v0.13.0 && git push origin v0.13.0
+
+Workflow `.github/workflows/release.yml` na Macu v cloudu postaví univerzální plugin, ověří verzi a auval,
+zabalí zip + `latest.json` a zveřejní vydání. Při chybě nic nezveřejní a log dá do konceptu `ci-log-…`.
+Postup níže (`Tools/release.sh` na vlastním Macu) zůstává jako záloha.
+
 ## Jednou na začátku
 1. Na https://github.com/new vytvoř repozitář **MEMORY-RACK**, **Public** (jinak by kamarádi nemohli stahovat).
 2. (volitelně) `brew install gh && gh auth login` – pak se vydává jedním příkazem.

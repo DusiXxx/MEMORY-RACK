@@ -54,6 +54,8 @@ public:
     // psani hodnot
     void startEntry (int index);
     void startEntryEdge (bool first);
+    bool startEntryFirstUnknown();                // psani do prvniho nezadaneho ovladace (fotka ho neprecetla)
+    int numUnknown() const;
     bool isEditing() const                        { return entry != nullptr; }
     std::vector<int> readingOrder() const;       // poradi ovladacu pri Tab (zleva doprava, shora dolu)
 
@@ -276,16 +278,16 @@ class ReviewPanel : public juce::Component
 {
 public:
     ReviewPanel();
-    struct Item { juce::String instance, title, message; int read = 0, readable = 0, unconfirmed = 0, notVisible = 0, tooSmall = 0, unsupported = 0; juce::StringArray uncertain, proposals; bool failed = false; bool manual = false; };
+    struct Item { juce::String instance, title, message; int read = 0, readable = 0, unconfirmed = 0, notVisible = 0, tooSmall = 0, unsupported = 0; juce::StringArray uncertain, proposals; bool failed = false; bool manual = false; int unknown = 0; };
     void setItems (const std::vector<Item>&);
     const std::vector<Item>& getItems() const     { return items; }
     std::function<void (const juce::String& instance, const juce::String& controlId)> onOpen;
-    std::function<void()> onConfirmAll, onClose, onAcceptProposals;
+    std::function<void()> onConfirmAll, onClose, onAcceptProposals, onFillManually;
     int preferredHeight() const;
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseUp (const juce::MouseEvent&) override;
-    juce::TextButton confirmAll, closeButton, acceptProposals;
+    juce::TextButton confirmAll, closeButton, acceptProposals, fillManually;
 private:
     std::vector<Item> items;
     struct Link { juce::Rectangle<float> r; juce::String instance, control; };
@@ -528,6 +530,8 @@ private:
     rm::PhotoWorker photoWorker;
 public:
     rm::PhotoWorker& getPhotoWorker()      { return photoWorker; }
+    juce::String updateButtonText() const  { return updateButton.isVisible() ? updateButton.getButtonText() : juce::String(); }
+    void clickUpdateButton()               { startUpdate(); }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RackMemoryEditor)
 };

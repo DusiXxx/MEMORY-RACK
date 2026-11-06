@@ -287,6 +287,8 @@ _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 _os.environ.setdefault('RM_OUT', OUT)
 from build_new_panels import new_profiles
 profiles += new_profiles()
+from build_pro_panels import pro_profiles
+profiles += pro_profiles()
 
 # Podklady pro cteni nastaveni z fotky: cim se pristroj na fotce zarovna (anchor) a jak se cte kazdy ovladac
 for p in profiles:

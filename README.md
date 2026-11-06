@@ -1,21 +1,21 @@
-# Rack Memory 0.12.1
+# Rack Memory 0.13.0
 
 AU plugin pro Logic Pro: paměť nastavení analogového racku + hlasitost a měření do/z hardwaru. Celý rack je na jedné stránce. Hardware se **neovládá**; zvuk prochází beze změny (jen volitelný gain, 0 dB = bitově beze změny).
 
 Skupiny (záložky): **Mixing**, **Mastering** a vlastní – každá má svůj rack a své verze. Nahoře **PATCHBAY** (Samson S-patch Plus, Neutrik NYS-SPP-L1).
 Přístroje: SPL Vitalizer Mk3-T, elysia xfilter (1U i Mastering Edition), xmax 500, nvelope 500, WesAudio _RHEA, Warm Audio WA76, WA-2A, API 512c, AMS Neve 1073LB, Cranborne Camden 500 + vlastní přístroje (+ PŘÍSTROJ → Vlastní přístroj).
 
-**Co je nového: `docs/POKRACOVANI-0.12.1.md` (stav projektu, test aktualizace na Macu), `docs/AKTUALIZACE-A-FOTKY-0.12.md` (0.12 – bezpečné aktualizace, sada fotek), `docs/STABILITA-0.11.md` (0.11 – zahřívání, regrese čtení z fotky, pevná regresní sada), `docs/FOTO-A-KNIHOVNA-0.10.md` (0.10) a `docs/OPRAVY-0.9.md` (0.9) – včetně postupu testu v Logicu.**
+**Co je nového: `docs/NOVINKY-0.13.md` (0.13 – tlačítko aktualizace na hlavní stránce, Doplnit ručně, UA 1176LN, LA-2A, Distressor, API 2500+, EQP-WA, vydání automaticky z GitHubu), `docs/POKRACOVANI-0.12.1.md` (stav projektu, test aktualizace na Macu), `docs/AKTUALIZACE-A-FOTKY-0.12.md` (0.12 – bezpečné aktualizace, sada fotek), `docs/STABILITA-0.11.md` (0.11 – zahřívání, regrese čtení z fotky, pevná regresní sada), `docs/FOTO-A-KNIHOVNA-0.10.md` (0.10) a `docs/OPRAVY-0.9.md` (0.9) – včetně postupu testu v Logicu.**
 
 ## Instalace (u tebe)
 
 Dvojklik na `Instalovat Rack Memory.command` (ve složce RackMemory), nebo v Terminálu:
 
-    cd ~/Downloads && rm -rf RackMemory && unzip -oq RackMemory-0.12.1.zip && bash RackMemory/build.sh
+    cd ~/Downloads && rm -rf RackMemory && unzip -oq RackMemory-0.13.0.zip && bash RackMemory/build.sh
 
 Build šetří počítač: jen pro tento Mac, o jedno jádro méně než má procesor (`RM_JOBS=2 bash RackMemory/build.sh` = ještě méně),
 s nízkou prioritou, a složka buildu je v `~/Library/Caches/RackMemoryBuild` – při další verzi se překládá jen to, co se změnilo.
-Na konci uloží do Stažených `Rack Memory 0.12.1 (x86_64).zip` (jen pro Mac se stejným procesorem).
+Na konci uloží do Stažených `Rack Memory 0.13.0 (x86_64).zip` (jen pro Mac se stejným procesorem).
 Univerzální plugin (Intel i Apple Silicon) pro kamarády: `bash RackMemory/build.sh --universal` (dělá ho i `Tools/release.sh`).
 
 ## Pro kamaráda (bez Terminálu)

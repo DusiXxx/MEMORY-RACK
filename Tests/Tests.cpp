@@ -199,7 +199,7 @@ int main (int argc, char** argv)
 
     section ("profily");
     {
-        CHECK (rm::profiles().size() == 14 && rm::defaultRack().size() == 5);
+        CHECK (rm::profiles().size() == 19 && rm::defaultRack().size() == 5);
         juce::StringArray ids;
         for (auto& p : rm::profiles())
         {
@@ -219,6 +219,41 @@ int main (int argc, char** argv)
             std::cout << "  " << p.name << ": " << p.controls.size() << " ovladacu" << std::endl;
         }
         std::cout << "  celkem " << rm::totalControls() << std::endl;
+    }
+
+    section ("novy hardware 0.13: hodnoty podle manualu, psani hodnot");
+    {
+        for (auto* id : { "ua.1176ln", "ua.la2a", "empiricallabs.distressor", "api.2500plus", "warmaudio.eqpwa" })
+        {
+            auto* pr = rm::findProfile (id);
+            CHECK (pr != nullptr && ! pr->layoutVerified && pr->sources.size() > 0 && rm::loadAsset (pr->image).isValid());
+        }
+        auto entry = [] (const char* dev, const char* ctl, const char* text, rm::ControlValue& v)
+        {
+            auto* pr = rm::findProfile (dev); auto* c = pr != nullptr ? pr->find (ctl) : nullptr;
+            return c != nullptr && rm::parseEntry (*c, juce::String::fromUTF8 (text), v);
+        };
+        rm::ControlValue v;
+        CHECK (entry ("api.2500plus", "attack", "1 ms", v) && v.known && v.pos == 3);
+        CHECK (entry ("api.2500plus", "ratio", "10:1", v) && v.pos == 5);
+        CHECK (entry ("api.2500plus", "release", "var", v) && v.pos == 6);
+        CHECK (entry ("api.2500plus", "link", "IND", v) && v.pos == 0);
+        CHECK (entry ("api.2500plus", "shape", "both", v) && v.pos == 2);
+        CHECK (entry ("warmaudio.eqpwa", "low_freq", "60 Hz", v) && v.pos == 2);
+        CHECK (entry ("warmaudio.eqpwa", "high_freq", "16", v) && v.pos == 6);
+        CHECK (entry ("warmaudio.eqpwa", "high_cut_freq", "20 kHz", v) && v.pos == 4);
+        CHECK (entry ("warmaudio.eqpwa", "bandwidth", "5", v) && std::abs (v.pos - 0.5) < 1e-6);
+        CHECK (entry ("empiricallabs.distressor", "input", "7", v) && std::abs (v.pos - 7.0 / 10.5) < 1e-6);
+        CHECK (entry ("empiricallabs.distressor", "ratio", "nuke", v) && v.pos == 7);
+        CHECK (entry ("empiricallabs.distressor", "dist", "DIST 3", v) && v.pos == 2);
+        CHECK (entry ("ua.1176ln", "ratio", "20", v) && v.pos == 3);
+        CHECK (entry ("ua.1176ln", "meter", "off", v) && v.pos == 3);
+        CHECK (entry ("ua.la2a", "meter", "gain", v) && v.pos == 1);
+        CHECK (entry ("ua.1176ln", "attack", "?", v) && ! v.known);
+        CHECK (! entry ("api.2500plus", "attack", "7 ms", v));               // poloha, kterou prepinac nema
+        // zobrazeni = zpet stejny text (manualove jednotky)
+        auto* att = rm::findProfile ("api.2500plus")->find ("attack");
+        rm::ControlValue a; a.known = true; a.pos = 4; CHECK (rm::entryText (*att, a) == "3 ms");
     }
 
     section ("pomocne funkce");
@@ -1201,9 +1236,22 @@ int main (int argc, char** argv)
         pump (100);
         if (pngDir != juce::File()) { pngDir.createDirectory(); savePng (*ed, pngDir.getChildFile ("rack_empty.png")); }
 
+        // tlacitko aktualizace je videt vzdy (verze + stav); klik = kontrola hned
+        CHECK (e->updateButtonText().startsWith ("v" JucePlugin_VersionString));
+        std::cout << "  tlacitko aktualizace: " << e->updateButtonText() << std::endl;
+
         p.songName = "Track_07";
         fillRack (p.working, 0, 0); p.working.notes = "final print"; p.markDirty();
         CHECK (p.working.numKnown() == rm::totalControls());
+        // doplnit rucne: psani zacne u prvniho nezadaneho ovladace
+        {
+            e->refreshAll(); pump (20);
+            auto* pv = e->panelFor (XM);
+            CHECK (pv != nullptr && pv->numUnknown() == 0 && ! pv->startEntryFirstUnknown());
+            p.working.values.erase (rm::valueKey (XM, "thr_low")); e->refreshAll(); pump (20);
+            CHECK (pv->numUnknown() == 1 && pv->startEntryFirstUnknown() && pv->isEditing());
+            fillRack (p.working, 0, 0); e->refreshAll(); pump (20);
+        }
         e->refreshAll(); pump (50);
         if (pngDir != juce::File()) savePng (*ed, pngDir.getChildFile ("rack_dirty.png"));
         CHECK (p.save().wasOk());

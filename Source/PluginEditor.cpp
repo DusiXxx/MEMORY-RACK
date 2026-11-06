@@ -316,6 +316,21 @@ void PanelView::startEntry (int index)
     repaint();
 }
 
+bool PanelView::startEntryFirstUnknown()
+{
+    for (int i : readingOrder())
+        if (profile->controls[(size_t) i].type != ControlType::button && ! value (profile->controls[(size_t) i]).known) { startEntry (i); return true; }
+    return false;
+}
+
+int PanelView::numUnknown() const
+{
+    int n = 0;
+    if (profile != nullptr)
+        for (auto& c : profile->controls) if (c.type != ControlType::button && ! value (c).known) ++n;
+    return n;
+}
+
 void PanelView::startEntryEdge (bool first)
 {
     auto order = readingOrder();
@@ -1242,6 +1257,17 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
         refreshAll();
     };
     review.onClose = [this] { review.setVisible (false); };
+    review.onFillManually = [this]
+    {
+        for (auto& it : review.getItems())
+            if (auto* pv = panelFor (it.instance))
+                if (pv->startEntryFirstUnknown())
+                {
+                    setStatus (U ("Napiš hodnotu jako na přístroji (např. 3 dB, 120 Hz, 2.4k, 30 ms, krok 4) – Tab další, Enter hotovo, Esc zrušit."), kFromPhoto, 20);
+                    return;
+                }
+        setStatus (U ("Všechno je zadané."), kOk);
+    };
     review.onAcceptProposals = [this]
     {
         int n = 0;
@@ -1357,6 +1383,7 @@ RackMemoryEditor::RackMemoryEditor (RackMemoryProcessor& p)
     if (! proc.profileNotes.isEmpty()) setStatus (proc.profileNotes[0] + (proc.profileNotes.size() > 1 ? U (" (+ další)") : String()), kAccent, 20);
     checkForUpdate();
     updater->maybeAutoCheck();          // GitHub: nejvys jednou za 6 hodin, na pozadi
+    refreshUpdateButton();              // tlacitko s verzi je videt hned od otevreni
     startTimer (500);
 }
 
@@ -1648,7 +1675,7 @@ void RackMemoryEditor::resized()
     valuesButton.setBounds (bar.removeFromRight (46)); bar.removeFromRight (6);
     photoButton.setBounds (bar.removeFromRight (64)); bar.removeFromRight (6);
     addHwButton.setBounds (bar.removeFromRight (104)); bar.removeFromRight (6);
-    if (updateButton.isVisible()) { updateButton.setBounds (bar.removeFromRight (150)); bar.removeFromRight (6); }
+    if (updateButton.isVisible()) { updateButton.setBounds (bar.removeFromRight (170)); bar.removeFromRight (6); }
     saveButton.setBounds (bar.removeFromRight (120));  bar.removeFromRight (6);
     if (undoButton.isVisible()) { undoButton.setBounds (bar.removeFromRight (60)); bar.removeFromRight (6); }
 
@@ -2624,6 +2651,19 @@ void RackMemoryEditor::refreshUpdateButton()
         default: break;
     }
     if (! visible && update.file.existsAsFile()) { text = U ("AKTUALIZOVAT ") + update.version + U (" (ze Stažených)"); visible = true; }
+    if (! visible)   // tlacitko je videt vzdy: verze + stav; klik = zkontrolovat GitHub hned
+    {
+        const String v = U ("v") + String (JucePlugin_VersionString);
+        if (st.state == S::checking)                     text = v + U (" · hledám…");
+        else if (st.state == S::upToDate)                text = v + U (" · aktuální ✓");
+        else if (st.state == S::offline)                 text = v + U (" · offline");
+        else if (st.state == S::notConfigured)           text = v;
+        else                                             text = v + U (" · zkontrolovat");
+        enabled = st.state != S::checking;
+        visible = true;
+        updateButton.setColour (juce::TextButton::buttonColourId, Colour (0xff2a2e35));
+    }
+    else updateButton.setColour (juce::TextButton::buttonColourId, kOk);   // je co delat: zelene
     const bool changed = updateButton.isVisible() != visible;
     updateButton.setButtonText (text);
     updateButton.setEnabled (enabled);
@@ -2741,6 +2781,12 @@ void RackMemoryEditor::startUpdate()
         ask (U ("Aktualizace se nepovedla"), st.message + U ("\n\nPodrobnosti: ") + updater->logFile().getFullPathName(), U ("Zkusit znovu"), U ("Zavřít"),
              [this] { updateRequested = false; updater->checkNow(); });
     else if (update.file.existsAsFile()) runUpdate (update.file);
+    else if (st.state != S::checking)
+    {
+        manualCheck = true;
+        setStatus (U ("Kontroluji GitHub (") + rm::Updater::builtInRepo() + U (")…"), kDim, 8);
+        updater->checkNow();
+    }
     refreshUpdateButton();
 }
 
@@ -2891,6 +2937,7 @@ void RackMemoryEditor::showReview (const juce::StringArray& instances)
         item.failed = it->second.failed; item.message = it->second.status;
         item.unconfirmed = proc.numUnconfirmed (id);
         item.manual = it->second.manual;
+        if (auto* pv = panelFor (id)) item.unknown = pv->numUnknown();
         for (auto& kv : it->second.states)
         {
             if (kv.second == "notvisible") ++item.notVisible;

@@ -521,7 +521,8 @@ bool parseEntry (const ControlDef& c, const String& text, ControlValue& out)
             if (c.options[i].toLowerCase().startsWith (lower) || c.options[i].upToFirstOccurrenceOf (" (", false, false).equalsIgnoreCase (t))
                 { out.known = true; out.pos = i; return true; }
         double n;
-        if (parseNumber (t, n) && n == std::floor (n) && n >= 1 && n <= c.options.size()) { out.known = true; out.pos = n - 1; return true; }
+        // cislo polohy (1..N) jen jako holé cislo: "7 ms" neni poloha 7
+        if (t.containsOnly ("0123456789") && parseNumber (t, n) && n >= 1 && n <= c.options.size()) { out.known = true; out.pos = n - 1; return true; }
         return false;
     }
 
