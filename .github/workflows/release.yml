@@ -1,10 +1,14 @@
-# Vydani MEMORY RACK: pri kazdem tagu v<verze> GitHub (Mac v cloudu) postavi univerzalni plugin, overi ho (auval),
-# zabali, spocita SHA-256 a zverejni vydani s latest.json -> pluginy u lidi nabidnou aktualizaci.
+# Vydani MEMORY RACK: kdyz se na main zmeni verze v CMakeLists.txt (nebo pri tagu v<verze> / rucnim spusteni)
+# GitHub (Mac v cloudu) postavi univerzalni plugin, overi ho (auval), zabali, spocita SHA-256 a zverejni
+# vydani v<verze> s latest.json -> pluginy u lidi nabidnou aktualizaci. Uz vydana verze se znovu nevydava.
 # Kdyz build selze, nic se nezverejni; log se ulozi do NEzverejneneho konceptu vydani (draft) "ci-log-...".
 name: Release
 on:
   push:
+    branches: [main]
+    paths: ['CMakeLists.txt', '.github/workflows/release.yml']
     tags: ['v*']
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -13,20 +17,26 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Verze z tagu = verze v CMakeLists.txt
+      - name: Verze (CMakeLists.txt) a jestli uz neni vydana
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          VER="${GITHUB_REF_NAME#v}"
           CM=$(sed -n 's/^project(RackMemory VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
-          echo "tag $VER, CMakeLists $CM"
-          [ "$VER" = "$CM" ] || { echo "Tag a verze nesedi" | tee ci.log; exit 1; }
-          echo "VER=$VER" >> "$GITHUB_ENV"
+          echo "CMakeLists $CM, ref $GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "${GITHUB_REF_NAME#v}" != "$CM" ]; then echo "Tag a verze nesedi" | tee ci.log; exit 1; fi
+          echo "VER=$CM" >> "$GITHUB_ENV"
+          if gh release view "v$CM" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$CM uz je vydana - nic nedelam"; echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
       - name: Build (Intel + Apple Silicon)
+        if: env.SKIP != '1'
         run: |
           set -o pipefail
           cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
                 -DRM_UPDATE_REPO="${GITHUB_REPOSITORY}" 2>&1 | tee -a ci.log
           cmake --build build --target RackMemory_AU -j 3 2>&1 | tail -n 400 | tee -a ci.log
       - name: Overeni (auval)
+        if: env.SKIP != '1'
         run: |
           set -o pipefail
           COMP="$HOME/Library/Audio/Plug-Ins/Components/Rack Memory.component"
@@ -39,6 +49,7 @@ jobs:
           if auval -v aufx Rkmm Dusx > auval.log 2>&1 && grep -q "AU VALIDATION SUCCEEDED" auval.log; then echo "auval OK" | tee -a ci.log
           else tail -n 40 auval.log | tee -a ci.log; echo "::warning::auval na CI neprosel (na Macu ho overi instalator)"; fi
       - name: Balicek + latest.json
+        if: env.SKIP != '1'
         run: |
           set -e
           OUT=out; mkdir -p $OUT; STAGE=$(mktemp -d)
@@ -66,10 +77,11 @@ jobs:
           PY
           cat "$OUT/latest.json" | tee -a ci.log
       - name: Zverejneni
+        if: env.SKIP != '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "out/RackMemory-$VER-mac.zip" out/latest.json \
+          gh release create "v$VER" "out/RackMemory-$VER-mac.zip" out/latest.json --target "$GITHUB_SHA" \
              --title "MEMORY RACK $VER" --notes-file out/RELEASE_NOTES.md --latest
       - name: Log pri chybe (koncept vydani, neverejny)
         if: failure()
@@ -77,4 +89,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           [ -f ci.log ] || echo "bez logu" > ci.log
-          gh release create "ci-log-${GITHUB_RUN_ID}" ci.log --draft --title "CI log ${GITHUB_REF_NAME} (chyba)" --notes "Build ${GITHUB_REF_NAME} selhal - log v priloze." || true
+          gh release create "ci-log-${GITHUB_RUN_ID}" ci.log --draft --title "CI log v${VER:-?} (chyba)" --notes "Build v${VER:-?} (${GITHUB_SHA}) selhal - log v priloze." || true

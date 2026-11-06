@@ -20,7 +20,7 @@ Postup instalace zůstává jako v 0.12: stažení s průběhem, ověření (SHA
 
 Nově vydání nedělá tvůj Mac. Dělá ho GitHub (`.github/workflows/release.yml`):
 
-1. Claude zvýší verzi a pošle značku `v0.13.0`.
+1. Claude zvýší verzi v `CMakeLists.txt` a pošle změny na GitHub.
 2. GitHub na svém Macu postaví plugin pro Intel i Apple Silicon a zkontroluje verzi.
 3. Spustí auval, zabalí zip a spočítá SHA-256.
 4. Zveřejní vydání se souborem `latest.json`. Pluginy u všech pak nabídnou aktualizaci.

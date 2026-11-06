@@ -7,9 +7,9 @@ velikost a SHA-256, nahradí `~/Library/Audio/Plug-Ins/Components/Rack Memory.co
 se při chybě vrátí) → **RESTARTUJ LOGIC**. Bez hesla, bez Terminálu. Nastavení a verze skladeb se nemění.
 
 ## Od 0.13: vydává GitHub sám
-Stačí zvýšit verzi v `CMakeLists.txt`, napsat první odstavec do `RELEASE_NOTES.md` a poslat značku:
-
-    git tag v0.13.0 && git push origin v0.13.0
+Stačí zvýšit verzi v `CMakeLists.txt`, napsat první odstavec do `RELEASE_NOTES.md` a poslat na `main`.
+Workflow se spustí sám při změně `CMakeLists.txt` (nebo tagem `v<verze>`, nebo ručně v Actions → Release → Run).
+Už vydanou verzi znovu nevydá.
 
 Workflow `.github/workflows/release.yml` na Macu v cloudu postaví univerzální plugin, ověří verzi a auval,
 zabalí zip + `latest.json` a zveřejní vydání. Při chybě nic nezveřejní a log dá do konceptu `ci-log-…`.
