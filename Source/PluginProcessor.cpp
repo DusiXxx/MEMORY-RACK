@@ -680,14 +680,16 @@ juce::StringArray RackMemoryProcessor::missingInstances() const
 {
     // kusy s hodnotami v nactene verzi teto skupiny, ktere v racku skupiny nejsou
     juce::StringArray out;
-    const auto* s = findSnapshot (loadedId);
+    // Pracovni hodnoty jsou vzdy teto skupiny (nactena verze + zmeny od nacteni). Kus, ktery uzivatel
+    // pridal az po nacteni verze a pak odebral, proto taky patri sem - jinak by jeho hodnoty nesly vratit.
+    // Vynechat jen kusy, ktere stoji v racku jine skupiny.
+    const auto everywhere = studio.allInstances();
     for (auto& kv : working.values)
     {
         if (! kv.second.known) continue;
         const auto dev = kv.first.upToFirstOccurrenceOf (":", false, false);
-        if (s != nullptr && ! instancesOf (*s).contains (dev)) continue;
-        if (s == nullptr && studio.allInstances().contains (dev)) continue;      // patri do jine skupiny
-        if (rack.find (dev) == nullptr && rm::profileForInstance (dev) != nullptr) out.addIfNotAlreadyThere (dev);
+        if (rack.find (dev) != nullptr || everywhere.contains (dev)) continue;   // v racku / v jine skupine
+        if (rm::profileForInstance (dev) != nullptr) out.addIfNotAlreadyThere (dev);
     }
     return out;
 }
